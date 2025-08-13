@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Digitization System</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Login/Registration Screen -->
+    <div id="auth-container" class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1><i class="fas fa-file-alt"></i> DocuDigit</h1>
+                <p>Document Digitization System</p>
+            </div>
+            
+            <!-- Login Form -->
+            <div id="login-form" class="auth-form active">
+                <h2>Sign In</h2>
+                <form>
+                    <div class="form-group">
+                        <label for="login-email">Email</label>
+                        <input type="email" id="login-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Sign In</button>
+                </form>
+                <p class="auth-switch">Don't have an account? <a href="#" onclick="showRegister()">Sign up</a></p>
+            </div>
+            
+            <!-- Registration Form -->
+            <div id="register-form" class="auth-form">
+                <h2>Create Account</h2>
+                <form>
+                    <div class="form-group">
+                        <label for="register-name">Full Name</label>
+                        <input type="text" id="register-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email">Email</label>
+                        <input type="email" id="register-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password</label>
+                        <input type="password" id="register-password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-confirm">Confirm Password</label>
+                        <input type="password" id="register-confirm" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Account</button>
+                </form>
+                <p class="auth-switch">Already have an account? <a href="#" onclick="showLogin()">Sign in</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="dashboard hidden">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1><i class="fas fa-file-alt"></i> DocuDigit</h1>
+            </div>
+            <div class="header-center">
+
+            </div>
+            <div class="header-right">
+                <span class="user-info">Welcome, User</span>
+                <button class="btn btn-secondary" onclick="logout()">Logout</button>
+            </div>
+        </header>
+
+        <div class="main-layout">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <h3>Clients</h3>
+                </div>
+                <div class="client-tree">
+                    <div class="client-node">
+                        <div class="client-header" onclick="toggleClient('totalflow')">
+                            <i class="fas fa-chevron-right" id="totalflow-icon"></i>
+                            <span>TotalFlow Ltd</span>
+                        </div>
+                        <div class="client-content" id="totalflow-content">
+                            <div class="doc-type" onclick="selectDocType('totalflow', 'invoice')">Invoice</div>
+                            <div class="doc-type" onclick="selectDocType('totalflow', 'bill')">Bill</div>
+                            <div class="doc-type" onclick="selectDocType('totalflow', 'receipt')">Receipt / Cash Receipt</div>
+                            <div class="doc-type" onclick="selectDocType('totalflow', 'proforma')">Proforma Invoice</div>
+                            <div class="doc-type" onclick="selectDocType('totalflow', 'credit')">Credit Note</div>
+                            <div class="doc-type" onclick="selectDocType('totalflow', 'debit')">Debit Note</div>
+                            <div class="doc-type" onclick="selectDocType('totalflow', 'purchase')">Purchase Order</div>
+                            <div class="doc-type" onclick="selectDocType('totalflow', 'sales')">Sales Order</div>
+                        </div>
+                    </div>
+                    
+                    <div class="client-node">
+                        <div class="client-header" onclick="toggleClient('jeff')">
+                            <i class="fas fa-chevron-right" id="jeff-icon"></i>
+                            <span>Jeff Nuttall</span>
+                        </div>
+                        <div class="client-content" id="jeff-content">
+                            <div class="doc-type" onclick="selectDocType('jeff', 'invoice')">Invoice</div>
+                            <div class="doc-type" onclick="selectDocType('jeff', 'bill')">Bill</div>
+                            <div class="doc-type" onclick="selectDocType('jeff', 'receipt')">Receipt / Cash Receipt</div>
+                            <div class="doc-type" onclick="selectDocType('jeff', 'proforma')">Proforma Invoice</div>
+                            <div class="doc-type" onclick="selectDocType('jeff', 'credit')">Credit Note</div>
+                            <div class="doc-type" onclick="selectDocType('jeff', 'debit')">Debit Note</div>
+                            <div class="doc-type" onclick="selectDocType('jeff', 'purchase')">Purchase Order</div>
+                            <div class="doc-type" onclick="selectDocType('jeff', 'sales')">Sales Order</div>
+                        </div>
+                    </div>
+                    
+                    <div class="client-node">
+                        <div class="client-header" onclick="toggleClient('schneider')">
+                            <i class="fas fa-chevron-right" id="schneider-icon"></i>
+                            <span>Schneider Ltd</span>
+                        </div>
+                        <div class="client-content" id="schneider-content">
+                            <div class="doc-type" onclick="selectDocType('schneider', 'invoice')">Invoice</div>
+                            <div class="doc-type" onclick="selectDocType('schneider', 'bill')">Bill</div>
+                            <div class="doc-type" onclick="selectDocType('schneider', 'receipt')">Receipt / Cash Receipt</div>
+                            <div class="doc-type" onclick="selectDocType('schneider', 'proforma')">Proforma Invoice</div>
+                            <div class="doc-type" onclick="selectDocType('schneider', 'credit')">Credit Note</div>
+                            <div class="doc-type" onclick="selectDocType('schneider', 'debit')">Debit Note</div>
+                            <div class="doc-type" onclick="selectDocType('schneider', 'purchase')">Purchase Order</div>
+                            <div class="doc-type" onclick="selectDocType('schneider', 'sales')">Sales Order</div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Date Filters -->
+                <div class="date-filters">
+                    <select id="year-filter">
+                        <option value="2023">2023</option>
+                        <option value="2024">2024</option>
+                        <option value="2025" selected>2025</option>
+                        <option value="2026">2026</option>
+                        <option value="2027">2027</option>
+                    </select>
+                    <select id="month-filter">
+                        <option value="01">January</option>
+                        <option value="02">February</option>
+                        <option value="03">March</option>
+                        <option value="04">April</option>
+                        <option value="05">May</option>
+                        <option value="06">June</option>
+                        <option value="07">July</option>
+                        <option value="08">August</option>
+                        <option value="09">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                </div>
+
+                <!-- Tabbed Panel -->
+                <section class="tabbed-panel">
+                    <div class="tab-header">
+                        <button class="tab-btn active" onclick="showTab('queue')">Queue</button>
+                        <button class="tab-btn" onclick="showTab('digitized')" id="digitized-tab">Digitized</button>
+                    </div>
+                    
+                    <div class="tab-content">
+                        <div id="queue-content" class="tab-pane active">
+                            <div class="queue-table-container">
+                                <table class="queue-table">
+                                    <thead>
+                                        <tr>
+                                            <th><input type="checkbox" id="select-all"></th>
+                                            <th>Preview</th>
+                                            <th>Document Name</th>
+                                            <th>Size</th>
+                                            <th>Upload Date</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="queue-table-body">
+                                        <tr>
+                                            <td><input type="checkbox" class="doc-checkbox" id="doc2"></td>
+                                            <td><div class="doc-thumbnail clickable" onclick="openImageModal('doc2', 'Cash Receipt 2')"><i class="fas fa-file-image"></i></div></td>
+                                            <td>Cash Receipt 2</td>
+                                            <td>1.8 MB</td>
+                                            <td>15 Jul 2025 05:34 PM</td>
+                                            <td>
+                                                <div class="action-buttons">
+                                                    <button class="btn btn-success btn-action" onclick="processDocument('doc2')">Proceed</button>
+                                                    <button class="btn btn-danger btn-action" onclick="deleteDocument('doc2')">Delete</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><input type="checkbox" class="doc-checkbox" id="doc3"></td>
+                                            <td><div class="doc-thumbnail clickable" onclick="openImageModal('doc3', 'Cash Receipt 3')"><i class="fas fa-file-image"></i></div></td>
+                                            <td>Cash Receipt 3</td>
+                                            <td>2.1 MB</td>
+                                            <td>15 Jul 2025 05:34 PM</td>
+                                            <td>
+                                                <div class="action-buttons">
+                                                    <button class="btn btn-success btn-action" onclick="processDocument('doc3')">Proceed</button>
+                                                    <button class="btn btn-danger btn-action" onclick="deleteDocument('doc3')">Delete</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                 </table>
+                             </div>
+                         </div>
+                        </div>
+                        
+                        <div id="digitized-content" class="tab-pane">
+                            <div class="digitized-header">
+                                <button class="btn btn-success" onclick="exportToExcel()">
+                                    <i class="fas fa-file-excel"></i> Export to Excel
+                                </button>
+                            </div>
+                            <div class="table-container">
+                                 <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>№</th>
+                                            <th>Дата транзакции</th>
+                                            <th>Поставщик (Vendor)</th>
+                                            <th>ABN</th>
+                                            <th>Сумма (вкл. GST)</th>
+                                            <th>GST (10%)</th>
+                                            <th>Описание</th>
+                                            <th>Метод оплаты</th>
+                                            <th>Статус</th>
+                                            <th>Тип документа</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="digitized-table-body">
+                                        <tr>
+                                            <td>1</td>
+                                            <td>12/07/2025 12:34</td>
+                                            <td>UGG EXPRESS AUSTRALIA</td>
+                                            <td>44 168 465 405</td>
+                                            <td>$105.00</td>
+                                            <td>$9.55</td>
+                                            <td>AS+MINI CLASSIC boots</td>
+                                            <td>Cash + Mastercard</td>
+                                            <td>Accepted</td>
+                                            <td>Tax Invoice</td>
+                                            <td><span class="status-badge status-processed">Processed</span></td>
+                                            <td>
+                                                <div class="action-buttons">
+                                                    <button class="btn btn-primary btn-action">Edit</button>
+                                                    <button class="btn btn-danger btn-action">Delete</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>2</td>
+                                            <td>21/07/2025 12:43</td>
+                                            <td>Spotlight Hoppers Crossing</td>
+                                            <td>39564681886</td>
+                                            <td>-$50.00</td>
+                                            <td>-$4.55</td>
+                                            <td>Возврат подушек Zanzibar</td>
+                                            <td>Mastercard (EFTPOS)</td>
+                                            <td>Refund</td>
+                                            <td>Return Tax Invoice</td>
+                                            <td><span class="status-badge status-processed">Processed</span></td>
+                                            <td>
+                                                <div class="action-buttons">
+                                                    <button class="btn btn-primary btn-action">Edit</button>
+                                                    <button class="btn btn-danger btn-action">Delete</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>3</td>
+                                            <td>12/07/2025 11:48</td>
+                                            <td>Kmart Werribee</td>
+                                            <td>73 004 700 485</td>
+                                            <td>$57.50</td>
+                                            <td>$5.23</td>
+                                            <td>Goods: microwave, screen</td>
+                                            <td>Mastercard</td>
+                                            <td>Approved</td>
+                                            <td>Tax Invoice</td>
+                                            <td><span class="status-badge status-processed">Processed</span></td>
+                                            <td>
+                                                <div class="action-buttons">
+                                                    <button class="btn btn-primary btn-action">Edit</button>
+                                                    <button class="btn btn-danger btn-action">Delete</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="image-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Document Preview</h3>
+                <button class="modal-close" onclick="closeImageModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <img id="modal-image" src="" alt="Document preview">
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
