@@ -17,7 +17,7 @@ export async function GET(
     const userId = searchParams.get('userId')
 
     if (!userId) {
-      const corsHeaders = getCorsHeaders(request)
+      const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
       return NextResponse.json({ error: 'User ID is required' }, { 
         status: 400,
         headers: corsHeaders,
@@ -33,7 +33,7 @@ export async function GET(
     })
 
     if (!company) {
-      const corsHeaders = getCorsHeaders(request)
+      const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
       return NextResponse.json({ error: 'Company not found' }, { 
         status: 404,
         headers: corsHeaders,
@@ -66,7 +66,7 @@ export async function GET(
       },
     })
 
-    const corsHeaders = getCorsHeaders(request)
+    const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
     return NextResponse.json({
       success: true,
       documents,
@@ -80,7 +80,7 @@ export async function GET(
     })
   } catch (error) {
     console.error('Get company files error:', error)
-    const corsHeaders = getCorsHeaders(request)
+    const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
     return NextResponse.json(
       { error: 'Failed to get company files' },
       { 

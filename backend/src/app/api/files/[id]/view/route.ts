@@ -3,17 +3,11 @@ import { readFile } from 'fs/promises'
 import { existsSync } from 'fs'
 import { join } from 'path'
 import { prisma } from '@/lib/prisma'
+import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
 
 // Handle CORS preflight requests
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': 'http://localhost:3111',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
-  })
+export async function OPTIONS(request: NextRequest) {
+  return handleCorsOptions(request.headers.get('origin') || '')
 }
 
 export async function GET(
@@ -26,11 +20,10 @@ export async function GET(
     const userId = searchParams.get('userId')
 
     if (!userId) {
+      const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
       return NextResponse.json({ error: 'User ID is required' }, { 
         status: 400,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       })
     }
 
@@ -72,31 +65,28 @@ export async function GET(
     }
 
     if (!document) {
+      const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
       return NextResponse.json({ error: 'Document not found' }, { 
         status: 404,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       })
     }
 
     if (!document.filePath) {
+      const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
       return NextResponse.json({ error: 'File path not found' }, { 
         status: 404,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       })
     }
 
     // Check if file exists
     const fullPath = join(process.cwd(), document.filePath)
     if (!existsSync(fullPath)) {
+      const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
       return NextResponse.json({ error: 'File not found on disk' }, { 
         status: 404,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       })
     }
 
@@ -104,11 +94,11 @@ export async function GET(
     const fileBuffer = await readFile(fullPath)
 
     // Set appropriate headers
-    const headers = new Headers()
+    const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
+    const headers = new Headers(corsHeaders)
     headers.set('Content-Type', document.mimeType || 'application/octet-stream')
     headers.set('Content-Length', fileBuffer.length.toString())
     headers.set('Content-Disposition', `inline; filename="${document.originalName}"`)
-    headers.set('Access-Control-Allow-Origin', 'http://localhost:3111')
     headers.set('Cross-Origin-Resource-Policy', 'cross-origin')
     headers.set('Cross-Origin-Embedder-Policy', 'unsafe-none')
 
@@ -118,13 +108,12 @@ export async function GET(
     })
   } catch (error) {
     console.error('View file error:', error)
+    const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
     return NextResponse.json(
       { error: 'Failed to view file' },
       { 
         status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       }
     )
   } finally {

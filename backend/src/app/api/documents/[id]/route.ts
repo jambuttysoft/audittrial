@@ -3,17 +3,11 @@ import { unlink } from 'fs/promises'
 import { existsSync } from 'fs'
 import { join } from 'path'
 import { prisma } from '@/lib/prisma'
+import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
 
 // Handle CORS preflight requests
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': 'http://localhost:3111',
-      'Access-Control-Allow-Methods': 'GET, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
-  })
+export async function OPTIONS(request: NextRequest) {
+  return handleCorsOptions(request.headers.get('origin') || '')
 }
 
 export async function DELETE(
@@ -26,11 +20,10 @@ export async function DELETE(
     const userId = searchParams.get('userId')
 
     if (!userId) {
+      const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
       return NextResponse.json({ error: 'User ID is required' }, { 
         status: 400,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       })
     }
 
@@ -43,11 +36,10 @@ export async function DELETE(
     })
 
     if (!document) {
+      const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
       return NextResponse.json({ error: 'Document not found' }, { 
         status: 404,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       })
     }
 
@@ -68,23 +60,21 @@ export async function DELETE(
       where: { id },
     })
 
+    const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
     return NextResponse.json({
       success: true,
       message: 'Document deleted successfully',
     }, {
-      headers: {
-        'Access-Control-Allow-Origin': 'http://localhost:3111',
-      },
+      headers: corsHeaders,
     })
   } catch (error) {
     console.error('Delete error:', error)
+    const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
     return NextResponse.json(
       { error: 'Failed to delete document' },
       { 
         status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       }
     )
   } finally {
@@ -102,11 +92,10 @@ export async function GET(
     const userId = searchParams.get('userId')
 
     if (!userId) {
+      const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
       return NextResponse.json({ error: 'User ID is required' }, { 
         status: 400,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       })
     }
 
@@ -134,31 +123,28 @@ export async function GET(
     })
 
     if (!document) {
+      const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
       return NextResponse.json({ error: 'Document not found' }, { 
         status: 404,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       })
     }
 
+    const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
     return NextResponse.json({
       success: true,
       document,
     }, {
-      headers: {
-        'Access-Control-Allow-Origin': 'http://localhost:3111',
-      },
+      headers: corsHeaders,
     })
   } catch (error) {
     console.error('Get document error:', error)
+    const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
     return NextResponse.json(
       { error: 'Failed to get document' },
       { 
         status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       }
     )
   } finally {

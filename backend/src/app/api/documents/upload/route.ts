@@ -3,17 +3,10 @@ import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
 import { prisma } from '@/lib/prisma'
+import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
 
-// Handle CORS preflight requests
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': 'http://localhost:3111',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
-  })
+export async function OPTIONS(request: NextRequest) {
+  return handleCorsOptions(request.headers.get('origin') || '')
 }
 
 export async function POST(request: NextRequest) {
@@ -24,20 +17,18 @@ export async function POST(request: NextRequest) {
     const companyId = formData.get('companyId') as string
 
     if (!file) {
+      const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
       return NextResponse.json({ error: 'No file provided' }, { 
         status: 400,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       })
     }
 
     if (!userId) {
+      const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
       return NextResponse.json({ error: 'User ID is required' }, { 
         status: 400,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       })
     }
 
@@ -50,13 +41,12 @@ export async function POST(request: NextRequest) {
     ]
     
     if (!allowedTypes.includes(file.type)) {
+      const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
       return NextResponse.json(
         { error: `File type ${file.type} not allowed. Allowed types: ${allowedTypes.join(', ')}` },
         { 
           status: 400,
-          headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3111',
-          },
+          headers: corsHeaders,
         }
       )
     }
@@ -64,13 +54,12 @@ export async function POST(request: NextRequest) {
     // Validate file size
     const maxSize = parseInt(process.env.MAX_FILE_SIZE || '10485760') // 10MB default
     if (file.size > maxSize) {
+      const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
       return NextResponse.json(
         { error: `File size ${file.size} exceeds maximum allowed size of ${maxSize} bytes` },
         { 
           status: 400,
-          headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3111',
-          },
+          headers: corsHeaders,
         }
       )
     }
@@ -92,11 +81,10 @@ export async function POST(request: NextRequest) {
     })
     
     if (!userExists) {
+      const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
       return NextResponse.json({ error: 'User not found' }, { 
         status: 404,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       })
     }
 
@@ -107,11 +95,10 @@ export async function POST(request: NextRequest) {
       })
       
       if (!companyExists) {
+        const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
         return NextResponse.json({ error: 'Company not found' }, { 
           status: 404,
-          headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3111',
-          },
+          headers: corsHeaders,
         })
       }
     }
@@ -150,24 +137,22 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
     return NextResponse.json({
       success: true,
       document,
       message: 'File uploaded successfully',
     }, {
-      headers: {
-        'Access-Control-Allow-Origin': 'http://localhost:3111',
-      },
+      headers: corsHeaders,
     })
   } catch (error) {
     console.error('Upload error:', error)
+    const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
     return NextResponse.json(
       { error: 'Failed to upload file' },
       { 
         status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       }
     )
   } finally {

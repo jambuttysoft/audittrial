@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
+
+export async function OPTIONS(request: NextRequest) {
+  return handleCorsOptions(request.headers.get('origin') || '')
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const abn = searchParams.get('abn')
   
-  // Добавляем CORS заголовки
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': 'http://localhost:3111',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  }
+  const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
   
   if (!abn) {
     return NextResponse.json(
@@ -84,16 +84,4 @@ export async function GET(request: NextRequest) {
       { status: 500, headers: corsHeaders }
     )
   }
-}
-
-// Добавляем обработчик OPTIONS для CORS preflight запросов
-export async function OPTIONS(request: NextRequest) {
-  return new Response(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': 'http://localhost:3111',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
-  })
 }

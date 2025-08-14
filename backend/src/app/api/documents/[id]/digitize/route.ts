@@ -4,6 +4,7 @@ import { readFile } from 'fs/promises'
 import { existsSync } from 'fs'
 import { join } from 'path'
 import { prisma } from '@/lib/prisma'
+import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
@@ -18,11 +19,10 @@ export async function POST(
     const userId = searchParams.get('userId')
 
     if (!userId) {
+      const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
       return NextResponse.json({ error: 'User ID is required' }, { 
         status: 400,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       })
     }
 
@@ -35,20 +35,18 @@ export async function POST(
     })
 
     if (!document) {
+      const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
       return NextResponse.json({ error: 'Document not found' }, { 
         status: 404,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       })
     }
 
     if (document.status === 'DIGITIZED') {
+      const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
       return NextResponse.json({ error: 'Document already digitized' }, { 
         status: 400,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       })
     }
 
@@ -248,14 +246,13 @@ export async function POST(
 
       console.log(`Document ${id} removed from Documents queue`)
 
+      const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
       return NextResponse.json({
         success: true,
         digitizedDocument,
         message: 'Document digitization completed successfully',
       }, {
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       })
     } catch (processingError) {
       console.error(`Processing error for document ${id}:`, processingError)
@@ -295,6 +292,7 @@ export async function POST(
       
       console.log(`Document ${id} status updated to ERROR`)
 
+      const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
       return NextResponse.json(
         { 
           error: errorMessage,
@@ -303,21 +301,18 @@ export async function POST(
         },
         { 
           status: shouldRetryLater ? 503 : 500,
-          headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3111',
-          },
+          headers: corsHeaders,
         }
       )
     }
   } catch (error) {
     console.error('Digitize error:', error)
+    const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
     return NextResponse.json(
       { error: 'Failed to digitize document' },
       { 
         status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       }
     )
   } finally {
@@ -325,12 +320,6 @@ export async function POST(
   }
 }
 
-export async function OPTIONS() {
-  return NextResponse.json({}, {
-    headers: {
-      'Access-Control-Allow-Origin': 'http://localhost:3111',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  })
+export async function OPTIONS(request: NextRequest) {
+  return handleCorsOptions(request.headers.get('origin') || '')
 }

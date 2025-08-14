@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { XeroClient, AccountingApi } from 'xero-node'
 import { prisma } from '@/lib/prisma'
+import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
 
 function getXeroClient() {
   const clientId = process.env.XERO_CLIENT_ID
@@ -44,15 +45,8 @@ function getXeroClient() {
 }
 
 // CORS preflight
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
-  })
+export async function OPTIONS(request: NextRequest) {
+  return handleCorsOptions(request.headers.get('origin') || '')
 }
 
 export async function GET(request: NextRequest) {
