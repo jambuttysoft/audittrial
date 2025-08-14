@@ -1,16 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCorsHeaders, handleCorsOptions } from '@/lib/cors';
 
 // Handle CORS preflight requests
 export async function OPTIONS(request: NextRequest) {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-        'Access-Control-Allow-Origin': 'http://localhost:3111',
-        'Access-Control-Allow-Methods': 'GET, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-  });
+  return handleCorsOptions(request.headers.get('origin') || '');
 }
 
 // Get Xero connection status
@@ -24,11 +18,7 @@ export async function GET(request: NextRequest) {
         { error: 'User ID is required' },
         { 
           status: 400,
-          headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3111',
-            'Access-Control-Allow-Methods': 'GET, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
-          }
+          headers: getCorsHeaders(request.headers.get('origin') || '')
         }
       );
     }
@@ -50,11 +40,7 @@ export async function GET(request: NextRequest) {
         { error: 'User not found' },
         { 
           status: 404,
-          headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3111',
-            'Access-Control-Allow-Methods': 'GET, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
-          }
+          headers: getCorsHeaders(request.headers.get('origin') || '')
         }
       );
     }
@@ -71,11 +57,7 @@ export async function GET(request: NextRequest) {
         needsReconnection: isConnected && isTokenExpired
       },
       {
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-          'Access-Control-Allow-Methods': 'GET, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        }
+        headers: getCorsHeaders(request.headers.get('origin') || '')
       }
     );
   } catch (error) {
@@ -84,11 +66,7 @@ export async function GET(request: NextRequest) {
       { error: 'Failed to check Xero status' },
       { 
         status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-          'Access-Control-Allow-Methods': 'GET, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        }
+        headers: getCorsHeaders(request.headers.get('origin') || '')
       }
     );
   }
@@ -105,11 +83,7 @@ export async function DELETE(request: NextRequest) {
         { error: 'User ID is required' },
         { 
           status: 400,
-          headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3111',
-            'Access-Control-Allow-Methods': 'GET, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
-          }
+          headers: getCorsHeaders(request.headers.get('origin') || '')
         }
       );
     }
@@ -130,11 +104,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json(
       { message: 'Xero disconnected successfully' },
       {
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-          'Access-Control-Allow-Methods': 'GET, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        }
+        headers: getCorsHeaders(request.headers.get('origin') || '')
       }
     );
   } catch (error) {
@@ -143,11 +113,7 @@ export async function DELETE(request: NextRequest) {
       { error: 'Failed to disconnect Xero' },
       { 
         status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-          'Access-Control-Allow-Methods': 'GET, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        }
+        headers: getCorsHeaders(request.headers.get('origin') || '')
       }
     );
   }
