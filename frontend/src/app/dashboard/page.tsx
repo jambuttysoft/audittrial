@@ -2059,52 +2059,66 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal for displaying image */}
+      {/* Улучшенное модальное окно для отображения изображений после оцифровки */}
       <Dialog open={isImageModalOpen} onOpenChange={(open) => {
         setIsImageModalOpen(open)
         if (!open) {
-          // Reset zoom and position when closing modal
+          // Сброс зума и позиции при закрытии модального окна
           setImageZoom(1)
           setImagePosition({ x: 0, y: 0 })
           setIsDragging(false)
         }
       }}>
-        <DialogContent className="max-w-6xl max-h-[95vh] p-2">
-          <DialogHeader className="px-4 py-2">
-            <DialogTitle>Document Preview - {selectedDocumentForImage?.originalName}</DialogTitle>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Zoom: {Math.round(imageZoom * 100)}%</span>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => {
-                  setImageZoom(1)
-                  setImagePosition({ x: 0, y: 0 })
-                }}
-              >
-                Reset
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => {
-                  if (selectedDocumentForImage) {
-                    const imageUrl = `http://localhost:3001/api/files/${selectedDocumentForImage.id}/view?userId=${user?.id}`
-                    window.open(imageUrl, '_blank')
-                  }
-                }}
-              >
-                Open in New Tab
-              </Button>
+        <DialogContent className="max-w-7xl max-h-[98vh] p-0 bg-black/95 border-0">
+          <DialogHeader className="px-6 py-4 bg-background/95 backdrop-blur-sm border-b">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <DialogTitle className="text-lg font-semibold text-foreground">
+                  Просмотр документа
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {selectedDocumentForImage?.originalName}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
+                  <span>Масштаб: {Math.round(imageZoom * 100)}%</span>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setImageZoom(1)
+                    setImagePosition({ x: 0, y: 0 })
+                  }}
+                  className="bg-background/80 hover:bg-background"
+                >
+                  Сбросить
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                     if (selectedDocumentForImage) {
+                       const imageUrl = `http://localhost:3001/api/files/${selectedDocumentForImage.id}/view?userId=${user?.id}`
+                       window.open(imageUrl, '_blank')
+                     }
+                   }}
+                  className="bg-background/80 hover:bg-background"
+                >
+                  Открыть в новой вкладке
+                </Button>
+              </div>
             </div>
           </DialogHeader>
+          
           <div 
-            className="flex-1 overflow-hidden relative bg-muted/20 rounded cursor-grab active:cursor-grabbing"
-            style={{ height: 'calc(90vh - 120px)' }}
+            className="flex-1 overflow-hidden relative bg-black/50 cursor-grab active:cursor-grabbing"
+            style={{ height: 'calc(98vh - 100px)' }}
             onWheel={(e) => {
               e.preventDefault()
-              const delta = e.deltaY > 0 ? 0.9 : 1.1
-              const newZoom = Math.max(0.1, Math.min(5, imageZoom * delta))
+              const delta = e.deltaY > 0 ? 0.85 : 1.15
+              const newZoom = Math.max(0.1, Math.min(8, imageZoom * delta))
               setImageZoom(newZoom)
             }}
             onMouseDown={(e) => {
@@ -2126,60 +2140,98 @@ export default function DashboardPage() {
           >
             {selectedDocumentForImage && (
               <>
+                {/* Индикатор загрузки */}
+                <div className="loading-indicator absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+                  <div className="text-center text-white">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-3" />
+                    <p className="text-sm opacity-80">Загрузка изображения...</p>
+                  </div>
+                </div>
+                
                 <img 
                   ref={imageRef}
                   src={`http://localhost:3001/api/files/${selectedDocumentForImage.id}/view?userId=${user?.id}`}
                   alt={selectedDocumentForImage.originalName}
-                  className="absolute top-1/2 left-1/2 max-w-none rounded transition-transform duration-150"
+                  className="absolute top-1/2 left-1/2 max-w-none shadow-2xl transition-transform duration-200 ease-out"
                   style={{
                     transform: `translate(-50%, -50%) translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${imageZoom})`,
-                    transformOrigin: 'center center'
+                    transformOrigin: 'center center',
+                    filter: 'drop-shadow(0 10px 25px rgba(0,0,0,0.5))'
                   }}
                   onError={(e) => {
-                    console.error('Image load error for document:', selectedDocumentForImage.id)
-                    console.error('Image URL:', e.currentTarget.src)
+                    console.error('Ошибка загрузки изображения для документа:', selectedDocumentForImage.id)
+                    console.error('URL изображения:', e.currentTarget.src)
+                    
+                    // Скрыть изображение и индикатор загрузки
                     e.currentTarget.style.display = 'none'
+                    const loadingDiv = e.currentTarget.parentElement?.querySelector('.loading-indicator') as HTMLElement
+                    if (loadingDiv) loadingDiv.style.display = 'none'
+                    
+                    // Показать сообщение об ошибке
                     const errorDiv = e.currentTarget.parentElement?.querySelector('.error-message') as HTMLElement
                     if (errorDiv) {
                       errorDiv.style.display = 'flex'
-                      errorDiv.innerHTML = `
-                        <div class="text-center">
-                          <svg class="h-12 w-12 text-muted-foreground mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          <p class="text-muted-foreground mb-2">Failed to load image</p>
-                          <p class="text-xs text-muted-foreground">Document ID: ${selectedDocumentForImage.id}</p>
-                          <p class="text-xs text-muted-foreground">File: ${selectedDocumentForImage.originalName}</p>
-                        </div>
-                      `
                     }
+                    
                     toast({
-                      title: "Image Load Error",
-                      description: `Failed to load image for document: ${selectedDocumentForImage.originalName}`,
+                      title: "Ошибка загрузки изображения",
+                      description: `Не удалось загрузить изображение документа: ${selectedDocumentForImage.originalName}`,
                       variant: "destructive"
                     })
                   }}
                   onLoad={() => {
-                    console.log('Image loaded successfully for document:', selectedDocumentForImage.id)
-                    // Reset zoom and position when new image loads
-                    setImageZoom(1)
-                    setImagePosition({ x: 0, y: 0 })
-                    // Hide error message if it was shown
+                    console.log('Изображение успешно загружено для документа:', selectedDocumentForImage.id)
+                    
+                    // Скрыть индикатор загрузки
+                    const loadingDiv = imageRef.current?.parentElement?.querySelector('.loading-indicator') as HTMLElement
+                    if (loadingDiv) loadingDiv.style.display = 'none'
+                    
+                    // Скрыть сообщение об ошибке если оно было показано
                     const errorDiv = imageRef.current?.parentElement?.querySelector('.error-message') as HTMLElement
-                    if (errorDiv) {
-                      errorDiv.style.display = 'none'
-                    }
+                    if (errorDiv) errorDiv.style.display = 'none'
                   }}
                   draggable={false}
                 />
-                <div className="error-message hidden absolute inset-0 flex items-center justify-center bg-muted rounded">
-                  <div className="text-center">
-                    <FileIcon className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-muted-foreground">Loading image...</p>
+                
+                {/* Сообщение об ошибке */}
+                <div className="error-message hidden absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                  <div className="text-center text-white bg-red-900/20 border border-red-500/30 rounded-lg p-8 max-w-md mx-4">
+                    <AlertCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Ошибка загрузки изображения</h3>
+                    <p className="text-sm opacity-80 mb-4">Не удалось загрузить изображение документа</p>
+                    <div className="text-xs opacity-60 space-y-1">
+                      <p>ID документа: {selectedDocumentForImage.id}</p>
+                      <p>Файл: {selectedDocumentForImage.originalName}</p>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-4 bg-white/10 border-white/20 text-white hover:bg-white/20"
+                      onClick={() => {
+                        // Попробовать перезагрузить изображение
+                        const img = imageRef.current
+                        if (img) {
+                          const loadingDiv = img.parentElement?.querySelector('.loading-indicator') as HTMLElement
+                          const errorDiv = img.parentElement?.querySelector('.error-message') as HTMLElement
+                          if (loadingDiv) loadingDiv.style.display = 'flex'
+                          if (errorDiv) errorDiv.style.display = 'none'
+                          img.style.display = 'block'
+                          img.src = img.src + '&t=' + Date.now() // Принудительная перезагрузка
+                        }
+                      }}
+                    >
+                      Попробовать снова
+                    </Button>
                   </div>
                 </div>
               </>
             )}
+            
+            {/* Подсказки по управлению */}
+            <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm text-white text-xs px-3 py-2 rounded-lg">
+              <p>🖱️ Колесо мыши - масштабирование</p>
+              <p>🖱️ Перетаскивание - перемещение (при увеличении)</p>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
