@@ -327,7 +327,7 @@ export default function DashboardPage() {
 
   const loadCompanies = async (userData: UserData) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/companies?userId=${userData.id}`)
+      const response = await fetch(`http://localhost:3110/api/companies?userId=${userData.id}`)
       if (response.ok) {
         const companiesData = await response.json()
         console.log('Companies API response:', companiesData)
@@ -401,7 +401,7 @@ export default function DashboardPage() {
     if (!user?.id) return
     
     try {
-      const response = await fetch(`http://localhost:3001/api/digitized?userId=${user.id}&companyId=${companyId}`)
+      const response = await fetch(`http://localhost:3110/api/digitized?userId=${user.id}&companyId=${companyId}`)
       if (response.ok) {
         const digitizedResponse = await response.json()
         console.log('Digitized documents API response:', digitizedResponse)
@@ -422,7 +422,7 @@ export default function DashboardPage() {
     if (!editedCompany || !user?.id) return
 
     try {
-      const response = await fetch(`http://localhost:3001/api/companies/${editedCompany.id}?userId=${user.id}`, {
+      const response = await fetch(`http://localhost:3110/api/companies/${editedCompany.id}?userId=${user.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -469,7 +469,7 @@ export default function DashboardPage() {
 
     setIsCreatingCompany(true)
     try {
-      const response = await fetch('http://localhost:3001/api/companies', {
+      const response = await fetch('http://localhost:3110/api/companies', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -583,7 +583,7 @@ export default function DashboardPage() {
     try {
       console.log(`Starting digitization for document ${documentId}...`)
       
-      const response = await fetch(`http://localhost:3001/api/documents/${documentId}/digitize?userId=${user.id}`, {
+      const response = await fetch(`http://localhost:3110/api/documents/${documentId}/digitize?userId=${user.id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -830,7 +830,7 @@ export default function DashboardPage() {
     setAbnData(null)
     
     try {
-      const response = await fetch(`http://localhost:3001/api/abn-lookup?abn=${abn}`)
+      const response = await fetch(`http://localhost:3110/api/abn-lookup?abn=${abn}`)
       
       if (response.ok) {
         const data = await response.json()
@@ -889,7 +889,7 @@ export default function DashboardPage() {
     if (!user?.id) return
     
     try {
-      const response = await fetch(`http://localhost:3001/api/xero/status?userId=${user.id}`)
+      const response = await fetch(`http://localhost:3110/api/xero/status?userId=${user.id}`)
       if (response.ok) {
         const status = await response.json()
         setXeroStatus(status)
@@ -904,7 +904,7 @@ export default function DashboardPage() {
     
     setIsLoadingXero(true)
     try {
-      const response = await fetch(`http://localhost:3001/api/xero/auth?userId=${user.id}`)
+      const response = await fetch(`http://localhost:3110/api/xero/auth?userId=${user.id}`)
       if (response.ok) {
         const { consentUrl } = await response.json()
         window.open(consentUrl, '_blank', 'width=600,height=700')
@@ -971,7 +971,7 @@ export default function DashboardPage() {
     setIsTestingXero(true)
     setXeroTestResult(null)
     try {
-      const response = await fetch(`http://localhost:3001/api/xero/test?userId=${user.id}`)
+      const response = await fetch(`http://localhost:3110/api/xero/test?userId=${user.id}`)
       const result = await response.json()
       
       if (response.ok) {
