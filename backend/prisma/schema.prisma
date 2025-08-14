@@ -160,6 +160,7 @@ model Digitized {
   
   // Основная информация о документе
   fileName          String
+  originalName      String
   filePath          String
   fileSize          Int
   mimeType          String

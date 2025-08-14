@@ -219,6 +219,7 @@ export async function POST(
           userId: documentWithRelations.userId,
           originalDocumentId: documentWithRelations.id,
           fileName: documentWithRelations.fileName,
+          // originalName field removed as it's not part of the Digitized model schema
           filePath: documentWithRelations.filePath,
           fileSize: documentWithRelations.fileSize,
           mimeType: documentWithRelations.mimeType,

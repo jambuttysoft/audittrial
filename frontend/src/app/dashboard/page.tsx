@@ -2253,10 +2253,10 @@ function DashboardContent() {
               </>
             )}
             
-            {/* Подсказки по управлению */}
+            {/* Control hints */}
             <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm text-white text-xs px-3 py-2 rounded-lg">
-              <p>🖱️ Колесо мыши - масштабирование</p>
-              <p>🖱️ Перетаскивание - перемещение (при увеличении)</p>
+              <p>🖱️ Mouse wheel - zoom</p>
+              <p>🖱️ Drag - move (when zoomed)</p>
             </div>
           </div>
         </DialogContent>

@@ -29,3 +29,6 @@ dist/
 build/
 coverage/
 backend/prisma/dev.db
+backend/prisma/dev.db
+backend/prisma/migrations/20250814231923_add_original_name_to_digitized/migration.sql
+backend/prisma/dev.db
