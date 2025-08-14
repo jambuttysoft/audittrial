@@ -33,12 +33,14 @@ npm run dev              # Запуск на порту 3000
 ## Технологии
 
 ### Frontend
+
 - **Next.js 15** - React фреймворк с App Router
 - **TypeScript** - Типизированный JavaScript
 - **Tailwind CSS** - Utility-first CSS фреймворк
 - **ShadCN UI** - Современные React компоненты
 
 ### Backend
+
 - **Next.js 15** - API Routes для бэкенда
 - **Prisma** - ORM для работы с базой данных
 - **PostgreSQL** - Реляционная база данных
@@ -99,6 +101,6 @@ npx shadcn@latest add [component-name]
 - **Backend**: http://localhost:3001
 - **Prisma Studio**: http://localhost:5555
 
-## Лицензия
+## Лицензия 
 
-MIT
+MIT with limits
