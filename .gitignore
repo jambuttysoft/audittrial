@@ -1,11 +1,15 @@
 # Node
 node_modules/
+
+# Next.js build output
+frontend/.next/
+backend/.next/
+
+# Логи
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-package-lock.json
-# (Если хочешь коммитить lock-файл — удали строку выше)
 
 # Env/секреты
 .env

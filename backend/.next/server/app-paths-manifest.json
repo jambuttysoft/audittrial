@@ -1,9 +1,0 @@
-{
-  "/api/companies/[id]/files/route": "app/api/companies/[id]/files/route.js",
-  "/api/companies/route": "app/api/companies/route.js",
-  "/api/digitized/route": "app/api/digitized/route.js",
-  "/api/documents/[id]/digitize/route": "app/api/documents/[id]/digitize/route.js",
-  "/api/documents/upload/route": "app/api/documents/upload/route.js",
-  "/api/files/[id]/view/route": "app/api/files/[id]/view/route.js",
-  "/api/xero/status/route": "app/api/xero/status/route.js"
-}
