@@ -1,0 +1,191 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  
+  // Authentication fields
+  password  String?  // null for OAuth users
+  isOAuthUser Boolean @default(false)
+  oauthProvider String? // "google", "facebook", etc.
+  oauthId   String?  // OAuth provider user ID
+  
+  // Profile information
+  name      String?
+  userType  UserType @default(INDIVIDUAL)
+  
+  // Contact information
+  phone     String?
+  address   String?
+  website   String?
+  avatar    String?  // URL to profile photo
+  
+  // Professional information
+  company   String?  // Company name if business
+  services  String?  // Description of services offered
+  
+  // Visibility settings
+  isVisibleToClients Boolean @default(false)
+  acceptsJobOffers   Boolean @default(false)
+  
+  // Account status
+  isActive  Boolean  @default(true)
+  isDeleted Boolean  @default(false)
+  
+  // Xero integration fields
+  xeroAccessToken    String?   // Xero OAuth access token
+  xeroRefreshToken   String?   // Xero OAuth refresh token
+  xeroTokenExpiry    DateTime? // When the access token expires
+  xeroTenantId       String?   // Xero tenant/organisation ID
+  xeroTenantName     String?   // Xero organisation name
+  xeroConnectedAt    DateTime? // When Xero was first connected
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  documents Document[]
+  companies Company[]
+  digitized Digitized[]
+  
+  @@map("users")
+}
+
+model Company {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  
+  // Contact information
+  email       String?
+  phone       String?
+  address     String?
+  website     String?
+  
+  // Business information
+  abn         String?  // Australian Business Number
+  industry    String?
+  
+  // Status
+  isActive    Boolean  @default(true)
+  
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents   Document[]
+  digitized   Digitized[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("companies")
+}
+
+model Document {
+  id              String            @id @default(cuid())
+  fileName        String
+  originalName    String
+  filePath        String
+  fileSize        Int
+  mimeType        String
+  status          DocumentStatus    @default(QUEUE)
+  uploadDate      DateTime          @default(now())
+  processedDate   DateTime?
+  
+  // Digitized data fields - все необходимые поля для парсинга документов
+  purchaseDate    DateTime?         // Purchase Date
+  vendorName      String?           // Vendor Name
+  vendorAbn       String?           // Vendor ABN
+  vendorAddress   String?           // Vendor Address
+  documentType    String?           // Document Type (invoice/receipt)
+  receiptNumber   String?           // Receipt/Invoice Number
+  paymentType     String?           // Payment Type
+  amountExclTax   Float?            // Amount Excl. Tax
+  taxAmount       Float?            // Tax Amount (GST)
+  totalAmount     Float?            // Total Amount
+  expenseCategory String?           // Expense Category
+  taxStatus       String?           // Tax Status
+  
+  // Legacy fields (для обратной совместимости)
+  transactionDate DateTime?
+  vendor          String?
+  abn             String?
+  gstAmount       Float?
+  description     String?
+  paymentMethod   String?
+  transactionStatus String?
+  
+  // Full receipt data from Gemini API
+  receiptData     Json?             // Stores complete parsed receipt data
+  
+  userId          String
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  companyId       String?
+  company         Company?          @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  @@map("documents")
+}
+
+enum DocumentStatus {
+  QUEUE
+  PROCESSING
+  DIGITIZED
+  ERROR
+}
+
+enum UserType {
+  INDIVIDUAL    // Частное лицо (бухгалтер-фрилансер)
+  BUSINESS      // Компания
+}
+
+// Модель для оцифрованных документов
+model Digitized {
+  id                String    @id @default(cuid())
+  companyId         String
+  userId            String
+  originalDocumentId String   @unique // Ссылка на оригинальный документ
+  
+  // Основная информация о документе
+  fileName          String
+  filePath          String
+  fileSize          Int
+  mimeType          String
+  
+  // Извлеченные данные
+  purchaseDate      DateTime?
+  vendorName        String?
+  vendorAbn         String?
+  vendorAddress     String?
+  documentType      String?
+  receiptNumber     String?
+  paymentType       String?
+  amountExclTax     Float?
+  taxAmount         Float?
+  totalAmount       Float?
+  expenseCategory   String?
+  taxStatus         String?
+  
+  // Метаданные
+  digitizedAt       DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Связи
+  company           Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("digitized")
+}

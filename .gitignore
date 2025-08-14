@@ -1,0 +1,24 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+# (Если хочешь коммитить lock-файл — удали строку выше)
+
+# Env/секреты
+.env
+.env.*
+!.env.example
+
+# ОС/редакторы
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Сборка/артефакты
+dist/
+build/
+coverage/

@@ -1,0 +1,211 @@
+import { NextRequest, NextResponse } from 'next/server'
+import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
+import { prisma } from '@/lib/prisma'
+
+// Request/Response interfaces
+interface LoginRequest {
+  email: string
+  password?: string
+  isOAuthUser?: boolean
+  oauthProvider?: string
+  oauthId?: string
+}
+
+interface LoginResponse {
+  success: boolean
+  message: string
+  user?: {
+    id: string
+    email: string
+    name: string | null
+    userType: string
+    isOAuthUser: boolean
+  }
+  token?: string
+}
+
+// Handle CORS preflight requests
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': 'http://localhost:3000',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  })
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const { email, password, isOAuthUser = false, oauthProvider, oauthId }: LoginRequest = await request.json()
+
+    // Validate required fields
+    if (!email) {
+      return NextResponse.json(
+        { success: false, message: 'Email is required' } as LoginResponse,
+        { 
+          status: 400,
+          headers: {
+            'Access-Control-Allow-Origin': 'http://localhost:3000',
+          },
+        }
+      )
+    }
+
+    // For OAuth users, validate OAuth fields
+    if (isOAuthUser && (!oauthProvider || !oauthId)) {
+      return NextResponse.json(
+        { success: false, message: 'OAuth provider and ID are required for OAuth login' } as LoginResponse,
+        { 
+          status: 400,
+          headers: {
+            'Access-Control-Allow-Origin': 'http://localhost:3000',
+          },
+        }
+      )
+    }
+
+    // For regular users, validate password
+    if (!isOAuthUser && !password) {
+      return NextResponse.json(
+        { success: false, message: 'Password is required' } as LoginResponse,
+        { 
+          status: 400,
+          headers: {
+            'Access-Control-Allow-Origin': 'http://localhost:3000',
+          },
+        }
+      )
+    }
+
+    // Find user by email
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        name: true,
+        userType: true,
+        isOAuthUser: true,
+        oauthProvider: true,
+        oauthId: true,
+        isActive: true,
+        isDeleted: true,
+      },
+    })
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid email or password' } as LoginResponse,
+        { 
+          status: 401,
+          headers: {
+            'Access-Control-Allow-Origin': 'http://localhost:3000',
+          },
+        }
+      )
+    }
+
+    // Check if user account is active
+    if (!user.isActive || user.isDeleted) {
+      return NextResponse.json(
+        { success: false, message: 'Account is deactivated' } as LoginResponse,
+        { 
+          status: 401,
+          headers: {
+            'Access-Control-Allow-Origin': 'http://localhost:3000',
+          },
+        }
+      )
+    }
+
+    // Handle OAuth login
+    if (isOAuthUser) {
+      if (!user.isOAuthUser || user.oauthProvider !== oauthProvider || user.oauthId !== oauthId) {
+        return NextResponse.json(
+          { success: false, message: 'Invalid OAuth credentials' } as LoginResponse,
+          { 
+            status: 401,
+            headers: {
+              'Access-Control-Allow-Origin': 'http://localhost:3000',
+            },
+          }
+        )
+      }
+    } else {
+      // Handle regular password login
+      if (user.isOAuthUser || !user.password) {
+        return NextResponse.json(
+          { success: false, message: 'This account uses OAuth login' } as LoginResponse,
+          { 
+            status: 401,
+            headers: {
+              'Access-Control-Allow-Origin': 'http://localhost:3000',
+            },
+          }
+        )
+      }
+
+      // Verify password
+      const isPasswordValid = await bcrypt.compare(password!, user.password)
+      if (!isPasswordValid) {
+        return NextResponse.json(
+          { success: false, message: 'Invalid email or password' } as LoginResponse,
+          { 
+            status: 401,
+            headers: {
+              'Access-Control-Allow-Origin': 'http://localhost:3000',
+            },
+          }
+        )
+      }
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        userId: user.id, 
+        email: user.email,
+        userType: user.userType 
+      },
+      process.env.JWT_SECRET || 'fallback-secret-key',
+      { expiresIn: '7d' }
+    )
+
+    // Return success response
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Login successful',
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          userType: user.userType,
+          isOAuthUser: user.isOAuthUser,
+        },
+        token,
+      } as LoginResponse,
+      { 
+        status: 200,
+        headers: {
+          'Access-Control-Allow-Origin': 'http://localhost:3000',
+        },
+      }
+    )
+  } catch (error) {
+    console.error('Login error:', error)
+    return NextResponse.json(
+      { success: false, message: 'Internal server error' } as LoginResponse,
+      { 
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': 'http://localhost:3000',
+        },
+      }
+    )
+  }
+}

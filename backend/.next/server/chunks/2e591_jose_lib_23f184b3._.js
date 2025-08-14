@@ -1,0 +1,5604 @@
+module.exports = {
+
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/consts.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+module.exports.KEYOBJECT = Symbol('KEYOBJECT');
+module.exports.PRIVATE_MEMBERS = Symbol('PRIVATE_MEMBERS');
+module.exports.PUBLIC_MEMBERS = Symbol('PUBLIC_MEMBERS');
+module.exports.THUMBPRINT_MATERIAL = Symbol('THUMBPRINT_MATERIAL');
+module.exports.JWK_MEMBERS = Symbol('JWK_MEMBERS');
+module.exports.KEY_MANAGEMENT_ENCRYPT = Symbol('KEY_MANAGEMENT_ENCRYPT');
+module.exports.KEY_MANAGEMENT_DECRYPT = Symbol('KEY_MANAGEMENT_DECRYPT');
+const USES_MAPPING = {
+    sig: new Set([
+        'sign',
+        'verify'
+    ]),
+    enc: new Set([
+        'encrypt',
+        'decrypt',
+        'wrapKey',
+        'unwrapKey',
+        'deriveKey'
+    ])
+};
+const OPS = new Set([
+    ...USES_MAPPING.sig,
+    ...USES_MAPPING.enc
+]);
+const USES = new Set(Object.keys(USES_MAPPING));
+module.exports.USES_MAPPING = USES_MAPPING;
+module.exports.OPS = OPS;
+module.exports.USES = USES;
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/registry/ec_curves.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { getCurves } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+const curves = new Set();
+if (getCurves().includes('prime256v1')) {
+    curves.add('P-256');
+}
+if (getCurves().includes('secp256k1')) {
+    curves.add('secp256k1');
+}
+if (getCurves().includes('secp384r1')) {
+    curves.add('P-384');
+}
+if (getCurves().includes('secp521r1')) {
+    curves.add('P-521');
+}
+module.exports = curves;
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/registry/iv_lengths.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+module.exports = new Map([
+    [
+        'A128CBC-HS256',
+        128
+    ],
+    [
+        'A128GCM',
+        96
+    ],
+    [
+        'A128GCMKW',
+        96
+    ],
+    [
+        'A192CBC-HS384',
+        128
+    ],
+    [
+        'A192GCM',
+        96
+    ],
+    [
+        'A192GCMKW',
+        96
+    ],
+    [
+        'A256CBC-HS512',
+        128
+    ],
+    [
+        'A256GCM',
+        96
+    ],
+    [
+        'A256GCMKW',
+        96
+    ]
+]);
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/registry/jwa.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+module.exports = {
+    sign: new Map(),
+    verify: new Map(),
+    keyManagementEncrypt: new Map(),
+    keyManagementDecrypt: new Map(),
+    encrypt: new Map(),
+    decrypt: new Map()
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/registry/jwk.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+module.exports = {
+    oct: {
+        decrypt: {},
+        deriveKey: {},
+        encrypt: {},
+        sign: {},
+        unwrapKey: {},
+        verify: {},
+        wrapKey: {}
+    },
+    EC: {
+        decrypt: {},
+        deriveKey: {},
+        encrypt: {},
+        sign: {},
+        unwrapKey: {},
+        verify: {},
+        wrapKey: {}
+    },
+    RSA: {
+        decrypt: {},
+        deriveKey: {},
+        encrypt: {},
+        sign: {},
+        unwrapKey: {},
+        verify: {},
+        wrapKey: {}
+    },
+    OKP: {
+        decrypt: {},
+        deriveKey: {},
+        encrypt: {},
+        sign: {},
+        unwrapKey: {},
+        verify: {},
+        wrapKey: {}
+    }
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/registry/key_lengths.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+module.exports = new Map([
+    [
+        'A128CBC-HS256',
+        256
+    ],
+    [
+        'A128GCM',
+        128
+    ],
+    [
+        'A192CBC-HS384',
+        384
+    ],
+    [
+        'A192GCM',
+        192
+    ],
+    [
+        'A256CBC-HS512',
+        512
+    ],
+    [
+        'A256GCM',
+        256
+    ]
+]);
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/registry/okp_curves.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const curves = new Set([
+    'Ed25519'
+]);
+if (!('electron' in process.versions)) {
+    curves.add('Ed448');
+    curves.add('X25519');
+    curves.add('X448');
+}
+module.exports = curves;
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/registry/ecdh_derive_lengths.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+module.exports = new Map();
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/registry/index.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const EC_CURVES = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/registry/ec_curves.js [app-route] (ecmascript)");
+const IVLENGTHS = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/registry/iv_lengths.js [app-route] (ecmascript)");
+const JWA = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/registry/jwa.js [app-route] (ecmascript)");
+const JWK = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/registry/jwk.js [app-route] (ecmascript)");
+const KEYLENGTHS = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/registry/key_lengths.js [app-route] (ecmascript)");
+const OKP_CURVES = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/registry/okp_curves.js [app-route] (ecmascript)");
+const ECDH_DERIVE_LENGTHS = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/registry/ecdh_derive_lengths.js [app-route] (ecmascript)");
+module.exports = {
+    EC_CURVES,
+    ECDH_DERIVE_LENGTHS,
+    IVLENGTHS,
+    JWA,
+    JWK,
+    KEYLENGTHS,
+    OKP_CURVES
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/generate_iv.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { randomBytes } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+const { IVLENGTHS } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/registry/index.js [app-route] (ecmascript)");
+module.exports = (alg)=>randomBytes(IVLENGTHS.get(alg) / 8);
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/base64url.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+let encode;
+let encodeBuffer;
+if (Buffer.isEncoding('base64url')) {
+    encode = (input, encoding = 'utf8')=>Buffer.from(input, encoding).toString('base64url');
+    encodeBuffer = (buf)=>buf.toString('base64url');
+} else {
+    const fromBase64 = (base64)=>base64.replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    encode = (input, encoding = 'utf8')=>fromBase64(Buffer.from(input, encoding).toString('base64'));
+    encodeBuffer = (buf)=>fromBase64(buf.toString('base64'));
+}
+const decodeToBuffer = (input)=>{
+    return Buffer.from(input, 'base64');
+};
+const decode = (input, encoding = 'utf8')=>{
+    return decodeToBuffer(input).toString(encoding);
+};
+const b64uJSON = {
+    encode: (input)=>{
+        return encode(JSON.stringify(input));
+    },
+    decode: (input, encoding = 'utf8')=>{
+        return JSON.parse(decode(input, encoding));
+    }
+};
+b64uJSON.decode.try = (input, encoding = 'utf8')=>{
+    try {
+        return b64uJSON.decode(input, encoding);
+    } catch (err) {
+        return decode(input, encoding);
+    }
+};
+const bnToBuf = (bn)=>{
+    let hex = BigInt(bn).toString(16);
+    if (hex.length % 2) {
+        hex = `0${hex}`;
+    }
+    const len = hex.length / 2;
+    const u8 = new Uint8Array(len);
+    let i = 0;
+    let j = 0;
+    while(i < len){
+        u8[i] = parseInt(hex.slice(j, j + 2), 16);
+        i += 1;
+        j += 2;
+    }
+    return u8;
+};
+const encodeBigInt = (bn)=>encodeBuffer(Buffer.from(bnToBuf(bn)));
+module.exports.decode = decode;
+module.exports.decodeToBuffer = decodeToBuffer;
+module.exports.encode = encode;
+module.exports.encodeBuffer = encodeBuffer;
+module.exports.JSON = b64uJSON;
+module.exports.encodeBigInt = encodeBigInt;
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const CODES = {
+    JOSEAlgNotWhitelisted: 'ERR_JOSE_ALG_NOT_WHITELISTED',
+    JOSECritNotUnderstood: 'ERR_JOSE_CRIT_NOT_UNDERSTOOD',
+    JOSEInvalidEncoding: 'ERR_JOSE_INVALID_ENCODING',
+    JOSEMultiError: 'ERR_JOSE_MULTIPLE_ERRORS',
+    JOSENotSupported: 'ERR_JOSE_NOT_SUPPORTED',
+    JWEDecryptionFailed: 'ERR_JWE_DECRYPTION_FAILED',
+    JWEInvalid: 'ERR_JWE_INVALID',
+    JWKImportFailed: 'ERR_JWK_IMPORT_FAILED',
+    JWKInvalid: 'ERR_JWK_INVALID',
+    JWKKeySupport: 'ERR_JWK_KEY_SUPPORT',
+    JWKSNoMatchingKey: 'ERR_JWKS_NO_MATCHING_KEY',
+    JWSInvalid: 'ERR_JWS_INVALID',
+    JWSVerificationFailed: 'ERR_JWS_VERIFICATION_FAILED',
+    JWTClaimInvalid: 'ERR_JWT_CLAIM_INVALID',
+    JWTExpired: 'ERR_JWT_EXPIRED',
+    JWTMalformed: 'ERR_JWT_MALFORMED'
+};
+const DEFAULT_MESSAGES = {
+    JWEDecryptionFailed: 'decryption operation failed',
+    JWEInvalid: 'JWE invalid',
+    JWKSNoMatchingKey: 'no matching key found in the KeyStore',
+    JWSInvalid: 'JWS invalid',
+    JWSVerificationFailed: 'signature verification failed'
+};
+class JOSEError extends Error {
+    constructor(message){
+        super(message);
+        if (message === undefined) {
+            this.message = DEFAULT_MESSAGES[this.constructor.name];
+        }
+        this.name = this.constructor.name;
+        this.code = CODES[this.constructor.name];
+        Error.captureStackTrace(this, this.constructor);
+    }
+}
+const isMulti = (e)=>e instanceof JOSEMultiError;
+class JOSEMultiError extends JOSEError {
+    constructor(errors){
+        super();
+        let i;
+        while((i = errors.findIndex(isMulti)) && i !== -1){
+            errors.splice(i, 1, ...errors[i]);
+        }
+        Object.defineProperty(this, 'errors', {
+            value: errors
+        });
+    }
+    *[Symbol.iterator]() {
+        for (const error of this.errors){
+            yield error;
+        }
+    }
+}
+module.exports.JOSEError = JOSEError;
+module.exports.JOSEAlgNotWhitelisted = class JOSEAlgNotWhitelisted extends JOSEError {
+};
+module.exports.JOSECritNotUnderstood = class JOSECritNotUnderstood extends JOSEError {
+};
+module.exports.JOSEInvalidEncoding = class JOSEInvalidEncoding extends JOSEError {
+};
+module.exports.JOSEMultiError = JOSEMultiError;
+module.exports.JOSENotSupported = class JOSENotSupported extends JOSEError {
+};
+module.exports.JWEDecryptionFailed = class JWEDecryptionFailed extends JOSEError {
+};
+module.exports.JWEInvalid = class JWEInvalid extends JOSEError {
+};
+module.exports.JWKImportFailed = class JWKImportFailed extends JOSEError {
+};
+module.exports.JWKInvalid = class JWKInvalid extends JOSEError {
+};
+module.exports.JWKKeySupport = class JWKKeySupport extends JOSEError {
+};
+module.exports.JWKSNoMatchingKey = class JWKSNoMatchingKey extends JOSEError {
+};
+module.exports.JWSInvalid = class JWSInvalid extends JOSEError {
+};
+module.exports.JWSVerificationFailed = class JWSVerificationFailed extends JOSEError {
+};
+class JWTClaimInvalid extends JOSEError {
+    constructor(message, claim = 'unspecified', reason = 'unspecified'){
+        super(message);
+        this.claim = claim;
+        this.reason = reason;
+    }
+}
+module.exports.JWTClaimInvalid = JWTClaimInvalid;
+module.exports.JWTExpired = class JWTExpired extends JWTClaimInvalid {
+};
+module.exports.JWTMalformed = class JWTMalformed extends JOSEError {
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/runtime_support.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { diffieHellman, KeyObject, sign, verify } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+const [major, minor] = process.version.substr(1).split('.').map((x)=>parseInt(x, 10));
+module.exports = {
+    oaepHashSupported: major > 12 || major === 12 && minor >= 9,
+    keyObjectSupported: !!KeyObject && major >= 12,
+    edDSASupported: !!sign && !!verify,
+    dsaEncodingSupported: major > 13 || major === 13 && minor >= 2 || major === 12 && minor >= 16,
+    improvedDH: !!diffieHellman
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/is_object.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+module.exports = (a)=>!!a && a.constructor === Object;
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/asn1/oids.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const oids = {
+    '1 2 840 10045 3 1 7': 'P-256',
+    '1 3 132 0 10': 'secp256k1',
+    '1 3 132 0 34': 'P-384',
+    '1 3 132 0 35': 'P-521',
+    '1 2 840 10045 2 1': 'ecPublicKey',
+    '1 2 840 113549 1 1 1': 'rsaEncryption',
+    '1 3 101 110': 'X25519',
+    '1 3 101 111': 'X448',
+    '1 3 101 112': 'Ed25519',
+    '1 3 101 113': 'Ed448'
+};
+module.exports = oids;
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/asn1/algorithm_identifier.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const oids = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/asn1/oids.js [app-route] (ecmascript)");
+module.exports = function() {
+    this.seq().obj(this.key('algorithm').objid(oids), this.key('parameters').optional().choice({
+        namedCurve: this.objid(oids),
+        null: this.null_()
+    }));
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/asn1/ec_private_key.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const oids = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/asn1/oids.js [app-route] (ecmascript)");
+module.exports = function() {
+    this.seq().obj(this.key('version').int(), this.key('privateKey').octstr(), this.key('parameters').explicit(0).optional().choice({
+        namedCurve: this.objid(oids)
+    }), this.key('publicKey').explicit(1).optional().bitstr());
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/asn1/private_key_info.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+module.exports = (AlgorithmIdentifier)=>function() {
+        this.seq().obj(this.key('version').int(), this.key('algorithm').use(AlgorithmIdentifier), this.key('privateKey').octstr());
+    };
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/asn1/public_key_info.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+module.exports = (AlgorithmIdentifier)=>function() {
+        this.seq().obj(this.key('algorithm').use(AlgorithmIdentifier), this.key('publicKey').bitstr());
+    };
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/asn1/private_key.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+module.exports = function() {
+    this.octstr().contains().obj(this.key('privateKey').octstr());
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/asn1/one_asymmetric_key.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+module.exports = (AlgorithmIdentifier, PrivateKey)=>function() {
+        this.seq().obj(this.key('version').int(), this.key('algorithm').use(AlgorithmIdentifier), this.key('privateKey').use(PrivateKey));
+    };
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/asn1/rsa_private_key.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+module.exports = function() {
+    this.seq().obj(this.key('version').int({
+        0: 'two-prime',
+        1: 'multi'
+    }), this.key('n').int(), this.key('e').int(), this.key('d').int(), this.key('p').int(), this.key('q').int(), this.key('dp').int(), this.key('dq').int(), this.key('qi').int());
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/asn1/rsa_public_key.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+module.exports = function() {
+    this.seq().obj(this.key('n').int(), this.key('e').int());
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/asn1/index.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const asn1 = __turbopack_context__.r("[project]/node_modules/@panva/asn1.js/lib/asn1.js [app-route] (ecmascript)");
+const types = new Map();
+const AlgorithmIdentifier = asn1.define('AlgorithmIdentifier', __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/asn1/algorithm_identifier.js [app-route] (ecmascript)"));
+types.set('AlgorithmIdentifier', AlgorithmIdentifier);
+const ECPrivateKey = asn1.define('ECPrivateKey', __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/asn1/ec_private_key.js [app-route] (ecmascript)"));
+types.set('ECPrivateKey', ECPrivateKey);
+const PrivateKeyInfo = asn1.define('PrivateKeyInfo', __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/asn1/private_key_info.js [app-route] (ecmascript)")(AlgorithmIdentifier));
+types.set('PrivateKeyInfo', PrivateKeyInfo);
+const PublicKeyInfo = asn1.define('PublicKeyInfo', __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/asn1/public_key_info.js [app-route] (ecmascript)")(AlgorithmIdentifier));
+types.set('PublicKeyInfo', PublicKeyInfo);
+const PrivateKey = asn1.define('PrivateKey', __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/asn1/private_key.js [app-route] (ecmascript)"));
+types.set('PrivateKey', PrivateKey);
+const OneAsymmetricKey = asn1.define('OneAsymmetricKey', __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/asn1/one_asymmetric_key.js [app-route] (ecmascript)")(AlgorithmIdentifier, PrivateKey));
+types.set('OneAsymmetricKey', OneAsymmetricKey);
+const RSAPrivateKey = asn1.define('RSAPrivateKey', __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/asn1/rsa_private_key.js [app-route] (ecmascript)"));
+types.set('RSAPrivateKey', RSAPrivateKey);
+const RSAPublicKey = asn1.define('RSAPublicKey', __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/asn1/rsa_public_key.js [app-route] (ecmascript)"));
+types.set('RSAPublicKey', RSAPublicKey);
+module.exports = types;
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/key_object.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { keyObjectSupported } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/runtime_support.js [app-route] (ecmascript)");
+let createPublicKey;
+let createPrivateKey;
+let createSecretKey;
+let KeyObject;
+let asInput;
+if (keyObjectSupported) {
+    ({ createPublicKey, createPrivateKey, createSecretKey, KeyObject } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)"));
+    asInput = (input)=>input;
+} else {
+    const { EOL } = __turbopack_context__.r("[externals]/os [external] (os, cjs)");
+    const errors = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+    const isObject = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/is_object.js [app-route] (ecmascript)");
+    const asn1 = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/asn1/index.js [app-route] (ecmascript)");
+    const toInput = Symbol('toInput');
+    const namedCurve = Symbol('namedCurve');
+    asInput = (keyObject, needsPublic)=>{
+        if (keyObject instanceof KeyObject) {
+            return keyObject[toInput](needsPublic);
+        }
+        return createSecretKey(keyObject)[toInput](needsPublic);
+    };
+    const pemToDer = (pem)=>Buffer.from(pem.replace(/(?:-----(?:BEGIN|END)(?: (?:RSA|EC))? (?:PRIVATE|PUBLIC) KEY-----|\s)/g, ''), 'base64');
+    const derToPem = (der, label)=>`-----BEGIN ${label}-----${EOL}${(der.toString('base64').match(/.{1,64}/g) || []).join(EOL)}${EOL}-----END ${label}-----`;
+    const unsupported = (input)=>{
+        const label = typeof input === 'string' ? input : `OID ${input.join('.')}`;
+        throw new errors.JOSENotSupported(`${label} is not supported in your Node.js runtime version`);
+    };
+    KeyObject = class KeyObject {
+        export({ cipher, passphrase, type, format } = {}) {
+            if (this._type === 'secret') {
+                return this._buffer;
+            }
+            if (this._type === 'public') {
+                if (this.asymmetricKeyType === 'rsa') {
+                    switch(type){
+                        case 'pkcs1':
+                            if (format === 'pem') {
+                                return this._pem;
+                            }
+                            return pemToDer(this._pem);
+                        case 'spki':
+                            {
+                                const PublicKeyInfo = asn1.get('PublicKeyInfo');
+                                const pem = PublicKeyInfo.encode({
+                                    algorithm: {
+                                        algorithm: 'rsaEncryption',
+                                        parameters: {
+                                            type: 'null'
+                                        }
+                                    },
+                                    publicKey: {
+                                        unused: 0,
+                                        data: pemToDer(this._pem)
+                                    }
+                                }, 'pem', {
+                                    label: 'PUBLIC KEY'
+                                });
+                                return format === 'pem' ? pem : pemToDer(pem);
+                            }
+                        default:
+                            throw new TypeError(`The value ${type} is invalid for option "type"`);
+                    }
+                }
+                if (this.asymmetricKeyType === 'ec') {
+                    if (type !== 'spki') {
+                        throw new TypeError(`The value ${type} is invalid for option "type"`);
+                    }
+                    if (format === 'pem') {
+                        return this._pem;
+                    }
+                    return pemToDer(this._pem);
+                }
+            }
+            if (this._type === 'private') {
+                if (passphrase !== undefined || cipher !== undefined) {
+                    throw new errors.JOSENotSupported('encrypted private keys are not supported in your Node.js runtime version');
+                }
+                if (type === 'pkcs8') {
+                    if (this._pkcs8) {
+                        if (format === 'der' && typeof this._pkcs8 === 'string') {
+                            return pemToDer(this._pkcs8);
+                        }
+                        if (format === 'pem' && Buffer.isBuffer(this._pkcs8)) {
+                            return derToPem(this._pkcs8, 'PRIVATE KEY');
+                        }
+                        return this._pkcs8;
+                    }
+                    if (this.asymmetricKeyType === 'rsa') {
+                        const parsed = this._asn1;
+                        const RSAPrivateKey = asn1.get('RSAPrivateKey');
+                        const privateKey = RSAPrivateKey.encode(parsed);
+                        const PrivateKeyInfo = asn1.get('PrivateKeyInfo');
+                        const pkcs8 = PrivateKeyInfo.encode({
+                            version: 0,
+                            privateKey,
+                            algorithm: {
+                                algorithm: 'rsaEncryption',
+                                parameters: {
+                                    type: 'null'
+                                }
+                            }
+                        });
+                        this._pkcs8 = pkcs8;
+                        return this.export({
+                            type,
+                            format
+                        });
+                    }
+                    if (this.asymmetricKeyType === 'ec') {
+                        const parsed = this._asn1;
+                        const ECPrivateKey = asn1.get('ECPrivateKey');
+                        const privateKey = ECPrivateKey.encode({
+                            version: parsed.version,
+                            privateKey: parsed.privateKey,
+                            publicKey: parsed.publicKey
+                        });
+                        const PrivateKeyInfo = asn1.get('PrivateKeyInfo');
+                        const pkcs8 = PrivateKeyInfo.encode({
+                            version: 0,
+                            privateKey,
+                            algorithm: {
+                                algorithm: 'ecPublicKey',
+                                parameters: this._asn1.parameters
+                            }
+                        });
+                        this._pkcs8 = pkcs8;
+                        return this.export({
+                            type,
+                            format
+                        });
+                    }
+                }
+                if (this.asymmetricKeyType === 'rsa' && type === 'pkcs1') {
+                    if (format === 'pem') {
+                        return this._pem;
+                    }
+                    return pemToDer(this._pem);
+                } else if (this.asymmetricKeyType === 'ec' && type === 'sec1') {
+                    if (format === 'pem') {
+                        return this._pem;
+                    }
+                    return pemToDer(this._pem);
+                } else {
+                    throw new TypeError(`The value ${type} is invalid for option "type"`);
+                }
+            }
+        }
+        get type() {
+            return this._type;
+        }
+        get asymmetricKeyType() {
+            return this._asymmetricKeyType;
+        }
+        get symmetricKeySize() {
+            return this._symmetricKeySize;
+        }
+        [toInput](needsPublic) {
+            switch(this._type){
+                case 'secret':
+                    return this._buffer;
+                case 'public':
+                    return this._pem;
+                default:
+                    if (needsPublic) {
+                        if (!('_pub' in this)) {
+                            this._pub = createPublicKey(this);
+                        }
+                        return this._pub[toInput](false);
+                    }
+                    return this._pem;
+            }
+        }
+    };
+    createSecretKey = (buffer)=>{
+        if (!Buffer.isBuffer(buffer) || !buffer.length) {
+            throw new TypeError('input must be a non-empty Buffer instance');
+        }
+        const keyObject = new KeyObject();
+        keyObject._buffer = Buffer.from(buffer);
+        keyObject._symmetricKeySize = buffer.length;
+        keyObject._type = 'secret';
+        return keyObject;
+    };
+    createPublicKey = (input)=>{
+        if (input instanceof KeyObject) {
+            if (input.type !== 'private') {
+                throw new TypeError(`Invalid key object type ${input.type}, expected private.`);
+            }
+            switch(input.asymmetricKeyType){
+                case 'ec':
+                    {
+                        const PublicKeyInfo = asn1.get('PublicKeyInfo');
+                        const key = PublicKeyInfo.encode({
+                            algorithm: {
+                                algorithm: 'ecPublicKey',
+                                parameters: input._asn1.parameters
+                            },
+                            publicKey: input._asn1.publicKey
+                        });
+                        return createPublicKey({
+                            key,
+                            format: 'der',
+                            type: 'spki'
+                        });
+                    }
+                case 'rsa':
+                    {
+                        const RSAPublicKey = asn1.get('RSAPublicKey');
+                        const key = RSAPublicKey.encode(input._asn1);
+                        return createPublicKey({
+                            key,
+                            format: 'der',
+                            type: 'pkcs1'
+                        });
+                    }
+            }
+        }
+        if (typeof input === 'string' || Buffer.isBuffer(input)) {
+            input = {
+                key: input,
+                format: 'pem'
+            };
+        }
+        if (!isObject(input)) {
+            throw new TypeError('input must be a string, Buffer or an object');
+        }
+        const { format, passphrase } = input;
+        let { key, type } = input;
+        if (typeof key !== 'string' && !Buffer.isBuffer(key)) {
+            throw new TypeError('key must be a string or Buffer');
+        }
+        if (format !== 'pem' && format !== 'der') {
+            throw new TypeError('format must be one of "pem" or "der"');
+        }
+        let label;
+        if (format === 'pem') {
+            key = key.toString();
+            switch(key.split(/\r?\n/g)[0].toString()){
+                case '-----BEGIN PUBLIC KEY-----':
+                    type = 'spki';
+                    label = 'PUBLIC KEY';
+                    break;
+                case '-----BEGIN RSA PUBLIC KEY-----':
+                    type = 'pkcs1';
+                    label = 'RSA PUBLIC KEY';
+                    break;
+                case '-----BEGIN CERTIFICATE-----':
+                    throw new errors.JOSENotSupported('X.509 certificates are not supported in your Node.js runtime version');
+                case '-----BEGIN PRIVATE KEY-----':
+                case '-----BEGIN EC PRIVATE KEY-----':
+                case '-----BEGIN RSA PRIVATE KEY-----':
+                    return createPublicKey(createPrivateKey(key));
+                default:
+                    throw new TypeError('unknown/unsupported PEM type');
+            }
+        }
+        switch(type){
+            case 'spki':
+                {
+                    const PublicKeyInfo = asn1.get('PublicKeyInfo');
+                    const parsed = PublicKeyInfo.decode(key, format, {
+                        label
+                    });
+                    let type, keyObject;
+                    switch(parsed.algorithm.algorithm){
+                        case 'ecPublicKey':
+                            {
+                                keyObject = new KeyObject();
+                                keyObject._asn1 = parsed;
+                                keyObject._asymmetricKeyType = 'ec';
+                                keyObject._type = 'public';
+                                keyObject._pem = PublicKeyInfo.encode(parsed, 'pem', {
+                                    label: 'PUBLIC KEY'
+                                });
+                                break;
+                            }
+                        case 'rsaEncryption':
+                            {
+                                type = 'pkcs1';
+                                keyObject = createPublicKey({
+                                    type,
+                                    key: parsed.publicKey.data,
+                                    format: 'der'
+                                });
+                                break;
+                            }
+                        default:
+                            unsupported(parsed.algorithm.algorithm);
+                    }
+                    return keyObject;
+                }
+            case 'pkcs1':
+                {
+                    const RSAPublicKey = asn1.get('RSAPublicKey');
+                    const parsed = RSAPublicKey.decode(key, format, {
+                        label
+                    });
+                    // special case when private pkcs1 PEM / DER is used with createPublicKey
+                    if (parsed.n === BigInt(0)) {
+                        return createPublicKey(createPrivateKey({
+                            key,
+                            format,
+                            type,
+                            passphrase
+                        }));
+                    }
+                    const keyObject = new KeyObject();
+                    keyObject._asn1 = parsed;
+                    keyObject._asymmetricKeyType = 'rsa';
+                    keyObject._type = 'public';
+                    keyObject._pem = RSAPublicKey.encode(parsed, 'pem', {
+                        label: 'RSA PUBLIC KEY'
+                    });
+                    return keyObject;
+                }
+            case 'pkcs8':
+            case 'sec1':
+                return createPublicKey(createPrivateKey({
+                    format,
+                    key,
+                    type,
+                    passphrase
+                }));
+            default:
+                throw new TypeError(`The value ${type} is invalid for option "type"`);
+        }
+    };
+    createPrivateKey = (input, hints)=>{
+        if (typeof input === 'string' || Buffer.isBuffer(input)) {
+            input = {
+                key: input,
+                format: 'pem'
+            };
+        }
+        if (!isObject(input)) {
+            throw new TypeError('input must be a string, Buffer or an object');
+        }
+        const { format, passphrase } = input;
+        let { key, type } = input;
+        if (typeof key !== 'string' && !Buffer.isBuffer(key)) {
+            throw new TypeError('key must be a string or Buffer');
+        }
+        if (passphrase !== undefined) {
+            throw new errors.JOSENotSupported('encrypted private keys are not supported in your Node.js runtime version');
+        }
+        if (format !== 'pem' && format !== 'der') {
+            throw new TypeError('format must be one of "pem" or "der"');
+        }
+        let label;
+        if (format === 'pem') {
+            key = key.toString();
+            switch(key.split(/\r?\n/g)[0].toString()){
+                case '-----BEGIN PRIVATE KEY-----':
+                    type = 'pkcs8';
+                    label = 'PRIVATE KEY';
+                    break;
+                case '-----BEGIN EC PRIVATE KEY-----':
+                    type = 'sec1';
+                    label = 'EC PRIVATE KEY';
+                    break;
+                case '-----BEGIN RSA PRIVATE KEY-----':
+                    type = 'pkcs1';
+                    label = 'RSA PRIVATE KEY';
+                    break;
+                default:
+                    throw new TypeError('unknown/unsupported PEM type');
+            }
+        }
+        switch(type){
+            case 'pkcs8':
+                {
+                    const PrivateKeyInfo = asn1.get('PrivateKeyInfo');
+                    const parsed = PrivateKeyInfo.decode(key, format, {
+                        label
+                    });
+                    let type, keyObject;
+                    switch(parsed.algorithm.algorithm){
+                        case 'ecPublicKey':
+                            {
+                                type = 'sec1';
+                                keyObject = createPrivateKey({
+                                    type,
+                                    key: parsed.privateKey,
+                                    format: 'der'
+                                }, {
+                                    [namedCurve]: parsed.algorithm.parameters.value
+                                });
+                                break;
+                            }
+                        case 'rsaEncryption':
+                            {
+                                type = 'pkcs1';
+                                keyObject = createPrivateKey({
+                                    type,
+                                    key: parsed.privateKey,
+                                    format: 'der'
+                                });
+                                break;
+                            }
+                        default:
+                            unsupported(parsed.algorithm.algorithm);
+                    }
+                    keyObject._pkcs8 = key;
+                    return keyObject;
+                }
+            case 'pkcs1':
+                {
+                    const RSAPrivateKey = asn1.get('RSAPrivateKey');
+                    const parsed = RSAPrivateKey.decode(key, format, {
+                        label
+                    });
+                    const keyObject = new KeyObject();
+                    keyObject._asn1 = parsed;
+                    keyObject._asymmetricKeyType = 'rsa';
+                    keyObject._type = 'private';
+                    keyObject._pem = RSAPrivateKey.encode(parsed, 'pem', {
+                        label: 'RSA PRIVATE KEY'
+                    });
+                    return keyObject;
+                }
+            case 'sec1':
+                {
+                    const ECPrivateKey = asn1.get('ECPrivateKey');
+                    let parsed = ECPrivateKey.decode(key, format, {
+                        label
+                    });
+                    if (!('parameters' in parsed) && !hints[namedCurve]) {
+                        throw new Error('invalid sec1');
+                    } else if (!('parameters' in parsed)) {
+                        parsed = {
+                            ...parsed,
+                            parameters: {
+                                type: 'namedCurve',
+                                value: hints[namedCurve]
+                            }
+                        };
+                    }
+                    const keyObject = new KeyObject();
+                    keyObject._asn1 = parsed;
+                    keyObject._asymmetricKeyType = 'ec';
+                    keyObject._type = 'private';
+                    keyObject._pem = ECPrivateKey.encode(parsed, 'pem', {
+                        label: 'EC PRIVATE KEY'
+                    });
+                    return keyObject;
+                }
+            default:
+                throw new TypeError(`The value ${type} is invalid for option "type"`);
+        }
+    };
+}
+module.exports = {
+    createPublicKey,
+    createPrivateKey,
+    createSecretKey,
+    KeyObject,
+    asInput
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/rsa_primes.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { randomBytes } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+const base64url = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/base64url.js [app-route] (ecmascript)");
+const errors = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+const ZERO = BigInt(0);
+const ONE = BigInt(1);
+const TWO = BigInt(2);
+const toJWKParameter = (n)=>{
+    const hex = n.toString(16);
+    return base64url.encodeBuffer(Buffer.from(hex.length % 2 ? `0${hex}` : hex, 'hex'));
+};
+const fromBuffer = (buf)=>BigInt(`0x${buf.toString('hex')}`);
+const bitLength = (n)=>n.toString(2).length;
+const eGcdX = (a, b)=>{
+    let x = ZERO;
+    let y = ONE;
+    let u = ONE;
+    let v = ZERO;
+    while(a !== ZERO){
+        const q = b / a;
+        const r = b % a;
+        const m = x - u * q;
+        const n = y - v * q;
+        b = a;
+        a = r;
+        x = u;
+        y = v;
+        u = m;
+        v = n;
+    }
+    return x;
+};
+const gcd = (a, b)=>{
+    let shift = ZERO;
+    while(!((a | b) & ONE)){
+        a >>= ONE;
+        b >>= ONE;
+        shift++;
+    }
+    while(!(a & ONE)){
+        a >>= ONE;
+    }
+    do {
+        while(!(b & ONE)){
+            b >>= ONE;
+        }
+        if (a > b) {
+            const x = a;
+            a = b;
+            b = x;
+        }
+        b -= a;
+    }while (b)
+    return a << shift;
+};
+const modPow = (a, b, n)=>{
+    a = toZn(a, n);
+    let result = ONE;
+    let x = a;
+    while(b > 0){
+        const leastSignificantBit = b % TWO;
+        b = b / TWO;
+        if (leastSignificantBit === ONE) {
+            result = result * x;
+            result = result % n;
+        }
+        x = x * x;
+        x = x % n;
+    }
+    return result;
+};
+const randBetween = (min, max)=>{
+    const interval = max - min;
+    const bitLen = bitLength(interval);
+    let rnd;
+    do {
+        rnd = fromBuffer(randBits(bitLen));
+    }while (rnd > interval)
+    return rnd + min;
+};
+const randBits = (bitLength)=>{
+    const byteLength = Math.ceil(bitLength / 8);
+    const rndBytes = randomBytes(byteLength);
+    // Fill with 0's the extra bits
+    rndBytes[0] = rndBytes[0] & 2 ** (bitLength % 8) - 1;
+    return rndBytes;
+};
+const toZn = (a, n)=>{
+    a = a % n;
+    return a < 0 ? a + n : a;
+};
+const odd = (n)=>{
+    let r = n;
+    while(r % TWO === ZERO){
+        r = r / TWO;
+    }
+    return r;
+};
+// not sold on these values
+const maxCountWhileNoY = 30;
+const maxCountWhileInot0 = 22;
+const getPrimeFactors = (e, d, n)=>{
+    const r = odd(e * d - ONE);
+    let countWhileNoY = 0;
+    let y;
+    do {
+        countWhileNoY++;
+        if (countWhileNoY === maxCountWhileNoY) {
+            throw new errors.JWKImportFailed('failed to calculate missing primes');
+        }
+        let countWhileInot0 = 0;
+        let i = modPow(randBetween(TWO, n), r, n);
+        let o = ZERO;
+        while(i !== ONE){
+            countWhileInot0++;
+            if (countWhileInot0 === maxCountWhileInot0) {
+                throw new errors.JWKImportFailed('failed to calculate missing primes');
+            }
+            o = i;
+            i = i * i % n;
+        }
+        if (o !== n - ONE) {
+            y = o;
+        }
+    }while (!y)
+    const p = gcd(y - ONE, n);
+    const q = n / p;
+    return p > q ? {
+        p,
+        q
+    } : {
+        p: q,
+        q: p
+    };
+};
+module.exports = (jwk)=>{
+    const e = fromBuffer(base64url.decodeToBuffer(jwk.e));
+    const d = fromBuffer(base64url.decodeToBuffer(jwk.d));
+    const n = fromBuffer(base64url.decodeToBuffer(jwk.n));
+    if (d >= n) {
+        throw new errors.JWKInvalid('invalid RSA private exponent');
+    }
+    const { p, q } = getPrimeFactors(e, d, n);
+    const dp = d % (p - ONE);
+    const dq = d % (q - ONE);
+    const qi = toZn(eGcdX(toZn(q, p), p), p);
+    return {
+        ...jwk,
+        p: toJWKParameter(p),
+        q: toJWKParameter(q),
+        dp: toJWKParameter(dp),
+        dq: toJWKParameter(dq),
+        qi: toJWKParameter(qi)
+    };
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/key_utils.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { EOL } = __turbopack_context__.r("[externals]/os [external] (os, cjs)");
+const errors = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+const { keyObjectSupported } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/runtime_support.js [app-route] (ecmascript)");
+const { createPublicKey } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/key_object.js [app-route] (ecmascript)");
+const base64url = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/base64url.js [app-route] (ecmascript)");
+const asn1 = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/asn1/index.js [app-route] (ecmascript)");
+const computePrimes = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/rsa_primes.js [app-route] (ecmascript)");
+const { OKP_CURVES, EC_CURVES } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/registry/index.js [app-route] (ecmascript)");
+const formatPem = (base64pem, descriptor)=>`-----BEGIN ${descriptor} KEY-----${EOL}${(base64pem.match(/.{1,64}/g) || []).join(EOL)}${EOL}-----END ${descriptor} KEY-----`;
+const okpToJWK = {
+    private (crv, keyObject) {
+        const der = keyObject.export({
+            type: 'pkcs8',
+            format: 'der'
+        });
+        const OneAsymmetricKey = asn1.get('OneAsymmetricKey');
+        const { privateKey: { privateKey: d } } = OneAsymmetricKey.decode(der);
+        return {
+            ...okpToJWK.public(crv, createPublicKey(keyObject)),
+            d: base64url.encodeBuffer(d)
+        };
+    },
+    public (crv, keyObject) {
+        const der = keyObject.export({
+            type: 'spki',
+            format: 'der'
+        });
+        const PublicKeyInfo = asn1.get('PublicKeyInfo');
+        const { publicKey: { data: x } } = PublicKeyInfo.decode(der);
+        return {
+            kty: 'OKP',
+            crv,
+            x: base64url.encodeBuffer(x)
+        };
+    }
+};
+const keyObjectToJWK = {
+    rsa: {
+        private (keyObject) {
+            const der = keyObject.export({
+                type: 'pkcs8',
+                format: 'der'
+            });
+            const PrivateKeyInfo = asn1.get('PrivateKeyInfo');
+            const RSAPrivateKey = asn1.get('RSAPrivateKey');
+            const { privateKey } = PrivateKeyInfo.decode(der);
+            const { version, n, e, d, p, q, dp, dq, qi } = RSAPrivateKey.decode(privateKey);
+            if (version !== 'two-prime') {
+                throw new errors.JOSENotSupported('Private RSA keys with more than two primes are not supported');
+            }
+            return {
+                kty: 'RSA',
+                n: base64url.encodeBigInt(n),
+                e: base64url.encodeBigInt(e),
+                d: base64url.encodeBigInt(d),
+                p: base64url.encodeBigInt(p),
+                q: base64url.encodeBigInt(q),
+                dp: base64url.encodeBigInt(dp),
+                dq: base64url.encodeBigInt(dq),
+                qi: base64url.encodeBigInt(qi)
+            };
+        },
+        public (keyObject) {
+            const der = keyObject.export({
+                type: 'spki',
+                format: 'der'
+            });
+            const PublicKeyInfo = asn1.get('PublicKeyInfo');
+            const RSAPublicKey = asn1.get('RSAPublicKey');
+            const { publicKey: { data: publicKey } } = PublicKeyInfo.decode(der);
+            const { n, e } = RSAPublicKey.decode(publicKey);
+            return {
+                kty: 'RSA',
+                n: base64url.encodeBigInt(n),
+                e: base64url.encodeBigInt(e)
+            };
+        }
+    },
+    ec: {
+        private (keyObject) {
+            const der = keyObject.export({
+                type: 'pkcs8',
+                format: 'der'
+            });
+            const PrivateKeyInfo = asn1.get('PrivateKeyInfo');
+            const ECPrivateKey = asn1.get('ECPrivateKey');
+            const { privateKey, algorithm: { parameters: { value: crv } } } = PrivateKeyInfo.decode(der);
+            const { privateKey: d, publicKey } = ECPrivateKey.decode(privateKey);
+            if (typeof publicKey === 'undefined') {
+                if (keyObjectSupported) {
+                    return {
+                        ...keyObjectToJWK.ec.public(createPublicKey(keyObject)),
+                        d: base64url.encodeBuffer(d)
+                    };
+                }
+                throw new errors.JOSENotSupported('Private EC keys without the public key embedded are not supported in your Node.js runtime version');
+            }
+            const x = publicKey.data.slice(1, (publicKey.data.length - 1) / 2 + 1);
+            const y = publicKey.data.slice((publicKey.data.length - 1) / 2 + 1);
+            return {
+                kty: 'EC',
+                crv,
+                d: base64url.encodeBuffer(d),
+                x: base64url.encodeBuffer(x),
+                y: base64url.encodeBuffer(y)
+            };
+        },
+        public (keyObject) {
+            const der = keyObject.export({
+                type: 'spki',
+                format: 'der'
+            });
+            const PublicKeyInfo = asn1.get('PublicKeyInfo');
+            const { publicKey: { data: publicKey }, algorithm: { parameters: { value: crv } } } = PublicKeyInfo.decode(der);
+            const x = publicKey.slice(1, (publicKey.length - 1) / 2 + 1);
+            const y = publicKey.slice((publicKey.length - 1) / 2 + 1);
+            return {
+                kty: 'EC',
+                crv,
+                x: base64url.encodeBuffer(x),
+                y: base64url.encodeBuffer(y)
+            };
+        }
+    },
+    ed25519: {
+        private (keyObject) {
+            return okpToJWK.private('Ed25519', keyObject);
+        },
+        public (keyObject) {
+            return okpToJWK.public('Ed25519', keyObject);
+        }
+    },
+    ed448: {
+        private (keyObject) {
+            return okpToJWK.private('Ed448', keyObject);
+        },
+        public (keyObject) {
+            return okpToJWK.public('Ed448', keyObject);
+        }
+    },
+    x25519: {
+        private (keyObject) {
+            return okpToJWK.private('X25519', keyObject);
+        },
+        public (keyObject) {
+            return okpToJWK.public('X25519', keyObject);
+        }
+    },
+    x448: {
+        private (keyObject) {
+            return okpToJWK.private('X448', keyObject);
+        },
+        public (keyObject) {
+            return okpToJWK.public('X448', keyObject);
+        }
+    }
+};
+module.exports.keyObjectToJWK = (keyObject)=>{
+    if (keyObject.type === 'private') {
+        return keyObjectToJWK[keyObject.asymmetricKeyType].private(keyObject);
+    }
+    return keyObjectToJWK[keyObject.asymmetricKeyType].public(keyObject);
+};
+const concatEcPublicKey = (x, y)=>({
+        unused: 0,
+        data: Buffer.concat([
+            Buffer.alloc(1, 4),
+            base64url.decodeToBuffer(x),
+            base64url.decodeToBuffer(y)
+        ])
+    });
+const jwkToPem = {
+    RSA: {
+        private (jwk, { calculateMissingRSAPrimes }) {
+            const RSAPrivateKey = asn1.get('RSAPrivateKey');
+            if ('oth' in jwk) {
+                throw new errors.JOSENotSupported('Private RSA keys with more than two primes are not supported');
+            }
+            if (jwk.p || jwk.q || jwk.dp || jwk.dq || jwk.qi) {
+                if (!(jwk.p && jwk.q && jwk.dp && jwk.dq && jwk.qi)) {
+                    throw new errors.JWKInvalid('all other private key parameters must be present when any one of them is present');
+                }
+            } else if (calculateMissingRSAPrimes) {
+                jwk = computePrimes(jwk);
+            } else if (!calculateMissingRSAPrimes) {
+                throw new errors.JOSENotSupported('importing private RSA keys without all other private key parameters is not enabled, see documentation and its advisory on how and when its ok to enable it');
+            }
+            return RSAPrivateKey.encode({
+                version: 0,
+                n: BigInt(`0x${base64url.decodeToBuffer(jwk.n).toString('hex')}`),
+                e: BigInt(`0x${base64url.decodeToBuffer(jwk.e).toString('hex')}`),
+                d: BigInt(`0x${base64url.decodeToBuffer(jwk.d).toString('hex')}`),
+                p: BigInt(`0x${base64url.decodeToBuffer(jwk.p).toString('hex')}`),
+                q: BigInt(`0x${base64url.decodeToBuffer(jwk.q).toString('hex')}`),
+                dp: BigInt(`0x${base64url.decodeToBuffer(jwk.dp).toString('hex')}`),
+                dq: BigInt(`0x${base64url.decodeToBuffer(jwk.dq).toString('hex')}`),
+                qi: BigInt(`0x${base64url.decodeToBuffer(jwk.qi).toString('hex')}`)
+            }, 'pem', {
+                label: 'RSA PRIVATE KEY'
+            });
+        },
+        public (jwk) {
+            const RSAPublicKey = asn1.get('RSAPublicKey');
+            return RSAPublicKey.encode({
+                version: 0,
+                n: BigInt(`0x${base64url.decodeToBuffer(jwk.n).toString('hex')}`),
+                e: BigInt(`0x${base64url.decodeToBuffer(jwk.e).toString('hex')}`)
+            }, 'pem', {
+                label: 'RSA PUBLIC KEY'
+            });
+        }
+    },
+    EC: {
+        private (jwk) {
+            const ECPrivateKey = asn1.get('ECPrivateKey');
+            return ECPrivateKey.encode({
+                version: 1,
+                privateKey: base64url.decodeToBuffer(jwk.d),
+                parameters: {
+                    type: 'namedCurve',
+                    value: jwk.crv
+                },
+                publicKey: concatEcPublicKey(jwk.x, jwk.y)
+            }, 'pem', {
+                label: 'EC PRIVATE KEY'
+            });
+        },
+        public (jwk) {
+            const PublicKeyInfo = asn1.get('PublicKeyInfo');
+            return PublicKeyInfo.encode({
+                algorithm: {
+                    algorithm: 'ecPublicKey',
+                    parameters: {
+                        type: 'namedCurve',
+                        value: jwk.crv
+                    }
+                },
+                publicKey: concatEcPublicKey(jwk.x, jwk.y)
+            }, 'pem', {
+                label: 'PUBLIC KEY'
+            });
+        }
+    },
+    OKP: {
+        private (jwk) {
+            const OneAsymmetricKey = asn1.get('OneAsymmetricKey');
+            const b64 = OneAsymmetricKey.encode({
+                version: 0,
+                privateKey: {
+                    privateKey: base64url.decodeToBuffer(jwk.d)
+                },
+                algorithm: {
+                    algorithm: jwk.crv
+                }
+            }, 'der');
+            // TODO: WHYYY? https://github.com/indutny/asn1.js/issues/110
+            b64.write('04', 12, 1, 'hex');
+            return formatPem(b64.toString('base64'), 'PRIVATE');
+        },
+        public (jwk) {
+            const PublicKeyInfo = asn1.get('PublicKeyInfo');
+            return PublicKeyInfo.encode({
+                algorithm: {
+                    algorithm: jwk.crv
+                },
+                publicKey: {
+                    unused: 0,
+                    data: base64url.decodeToBuffer(jwk.x)
+                }
+            }, 'pem', {
+                label: 'PUBLIC KEY'
+            });
+        }
+    }
+};
+module.exports.jwkToPem = (jwk, { calculateMissingRSAPrimes = false } = {})=>{
+    switch(jwk.kty){
+        case 'EC':
+            if (!EC_CURVES.has(jwk.crv)) {
+                throw new errors.JOSENotSupported(`unsupported EC key curve: ${jwk.crv}`);
+            }
+            break;
+        case 'OKP':
+            if (!OKP_CURVES.has(jwk.crv)) {
+                throw new errors.JOSENotSupported(`unsupported OKP key curve: ${jwk.crv}`);
+            }
+            break;
+        case 'RSA':
+            break;
+        default:
+            throw new errors.JOSENotSupported(`unsupported key type: ${jwk.kty}`);
+    }
+    if (jwk.d) {
+        return jwkToPem[jwk.kty].private(jwk, {
+            calculateMissingRSAPrimes
+        });
+    }
+    return jwkToPem[jwk.kty].public(jwk);
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwk/thumbprint.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { createHash } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+const base64url = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/base64url.js [app-route] (ecmascript)");
+const x5t = (hash, cert)=>base64url.encodeBuffer(createHash(hash).update(Buffer.from(cert, 'base64')).digest());
+module.exports.kid = (components)=>base64url.encodeBuffer(createHash('sha256').update(JSON.stringify(components)).digest());
+module.exports.x5t = x5t.bind(undefined, 'sha1');
+module.exports['x5t#S256'] = x5t.bind(undefined, 'sha256');
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/base.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { strict: assert } = __turbopack_context__.r("[externals]/assert [external] (assert, cjs)");
+const { inspect } = __turbopack_context__.r("[externals]/util [external] (util, cjs)");
+const { EOL } = __turbopack_context__.r("[externals]/os [external] (os, cjs)");
+const { keyObjectSupported } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/runtime_support.js [app-route] (ecmascript)");
+const { createPublicKey } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/key_object.js [app-route] (ecmascript)");
+const { keyObjectToJWK } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/key_utils.js [app-route] (ecmascript)");
+const { THUMBPRINT_MATERIAL, PUBLIC_MEMBERS, PRIVATE_MEMBERS, JWK_MEMBERS, KEYOBJECT, USES_MAPPING, OPS, USES } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/consts.js [app-route] (ecmascript)");
+const isObject = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/is_object.js [app-route] (ecmascript)");
+const thumbprint = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/thumbprint.js [app-route] (ecmascript)");
+const errors = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+const privateApi = Symbol('privateApi');
+const { JWK } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/registry/index.js [app-route] (ecmascript)");
+class Key {
+    constructor(keyObject, { alg, use, kid, key_ops: ops, x5c, x5t, 'x5t#S256': x5t256 } = {}){
+        if (use !== undefined) {
+            if (typeof use !== 'string' || !USES.has(use)) {
+                throw new TypeError('`use` must be either "sig" or "enc" string when provided');
+            }
+        }
+        if (alg !== undefined) {
+            if (typeof alg !== 'string' || !alg) {
+                throw new TypeError('`alg` must be a non-empty string when provided');
+            }
+        }
+        if (kid !== undefined) {
+            if (typeof kid !== 'string' || !kid) {
+                throw new TypeError('`kid` must be a non-empty string when provided');
+            }
+        }
+        if (ops !== undefined) {
+            if (!Array.isArray(ops) || !ops.length || ops.some((o)=>typeof o !== 'string')) {
+                throw new TypeError('`key_ops` must be a non-empty array of strings when provided');
+            }
+            ops = Array.from(new Set(ops)).filter((x)=>OPS.has(x));
+        }
+        if (ops && use) {
+            if (use === 'enc' && ops.some((x)=>USES_MAPPING.sig.has(x)) || use === 'sig' && ops.some((x)=>USES_MAPPING.enc.has(x))) {
+                throw new errors.JWKInvalid('inconsistent JWK "use" and "key_ops"');
+            }
+        }
+        if (keyObjectSupported && x5c !== undefined) {
+            if (!Array.isArray(x5c) || !x5c.length || x5c.some((c)=>typeof c !== 'string')) {
+                throw new TypeError('`x5c` must be an array of one or more PKIX certificates when provided');
+            }
+            x5c.forEach((cert, i)=>{
+                let publicKey;
+                try {
+                    publicKey = createPublicKey({
+                        key: `-----BEGIN CERTIFICATE-----${EOL}${(cert.match(/.{1,64}/g) || []).join(EOL)}${EOL}-----END CERTIFICATE-----`,
+                        format: 'pem'
+                    });
+                } catch (err) {
+                    throw new errors.JWKInvalid(`\`x5c\` member at index ${i} is not a valid base64-encoded DER PKIX certificate`);
+                }
+                if (i === 0) {
+                    try {
+                        assert.deepEqual(publicKey.export({
+                            type: 'spki',
+                            format: 'der'
+                        }), (keyObject.type === 'public' ? keyObject : createPublicKey(keyObject)).export({
+                            type: 'spki',
+                            format: 'der'
+                        }));
+                    } catch (err) {
+                        throw new errors.JWKInvalid('The key in the first `x5c` certificate MUST match the public key represented by the JWK');
+                    }
+                }
+            });
+        }
+        Object.defineProperties(this, {
+            [KEYOBJECT]: {
+                value: isObject(keyObject) ? undefined : keyObject
+            },
+            keyObject: {
+                get () {
+                    if (!keyObjectSupported) {
+                        throw new errors.JOSENotSupported('KeyObject class is not supported in your Node.js runtime version');
+                    }
+                    return this[KEYOBJECT];
+                }
+            },
+            type: {
+                value: keyObject.type
+            },
+            private: {
+                value: keyObject.type === 'private'
+            },
+            public: {
+                value: keyObject.type === 'public'
+            },
+            secret: {
+                value: keyObject.type === 'secret'
+            },
+            alg: {
+                value: alg,
+                enumerable: alg !== undefined
+            },
+            use: {
+                value: use,
+                enumerable: use !== undefined
+            },
+            x5c: {
+                enumerable: x5c !== undefined,
+                ...x5c ? {
+                    get () {
+                        return [
+                            ...x5c
+                        ];
+                    }
+                } : {
+                    value: undefined
+                }
+            },
+            key_ops: {
+                enumerable: ops !== undefined,
+                ...ops ? {
+                    get () {
+                        return [
+                            ...ops
+                        ];
+                    }
+                } : {
+                    value: undefined
+                }
+            },
+            kid: {
+                enumerable: true,
+                ...kid ? {
+                    value: kid
+                } : {
+                    get () {
+                        Object.defineProperty(this, 'kid', {
+                            value: this.thumbprint,
+                            configurable: false
+                        });
+                        return this.kid;
+                    },
+                    configurable: true
+                }
+            },
+            ...x5c ? {
+                x5t: {
+                    enumerable: true,
+                    ...x5t ? {
+                        value: x5t
+                    } : {
+                        get () {
+                            Object.defineProperty(this, 'x5t', {
+                                value: thumbprint.x5t(this.x5c[0]),
+                                configurable: false
+                            });
+                            return this.x5t;
+                        },
+                        configurable: true
+                    }
+                }
+            } : undefined,
+            ...x5c ? {
+                'x5t#S256': {
+                    enumerable: true,
+                    ...x5t256 ? {
+                        value: x5t256
+                    } : {
+                        get () {
+                            Object.defineProperty(this, 'x5t#S256', {
+                                value: thumbprint['x5t#S256'](this.x5c[0]),
+                                configurable: false
+                            });
+                            return this['x5t#S256'];
+                        },
+                        configurable: true
+                    }
+                }
+            } : undefined,
+            thumbprint: {
+                get () {
+                    Object.defineProperty(this, 'thumbprint', {
+                        value: thumbprint.kid(this[THUMBPRINT_MATERIAL]()),
+                        configurable: false
+                    });
+                    return this.thumbprint;
+                },
+                configurable: true
+            }
+        });
+    }
+    toPEM(priv = false, encoding = {}) {
+        if (this.secret) {
+            throw new TypeError('symmetric keys cannot be exported as PEM');
+        }
+        if (priv && this.public === true) {
+            throw new TypeError('public key cannot be exported as private');
+        }
+        const { type = priv ? 'pkcs8' : 'spki', cipher, passphrase } = encoding;
+        let keyObject = this[KEYOBJECT];
+        if (!priv) {
+            if (this.private) {
+                keyObject = createPublicKey(keyObject);
+            }
+            if (cipher || passphrase) {
+                throw new TypeError('cipher and passphrase can only be applied when exporting private keys');
+            }
+        }
+        if (priv) {
+            return keyObject.export({
+                format: 'pem',
+                type,
+                cipher,
+                passphrase
+            });
+        }
+        return keyObject.export({
+            format: 'pem',
+            type
+        });
+    }
+    toJWK(priv = false) {
+        if (priv && this.public === true) {
+            throw new TypeError('public key cannot be exported as private');
+        }
+        const components = [
+            ...this.constructor[priv ? PRIVATE_MEMBERS : PUBLIC_MEMBERS]
+        ].map((k)=>[
+                k,
+                this[k]
+            ]);
+        const result = {};
+        Object.keys(components).forEach((key)=>{
+            const [k, v] = components[key];
+            result[k] = v;
+        });
+        result.kty = this.kty;
+        result.kid = this.kid;
+        if (this.alg) {
+            result.alg = this.alg;
+        }
+        if (this.key_ops && this.key_ops.length) {
+            result.key_ops = this.key_ops;
+        }
+        if (this.use) {
+            result.use = this.use;
+        }
+        if (this.x5c) {
+            result.x5c = this.x5c;
+        }
+        if (this.x5t) {
+            result.x5t = this.x5t;
+        }
+        if (this['x5t#S256']) {
+            result['x5t#S256'] = this['x5t#S256'];
+        }
+        return result;
+    }
+    [JWK_MEMBERS]() {
+        const props = this[KEYOBJECT].type === 'private' ? this.constructor[PRIVATE_MEMBERS] : this.constructor[PUBLIC_MEMBERS];
+        Object.defineProperties(this, [
+            ...props
+        ].reduce((acc, component)=>{
+            acc[component] = {
+                get () {
+                    const jwk = keyObjectToJWK(this[KEYOBJECT]);
+                    Object.defineProperties(this, Object.entries(jwk).filter(([key])=>props.has(key)).reduce((acc, [key, value])=>{
+                        acc[key] = {
+                            value,
+                            enumerable: this.constructor[PUBLIC_MEMBERS].has(key),
+                            configurable: false
+                        };
+                        return acc;
+                    }, {}));
+                    return this[component];
+                },
+                enumerable: this.constructor[PUBLIC_MEMBERS].has(component),
+                configurable: true
+            };
+            return acc;
+        }, {}));
+    }
+    /* c8 ignore next 8 */ [inspect.custom]() {
+        return `${this.constructor.name} ${inspect(this.toJWK(false), {
+            depth: Infinity,
+            colors: process.stdout.isTTY,
+            compact: false,
+            sorted: true
+        })}`;
+    }
+    /* c8 ignore next 3 */ [THUMBPRINT_MATERIAL]() {
+        throw new Error(`"[THUMBPRINT_MATERIAL]()" is not implemented on ${this.constructor.name}`);
+    }
+    algorithms(operation, /* the rest is private API */ int, opts) {
+        const { use = this.use, alg = this.alg, key_ops: ops = this.key_ops } = int === privateApi ? opts : {};
+        if (alg) {
+            return new Set(this.algorithms(operation, privateApi, {
+                alg: null,
+                use,
+                key_ops: ops
+            }).has(alg) ? [
+                alg
+            ] : undefined);
+        }
+        if (typeof operation === 'symbol') {
+            try {
+                return this[operation]();
+            } catch (err) {
+                return new Set();
+            }
+        }
+        if (operation && ops && !ops.includes(operation)) {
+            return new Set();
+        }
+        switch(operation){
+            case 'decrypt':
+            case 'deriveKey':
+            case 'encrypt':
+            case 'sign':
+            case 'unwrapKey':
+            case 'verify':
+            case 'wrapKey':
+                return new Set(Object.entries(JWK[this.kty][operation]).map(([alg, fn])=>fn(this) ? alg : undefined).filter(Boolean));
+            case undefined:
+                return new Set([
+                    ...this.algorithms('sign'),
+                    ...this.algorithms('verify'),
+                    ...this.algorithms('decrypt'),
+                    ...this.algorithms('encrypt'),
+                    ...this.algorithms('unwrapKey'),
+                    ...this.algorithms('wrapKey'),
+                    ...this.algorithms('deriveKey')
+                ]);
+            default:
+                throw new TypeError('invalid key operation');
+        }
+    }
+    /* c8 ignore next 3 */ static async generate() {
+        throw new Error(`"static async generate()" is not implemented on ${this.name}`);
+    }
+    /* c8 ignore next 3 */ static generateSync() {
+        throw new Error(`"static generateSync()" is not implemented on ${this.name}`);
+    }
+    /* c8 ignore next 3 */ static get [PUBLIC_MEMBERS]() {
+        throw new Error(`"static get [PUBLIC_MEMBERS]()" is not implemented on ${this.name}`);
+    }
+    /* c8 ignore next 3 */ static get [PRIVATE_MEMBERS]() {
+        throw new Error(`"static get [PRIVATE_MEMBERS]()" is not implemented on ${this.name}`);
+    }
+}
+module.exports = Key;
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/rsa.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { generateKeyPairSync, generateKeyPair: async } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+const { promisify } = __turbopack_context__.r("[externals]/util [external] (util, cjs)");
+const { THUMBPRINT_MATERIAL, JWK_MEMBERS, PUBLIC_MEMBERS, PRIVATE_MEMBERS, KEY_MANAGEMENT_DECRYPT, KEY_MANAGEMENT_ENCRYPT } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/consts.js [app-route] (ecmascript)");
+const { keyObjectSupported } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/runtime_support.js [app-route] (ecmascript)");
+const { createPublicKey, createPrivateKey } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/key_object.js [app-route] (ecmascript)");
+const Key = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/base.js [app-route] (ecmascript)");
+const generateKeyPair = promisify(async);
+const RSA_PUBLIC = new Set([
+    'e',
+    'n'
+]);
+Object.freeze(RSA_PUBLIC);
+const RSA_PRIVATE = new Set([
+    ...RSA_PUBLIC,
+    'd',
+    'p',
+    'q',
+    'dp',
+    'dq',
+    'qi'
+]);
+Object.freeze(RSA_PRIVATE);
+// RSA Key Type
+class RSAKey extends Key {
+    constructor(...args){
+        super(...args);
+        this[JWK_MEMBERS]();
+        Object.defineProperties(this, {
+            kty: {
+                value: 'RSA',
+                enumerable: true
+            },
+            length: {
+                get () {
+                    Object.defineProperty(this, 'length', {
+                        value: Buffer.byteLength(this.n, 'base64') * 8,
+                        configurable: false
+                    });
+                    return this.length;
+                },
+                configurable: true
+            }
+        });
+    }
+    static get [PUBLIC_MEMBERS]() {
+        return RSA_PUBLIC;
+    }
+    static get [PRIVATE_MEMBERS]() {
+        return RSA_PRIVATE;
+    }
+    // https://tc39.github.io/ecma262/#sec-ordinaryownpropertykeys no need for any special
+    // JSON.stringify handling in V8
+    [THUMBPRINT_MATERIAL]() {
+        return {
+            e: this.e,
+            kty: 'RSA',
+            n: this.n
+        };
+    }
+    [KEY_MANAGEMENT_ENCRYPT]() {
+        return this.algorithms('wrapKey');
+    }
+    [KEY_MANAGEMENT_DECRYPT]() {
+        return this.algorithms('unwrapKey');
+    }
+    static async generate(len = 2048, privat = true) {
+        if (!Number.isSafeInteger(len) || len < 512 || len % 8 !== 0 || 'electron' in process.versions && len % 128 !== 0) {
+            throw new TypeError('invalid bit length');
+        }
+        let privateKey, publicKey;
+        if (keyObjectSupported) {
+            ({ privateKey, publicKey } = await generateKeyPair('rsa', {
+                modulusLength: len
+            }));
+            return privat ? privateKey : publicKey;
+        }
+        ({ privateKey, publicKey } = await generateKeyPair('rsa', {
+            modulusLength: len,
+            publicKeyEncoding: {
+                type: 'spki',
+                format: 'pem'
+            },
+            privateKeyEncoding: {
+                type: 'pkcs8',
+                format: 'pem'
+            }
+        }));
+        if (privat) {
+            return createPrivateKey(privateKey);
+        } else {
+            return createPublicKey(publicKey);
+        }
+    }
+    static generateSync(len = 2048, privat = true) {
+        if (!Number.isSafeInteger(len) || len < 512 || len % 8 !== 0 || 'electron' in process.versions && len % 128 !== 0) {
+            throw new TypeError('invalid bit length');
+        }
+        let privateKey, publicKey;
+        if (keyObjectSupported) {
+            ({ privateKey, publicKey } = generateKeyPairSync('rsa', {
+                modulusLength: len
+            }));
+            return privat ? privateKey : publicKey;
+        }
+        ({ privateKey, publicKey } = generateKeyPairSync('rsa', {
+            modulusLength: len,
+            publicKeyEncoding: {
+                type: 'spki',
+                format: 'pem'
+            },
+            privateKeyEncoding: {
+                type: 'pkcs8',
+                format: 'pem'
+            }
+        }));
+        if (privat) {
+            return createPrivateKey(privateKey);
+        } else {
+            return createPublicKey(publicKey);
+        }
+    }
+}
+module.exports = RSAKey;
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/ec.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { generateKeyPairSync, generateKeyPair: async } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+const { promisify } = __turbopack_context__.r("[externals]/util [external] (util, cjs)");
+const { THUMBPRINT_MATERIAL, JWK_MEMBERS, PUBLIC_MEMBERS, PRIVATE_MEMBERS, KEY_MANAGEMENT_DECRYPT, KEY_MANAGEMENT_ENCRYPT } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/consts.js [app-route] (ecmascript)");
+const { EC_CURVES } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/registry/index.js [app-route] (ecmascript)");
+const { keyObjectSupported } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/runtime_support.js [app-route] (ecmascript)");
+const { createPublicKey, createPrivateKey } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/key_object.js [app-route] (ecmascript)");
+const errors = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+const Key = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/base.js [app-route] (ecmascript)");
+const generateKeyPair = promisify(async);
+const EC_PUBLIC = new Set([
+    'crv',
+    'x',
+    'y'
+]);
+Object.freeze(EC_PUBLIC);
+const EC_PRIVATE = new Set([
+    ...EC_PUBLIC,
+    'd'
+]);
+Object.freeze(EC_PRIVATE);
+// Elliptic Curve Key Type
+class ECKey extends Key {
+    constructor(...args){
+        super(...args);
+        this[JWK_MEMBERS]();
+        Object.defineProperty(this, 'kty', {
+            value: 'EC',
+            enumerable: true
+        });
+        if (!EC_CURVES.has(this.crv)) {
+            throw new errors.JOSENotSupported('unsupported EC key curve');
+        }
+    }
+    static get [PUBLIC_MEMBERS]() {
+        return EC_PUBLIC;
+    }
+    static get [PRIVATE_MEMBERS]() {
+        return EC_PRIVATE;
+    }
+    // https://tc39.github.io/ecma262/#sec-ordinaryownpropertykeys no need for any special
+    // JSON.stringify handling in V8
+    [THUMBPRINT_MATERIAL]() {
+        return {
+            crv: this.crv,
+            kty: 'EC',
+            x: this.x,
+            y: this.y
+        };
+    }
+    [KEY_MANAGEMENT_ENCRYPT]() {
+        return this.algorithms('deriveKey');
+    }
+    [KEY_MANAGEMENT_DECRYPT]() {
+        if (this.public) {
+            return new Set();
+        }
+        return this.algorithms('deriveKey');
+    }
+    static async generate(crv = 'P-256', privat = true) {
+        if (!EC_CURVES.has(crv)) {
+            throw new errors.JOSENotSupported(`unsupported EC key curve: ${crv}`);
+        }
+        let privateKey, publicKey;
+        if (keyObjectSupported) {
+            ({ privateKey, publicKey } = await generateKeyPair('ec', {
+                namedCurve: crv
+            }));
+            return privat ? privateKey : publicKey;
+        }
+        ({ privateKey, publicKey } = await generateKeyPair('ec', {
+            namedCurve: crv,
+            publicKeyEncoding: {
+                type: 'spki',
+                format: 'pem'
+            },
+            privateKeyEncoding: {
+                type: 'pkcs8',
+                format: 'pem'
+            }
+        }));
+        if (privat) {
+            return createPrivateKey(privateKey);
+        } else {
+            return createPublicKey(publicKey);
+        }
+    }
+    static generateSync(crv = 'P-256', privat = true) {
+        if (!EC_CURVES.has(crv)) {
+            throw new errors.JOSENotSupported(`unsupported EC key curve: ${crv}`);
+        }
+        let privateKey, publicKey;
+        if (keyObjectSupported) {
+            ({ privateKey, publicKey } = generateKeyPairSync('ec', {
+                namedCurve: crv
+            }));
+            return privat ? privateKey : publicKey;
+        }
+        ({ privateKey, publicKey } = generateKeyPairSync('ec', {
+            namedCurve: crv,
+            publicKeyEncoding: {
+                type: 'spki',
+                format: 'pem'
+            },
+            privateKeyEncoding: {
+                type: 'pkcs8',
+                format: 'pem'
+            }
+        }));
+        if (privat) {
+            return createPrivateKey(privateKey);
+        } else {
+            return createPublicKey(publicKey);
+        }
+    }
+}
+module.exports = ECKey;
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/okp.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { generateKeyPairSync, generateKeyPair: async } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+const { promisify } = __turbopack_context__.r("[externals]/util [external] (util, cjs)");
+const { THUMBPRINT_MATERIAL, JWK_MEMBERS, PUBLIC_MEMBERS, PRIVATE_MEMBERS, KEY_MANAGEMENT_DECRYPT, KEY_MANAGEMENT_ENCRYPT } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/consts.js [app-route] (ecmascript)");
+const { OKP_CURVES } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/registry/index.js [app-route] (ecmascript)");
+const { edDSASupported } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/runtime_support.js [app-route] (ecmascript)");
+const errors = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+const Key = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/base.js [app-route] (ecmascript)");
+const generateKeyPair = promisify(async);
+const OKP_PUBLIC = new Set([
+    'crv',
+    'x'
+]);
+Object.freeze(OKP_PUBLIC);
+const OKP_PRIVATE = new Set([
+    ...OKP_PUBLIC,
+    'd'
+]);
+Object.freeze(OKP_PRIVATE);
+// Octet string key pairs Key Type
+class OKPKey extends Key {
+    constructor(...args){
+        super(...args);
+        this[JWK_MEMBERS]();
+        Object.defineProperty(this, 'kty', {
+            value: 'OKP',
+            enumerable: true
+        });
+        if (!OKP_CURVES.has(this.crv)) {
+            throw new errors.JOSENotSupported('unsupported OKP key curve');
+        }
+    }
+    static get [PUBLIC_MEMBERS]() {
+        return OKP_PUBLIC;
+    }
+    static get [PRIVATE_MEMBERS]() {
+        return OKP_PRIVATE;
+    }
+    // https://tc39.github.io/ecma262/#sec-ordinaryownpropertykeys no need for any special
+    // JSON.stringify handling in V8
+    [THUMBPRINT_MATERIAL]() {
+        return {
+            crv: this.crv,
+            kty: 'OKP',
+            x: this.x
+        };
+    }
+    [KEY_MANAGEMENT_ENCRYPT]() {
+        return this.algorithms('deriveKey');
+    }
+    [KEY_MANAGEMENT_DECRYPT]() {
+        if (this.public) {
+            return new Set();
+        }
+        return this.algorithms('deriveKey');
+    }
+    static async generate(crv = 'Ed25519', privat = true) {
+        if (!edDSASupported) {
+            throw new errors.JOSENotSupported('OKP keys are not supported in your Node.js runtime version');
+        }
+        if (!OKP_CURVES.has(crv)) {
+            throw new errors.JOSENotSupported(`unsupported OKP key curve: ${crv}`);
+        }
+        const { privateKey, publicKey } = await generateKeyPair(crv.toLowerCase());
+        return privat ? privateKey : publicKey;
+    }
+    static generateSync(crv = 'Ed25519', privat = true) {
+        if (!edDSASupported) {
+            throw new errors.JOSENotSupported('OKP keys are not supported in your Node.js runtime version');
+        }
+        if (!OKP_CURVES.has(crv)) {
+            throw new errors.JOSENotSupported(`unsupported OKP key curve: ${crv}`);
+        }
+        const { privateKey, publicKey } = generateKeyPairSync(crv.toLowerCase());
+        return privat ? privateKey : publicKey;
+    }
+}
+module.exports = OKPKey;
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/oct.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { randomBytes } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+const { createSecretKey } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/key_object.js [app-route] (ecmascript)");
+const base64url = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/base64url.js [app-route] (ecmascript)");
+const { THUMBPRINT_MATERIAL, PUBLIC_MEMBERS, PRIVATE_MEMBERS, KEY_MANAGEMENT_DECRYPT, KEY_MANAGEMENT_ENCRYPT, KEYOBJECT } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/consts.js [app-route] (ecmascript)");
+const Key = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/base.js [app-route] (ecmascript)");
+const OCT_PUBLIC = new Set();
+Object.freeze(OCT_PUBLIC);
+const OCT_PRIVATE = new Set([
+    'k'
+]);
+Object.freeze(OCT_PRIVATE);
+// Octet sequence Key Type
+class OctKey extends Key {
+    constructor(...args){
+        super(...args);
+        Object.defineProperties(this, {
+            kty: {
+                value: 'oct',
+                enumerable: true
+            },
+            length: {
+                value: this[KEYOBJECT] ? this[KEYOBJECT].symmetricKeySize * 8 : undefined
+            },
+            k: {
+                enumerable: false,
+                get () {
+                    if (this[KEYOBJECT]) {
+                        Object.defineProperty(this, 'k', {
+                            value: base64url.encodeBuffer(this[KEYOBJECT].export()),
+                            configurable: false
+                        });
+                    } else {
+                        Object.defineProperty(this, 'k', {
+                            value: undefined,
+                            configurable: false
+                        });
+                    }
+                    return this.k;
+                },
+                configurable: true
+            }
+        });
+    }
+    static get [PUBLIC_MEMBERS]() {
+        return OCT_PUBLIC;
+    }
+    static get [PRIVATE_MEMBERS]() {
+        return OCT_PRIVATE;
+    }
+    // https://tc39.github.io/ecma262/#sec-ordinaryownpropertykeys no need for any special
+    // JSON.stringify handling in V8
+    [THUMBPRINT_MATERIAL]() {
+        if (!this[KEYOBJECT]) {
+            throw new TypeError('reference "oct" keys without "k" cannot have their thumbprint calculated');
+        }
+        return {
+            k: this.k,
+            kty: 'oct'
+        };
+    }
+    [KEY_MANAGEMENT_ENCRYPT]() {
+        return new Set([
+            ...this.algorithms('wrapKey'),
+            ...this.algorithms('deriveKey')
+        ]);
+    }
+    [KEY_MANAGEMENT_DECRYPT]() {
+        return this[KEY_MANAGEMENT_ENCRYPT]();
+    }
+    algorithms(...args) {
+        if (!this[KEYOBJECT]) {
+            return new Set();
+        }
+        return Key.prototype.algorithms.call(this, ...args);
+    }
+    static async generate(...args) {
+        return this.generateSync(...args);
+    }
+    static generateSync(len = 256, privat = true) {
+        if (!privat) {
+            throw new TypeError('"oct" keys cannot be generated as public');
+        }
+        if (!Number.isSafeInteger(len) || !len || len % 8 !== 0) {
+            throw new TypeError('invalid bit length');
+        }
+        return createSecretKey(randomBytes(len / 8));
+    }
+}
+module.exports = OctKey;
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwk/import.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { createPublicKey, createPrivateKey, createSecretKey, KeyObject } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/key_object.js [app-route] (ecmascript)");
+const base64url = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/base64url.js [app-route] (ecmascript)");
+const isObject = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/is_object.js [app-route] (ecmascript)");
+const { jwkToPem } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/key_utils.js [app-route] (ecmascript)");
+const errors = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+const RSAKey = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/rsa.js [app-route] (ecmascript)");
+const ECKey = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/ec.js [app-route] (ecmascript)");
+const OKPKey = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/okp.js [app-route] (ecmascript)");
+const OctKey = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/oct.js [app-route] (ecmascript)");
+const importable = new Set([
+    'string',
+    'buffer',
+    'object'
+]);
+const mergedParameters = (target = {}, source = {})=>{
+    return {
+        alg: source.alg,
+        key_ops: source.key_ops,
+        kid: source.kid,
+        use: source.use,
+        x5c: source.x5c,
+        x5t: source.x5t,
+        'x5t#S256': source['x5t#S256'],
+        ...target
+    };
+};
+const openSSHpublicKey = /^[a-zA-Z0-9-]+ AAAA(?:[0-9A-Za-z+/])+(?:==|=)?(?: .*)?$/;
+const asKey = (key, parameters, { calculateMissingRSAPrimes = false } = {})=>{
+    let privateKey, publicKey, secret;
+    if (!importable.has(typeof key)) {
+        throw new TypeError('key argument must be a string, buffer or an object');
+    }
+    if (parameters !== undefined && !isObject(parameters)) {
+        throw new TypeError('parameters argument must be a plain object when provided');
+    }
+    if (key instanceof KeyObject) {
+        switch(key.type){
+            case 'private':
+                privateKey = key;
+                break;
+            case 'public':
+                publicKey = key;
+                break;
+            case 'secret':
+                secret = key;
+                break;
+        }
+    } else if (typeof key === 'object' && key && 'kty' in key && key.kty === 'oct') {
+        try {
+            secret = createSecretKey(base64url.decodeToBuffer(key.k));
+        } catch (err) {
+            if (!('k' in key)) {
+                secret = {
+                    type: 'secret'
+                };
+            }
+        }
+        parameters = mergedParameters(parameters, key);
+    } else if (typeof key === 'object' && key && 'kty' in key) {
+        ({ calculateMissingRSAPrimes = false } = parameters || {
+            calculateMissingRSAPrimes
+        });
+        let pem;
+        try {
+            pem = jwkToPem(key, {
+                calculateMissingRSAPrimes
+            });
+        } catch (err) {
+            if (err instanceof errors.JOSEError) {
+                throw err;
+            }
+        }
+        if (pem && key.d) {
+            privateKey = createPrivateKey(pem);
+        } else if (pem) {
+            publicKey = createPublicKey(pem);
+        }
+        parameters = mergedParameters({}, key);
+    } else if (key && (typeof key === 'object' || typeof key === 'string')) {
+        try {
+            privateKey = createPrivateKey(key);
+        } catch (err) {
+            if (err instanceof errors.JOSEError) {
+                throw err;
+            }
+        }
+        try {
+            publicKey = createPublicKey(key);
+            if (key.startsWith('-----BEGIN CERTIFICATE-----') && (!parameters || !('x5c' in parameters))) {
+                parameters = mergedParameters(parameters, {
+                    x5c: [
+                        key.replace(/(?:-----(?:BEGIN|END) CERTIFICATE-----|\s)/g, '')
+                    ]
+                });
+            }
+        } catch (err) {
+            if (err instanceof errors.JOSEError) {
+                throw err;
+            }
+        }
+        try {
+            // this is to filter out invalid PEM keys and certs, i'll rather have them fail import then
+            // have them imported as symmetric "oct" keys
+            if (!key.includes('-----BEGIN') && !openSSHpublicKey.test(key.toString('ascii').replace(/[\r\n]/g, ''))) {
+                secret = createSecretKey(Buffer.isBuffer(key) ? key : Buffer.from(key));
+            }
+        } catch (err) {}
+    }
+    const keyObject = privateKey || publicKey || secret;
+    if (privateKey || publicKey) {
+        switch(keyObject.asymmetricKeyType){
+            case 'rsa':
+                return new RSAKey(keyObject, parameters);
+            case 'ec':
+                return new ECKey(keyObject, parameters);
+            case 'ed25519':
+            case 'ed448':
+            case 'x25519':
+            case 'x448':
+                return new OKPKey(keyObject, parameters);
+            default:
+                throw new errors.JOSENotSupported('only RSA, EC and OKP asymmetric keys are supported');
+        }
+    } else if (secret) {
+        return new OctKey(keyObject, parameters);
+    }
+    throw new errors.JWKImportFailed('key import failed');
+};
+module.exports = asKey;
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwk/generate.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const errors = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+const importKey = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/import.js [app-route] (ecmascript)");
+const RSAKey = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/rsa.js [app-route] (ecmascript)");
+const ECKey = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/ec.js [app-route] (ecmascript)");
+const OKPKey = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/okp.js [app-route] (ecmascript)");
+const OctKey = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/oct.js [app-route] (ecmascript)");
+const generate = async (kty, crvOrSize, params, generatePrivate = true)=>{
+    switch(kty){
+        case 'RSA':
+            return importKey(await RSAKey.generate(crvOrSize, generatePrivate), params);
+        case 'EC':
+            return importKey(await ECKey.generate(crvOrSize, generatePrivate), params);
+        case 'OKP':
+            return importKey(await OKPKey.generate(crvOrSize, generatePrivate), params);
+        case 'oct':
+            return importKey(await OctKey.generate(crvOrSize, generatePrivate), params);
+        default:
+            throw new errors.JOSENotSupported(`unsupported key type: ${kty}`);
+    }
+};
+const generateSync = (kty, crvOrSize, params, generatePrivate = true)=>{
+    switch(kty){
+        case 'RSA':
+            return importKey(RSAKey.generateSync(crvOrSize, generatePrivate), params);
+        case 'EC':
+            return importKey(ECKey.generateSync(crvOrSize, generatePrivate), params);
+        case 'OKP':
+            return importKey(OKPKey.generateSync(crvOrSize, generatePrivate), params);
+        case 'oct':
+            return importKey(OctKey.generateSync(crvOrSize, generatePrivate), params);
+        default:
+            throw new errors.JOSENotSupported(`unsupported key type: ${kty}`);
+    }
+};
+module.exports.generate = generate;
+module.exports.generateSync = generateSync;
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/none.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { inspect } = __turbopack_context__.r("[externals]/util [external] (util, cjs)");
+const Key = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/base.js [app-route] (ecmascript)");
+class NoneKey extends Key {
+    constructor(){
+        super({
+            type: 'unsecured'
+        }, {
+            alg: 'none'
+        });
+        Object.defineProperties(this, {
+            kid: {
+                value: undefined
+            },
+            kty: {
+                value: undefined
+            },
+            thumbprint: {
+                value: undefined
+            },
+            toJWK: {
+                value: undefined
+            },
+            toPEM: {
+                value: undefined
+            }
+        });
+    }
+    /* c8 ignore next 3 */ [inspect.custom]() {
+        return 'None {}';
+    }
+    algorithms(operation) {
+        switch(operation){
+            case 'sign':
+            case 'verify':
+            case undefined:
+                return new Set([
+                    'none'
+                ]);
+            default:
+                return new Set();
+        }
+    }
+}
+module.exports = new NoneKey();
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/embedded.jwk.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { inspect } = __turbopack_context__.r("[externals]/util [external] (util, cjs)");
+const Key = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/base.js [app-route] (ecmascript)");
+class EmbeddedJWK extends Key {
+    constructor(){
+        super({
+            type: 'embedded'
+        });
+        Object.defineProperties(this, {
+            kid: {
+                value: undefined
+            },
+            kty: {
+                value: undefined
+            },
+            thumbprint: {
+                value: undefined
+            },
+            toJWK: {
+                value: undefined
+            },
+            toPEM: {
+                value: undefined
+            }
+        });
+    }
+    /* c8 ignore next 3 */ [inspect.custom]() {
+        return 'Embedded.JWK {}';
+    }
+    algorithms() {
+        return new Set();
+    }
+}
+module.exports = new EmbeddedJWK();
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/embedded.x5c.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { inspect } = __turbopack_context__.r("[externals]/util [external] (util, cjs)");
+const Key = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/base.js [app-route] (ecmascript)");
+class EmbeddedX5C extends Key {
+    constructor(){
+        super({
+            type: 'embedded'
+        });
+        Object.defineProperties(this, {
+            kid: {
+                value: undefined
+            },
+            kty: {
+                value: undefined
+            },
+            thumbprint: {
+                value: undefined
+            },
+            toJWK: {
+                value: undefined
+            },
+            toPEM: {
+                value: undefined
+            }
+        });
+    }
+    /* c8 ignore next 3 */ [inspect.custom]() {
+        return 'Embedded.X5C {}';
+    }
+    algorithms() {
+        return new Set();
+    }
+}
+module.exports = new EmbeddedX5C();
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwk/index.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const Key = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/base.js [app-route] (ecmascript)");
+const None = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/none.js [app-route] (ecmascript)");
+const EmbeddedJWK = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/embedded.jwk.js [app-route] (ecmascript)");
+const EmbeddedX5C = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/embedded.x5c.js [app-route] (ecmascript)");
+const importKey = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/import.js [app-route] (ecmascript)");
+const generate = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/generate.js [app-route] (ecmascript)");
+module.exports = {
+    ...generate,
+    asKey: importKey,
+    isKey: (input)=>input instanceof Key,
+    None,
+    EmbeddedJWK,
+    EmbeddedX5C
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwks/keystore.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { inspect } = __turbopack_context__.r("[externals]/util [external] (util, cjs)");
+const isObject = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/is_object.js [app-route] (ecmascript)");
+const { generate, generateSync } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/generate.js [app-route] (ecmascript)");
+const { USES_MAPPING } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/consts.js [app-route] (ecmascript)");
+const { isKey, asKey: importKey } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/index.js [app-route] (ecmascript)");
+const keyscore = (key, { alg, use, ops })=>{
+    let score = 0;
+    if (alg && key.alg) {
+        score++;
+    }
+    if (use && key.use) {
+        score++;
+    }
+    if (ops && key.key_ops) {
+        score++;
+    }
+    return score;
+};
+class KeyStore {
+    constructor(...keys){
+        while(keys.some(Array.isArray)){
+            keys = keys.flat ? keys.flat() : keys.reduce((acc, val)=>{
+                if (Array.isArray(val)) {
+                    return [
+                        ...acc,
+                        ...val
+                    ];
+                }
+                acc.push(val);
+                return acc;
+            }, []);
+        }
+        if (keys.some((k)=>!isKey(k) || !k.kty)) {
+            throw new TypeError('all keys must be instances of a key instantiated by JWK.asKey');
+        }
+        this._keys = new Set(keys);
+    }
+    all({ alg, kid, thumbprint, use, kty, key_ops: ops, x5t, 'x5t#S256': x5t256, crv } = {}) {
+        if (ops !== undefined && (!Array.isArray(ops) || !ops.length || ops.some((x)=>typeof x !== 'string'))) {
+            throw new TypeError('`key_ops` must be a non-empty array of strings');
+        }
+        const search = {
+            alg,
+            use,
+            ops
+        };
+        return [
+            ...this._keys
+        ].filter((key)=>{
+            let candidate = true;
+            if (candidate && kid !== undefined && key.kid !== kid) {
+                candidate = false;
+            }
+            if (candidate && thumbprint !== undefined && key.thumbprint !== thumbprint) {
+                candidate = false;
+            }
+            if (candidate && x5t !== undefined && key.x5t !== x5t) {
+                candidate = false;
+            }
+            if (candidate && x5t256 !== undefined && key['x5t#S256'] !== x5t256) {
+                candidate = false;
+            }
+            if (candidate && kty !== undefined && key.kty !== kty) {
+                candidate = false;
+            }
+            if (candidate && crv !== undefined && key.crv !== crv) {
+                candidate = false;
+            }
+            if (alg !== undefined && !key.algorithms().has(alg)) {
+                candidate = false;
+            }
+            if (candidate && use !== undefined && key.use !== undefined && key.use !== use) {
+                candidate = false;
+            }
+            // TODO:
+            if (candidate && ops !== undefined && (key.key_ops !== undefined || key.use !== undefined)) {
+                let keyOps;
+                if (key.key_ops) {
+                    keyOps = new Set(key.key_ops);
+                } else {
+                    keyOps = USES_MAPPING[key.use];
+                }
+                if (ops.some((x)=>!keyOps.has(x))) {
+                    candidate = false;
+                }
+            }
+            return candidate;
+        }).sort((first, second)=>keyscore(second, search) - keyscore(first, search));
+    }
+    get(...args) {
+        return this.all(...args)[0];
+    }
+    add(key) {
+        if (!isKey(key) || !key.kty) {
+            throw new TypeError('key must be an instance of a key instantiated by JWK.asKey');
+        }
+        this._keys.add(key);
+    }
+    remove(key) {
+        if (!isKey(key)) {
+            throw new TypeError('key must be an instance of a key instantiated by JWK.asKey');
+        }
+        this._keys.delete(key);
+    }
+    toJWKS(priv = false) {
+        return {
+            keys: [
+                ...this._keys.values()
+            ].map((key)=>key.toJWK(priv && (key.private || key.secret && key.k)))
+        };
+    }
+    async generate(...args) {
+        this._keys.add(await generate(...args));
+    }
+    generateSync(...args) {
+        this._keys.add(generateSync(...args));
+    }
+    get size() {
+        return this._keys.size;
+    }
+    /* c8 ignore next 8 */ [inspect.custom]() {
+        return `${this.constructor.name} ${inspect(this.toJWKS(false), {
+            depth: Infinity,
+            colors: process.stdout.isTTY,
+            compact: false,
+            sorted: true
+        })}`;
+    }
+    *[Symbol.iterator]() {
+        for (const key of this._keys){
+            yield key;
+        }
+    }
+}
+function asKeyStore(jwks, { ignoreErrors = false, calculateMissingRSAPrimes = false } = {}) {
+    if (!isObject(jwks) || !Array.isArray(jwks.keys) || jwks.keys.some((k)=>!isObject(k) || !('kty' in k))) {
+        throw new TypeError('jwks must be a JSON Web Key Set formatted object');
+    }
+    const keys = jwks.keys.map((jwk)=>{
+        try {
+            return importKey(jwk, {
+                calculateMissingRSAPrimes
+            });
+        } catch (err) {
+            if (!ignoreErrors) {
+                throw err;
+            }
+            return undefined;
+        }
+    }).filter(Boolean);
+    return new KeyStore(...keys);
+}
+module.exports = {
+    KeyStore,
+    asKeyStore
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/get_key.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const errors = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+const Key = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/base.js [app-route] (ecmascript)");
+const importKey = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/import.js [app-route] (ecmascript)");
+const { KeyStore } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwks/keystore.js [app-route] (ecmascript)");
+module.exports = (input, keyStoreAllowed = false)=>{
+    if (input instanceof Key) {
+        return input;
+    }
+    if (input instanceof KeyStore) {
+        if (!keyStoreAllowed) {
+            throw new TypeError('key argument for this operation must not be a JWKS.KeyStore instance');
+        }
+        return input;
+    }
+    try {
+        return importKey(input);
+    } catch (err) {
+        if (err instanceof errors.JOSEError && !(err instanceof errors.JWKImportFailed)) {
+            throw err;
+        }
+        let msg;
+        if (keyStoreAllowed) {
+            msg = 'key must be an instance of a key instantiated by JWK.asKey, a valid JWK.asKey input, or a JWKS.KeyStore instance';
+        } else {
+            msg = 'key must be an instance of a key instantiated by JWK.asKey, or a valid JWK.asKey input';
+        }
+        throw new TypeError(msg);
+    }
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/deep_clone.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+module.exports = (obj)=>JSON.parse(JSON.stringify(obj));
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/timing_safe_equal.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { timingSafeEqual: TSE } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+const paddedBuffer = (input, length)=>{
+    if (input.length === length) {
+        return input;
+    }
+    const buffer = Buffer.alloc(length);
+    input.copy(buffer);
+    return buffer;
+};
+const timingSafeEqual = (a, b)=>{
+    const length = Math.max(a.length, b.length);
+    return TSE(paddedBuffer(a, length), paddedBuffer(b, length));
+};
+module.exports = timingSafeEqual;
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/node_alg.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+module.exports = (alg)=>`sha${alg.substr(2, 3)}`;
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwa/hmac.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { createHmac } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+const { KEYOBJECT } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/consts.js [app-route] (ecmascript)");
+const timingSafeEqual = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/timing_safe_equal.js [app-route] (ecmascript)");
+const resolveNodeAlg = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/node_alg.js [app-route] (ecmascript)");
+const { asInput } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/key_object.js [app-route] (ecmascript)");
+const sign = (jwaAlg, hmacAlg, { [KEYOBJECT]: keyObject }, payload)=>{
+    const hmac = createHmac(hmacAlg, asInput(keyObject, false));
+    hmac.update(payload);
+    return hmac.digest();
+};
+const verify = (jwaAlg, hmacAlg, key, payload, signature)=>{
+    const expected = sign(jwaAlg, hmacAlg, key, payload);
+    const actual = signature;
+    return timingSafeEqual(actual, expected);
+};
+module.exports = (JWA, JWK)=>{
+    [
+        'HS256',
+        'HS384',
+        'HS512'
+    ].forEach((jwaAlg)=>{
+        const hmacAlg = resolveNodeAlg(jwaAlg);
+        JWA.sign.set(jwaAlg, sign.bind(undefined, jwaAlg, hmacAlg));
+        JWA.verify.set(jwaAlg, verify.bind(undefined, jwaAlg, hmacAlg));
+        JWK.oct.sign[jwaAlg] = JWK.oct.verify[jwaAlg] = (key)=>key.use === 'sig' || key.use === undefined;
+    });
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/ecdsa_signatures.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const MAX_OCTET = 0x80;
+const CLASS_UNIVERSAL = 0;
+const PRIMITIVE_BIT = 0x20;
+const TAG_SEQ = 0x10;
+const TAG_INT = 0x02;
+const ENCODED_TAG_SEQ = TAG_SEQ | PRIMITIVE_BIT | CLASS_UNIVERSAL << 6;
+const ENCODED_TAG_INT = TAG_INT | CLASS_UNIVERSAL << 6;
+const getParamSize = (keySize)=>(keySize / 8 | 0) + (keySize % 8 === 0 ? 0 : 1);
+const paramBytesForAlg = {
+    ES256: getParamSize(256),
+    ES256K: getParamSize(256),
+    ES384: getParamSize(384),
+    ES512: getParamSize(521)
+};
+const countPadding = (buf, start, stop)=>{
+    let padding = 0;
+    while(start + padding < stop && buf[start + padding] === 0){
+        ++padding;
+    }
+    const needsSign = buf[start + padding] >= MAX_OCTET;
+    if (needsSign) {
+        --padding;
+    }
+    return padding;
+};
+module.exports.derToJose = (signature, alg)=>{
+    if (!Buffer.isBuffer(signature)) {
+        throw new TypeError('ECDSA signature must be a Buffer');
+    }
+    if (!paramBytesForAlg[alg]) {
+        throw new Error(`Unknown algorithm "${alg}"`);
+    }
+    const paramBytes = paramBytesForAlg[alg];
+    // the DER encoded param should at most be the param size, plus a padding
+    // zero, since due to being a signed integer
+    const maxEncodedParamLength = paramBytes + 1;
+    const inputLength = signature.length;
+    let offset = 0;
+    if (signature[offset++] !== ENCODED_TAG_SEQ) {
+        throw new Error('Could not find expected "seq"');
+    }
+    let seqLength = signature[offset++];
+    if (seqLength === (MAX_OCTET | 1)) {
+        seqLength = signature[offset++];
+    }
+    if (inputLength - offset < seqLength) {
+        throw new Error(`"seq" specified length of ${seqLength}", only ${inputLength - offset}" remaining`);
+    }
+    if (signature[offset++] !== ENCODED_TAG_INT) {
+        throw new Error('Could not find expected "int" for "r"');
+    }
+    const rLength = signature[offset++];
+    if (inputLength - offset - 2 < rLength) {
+        throw new Error(`"r" specified length of "${rLength}", only "${inputLength - offset - 2}" available`);
+    }
+    if (maxEncodedParamLength < rLength) {
+        throw new Error(`"r" specified length of "${rLength}", max of "${maxEncodedParamLength}" is acceptable`);
+    }
+    const rOffset = offset;
+    offset += rLength;
+    if (signature[offset++] !== ENCODED_TAG_INT) {
+        throw new Error('Could not find expected "int" for "s"');
+    }
+    const sLength = signature[offset++];
+    if (inputLength - offset !== sLength) {
+        throw new Error(`"s" specified length of "${sLength}", expected "${inputLength - offset}"`);
+    }
+    if (maxEncodedParamLength < sLength) {
+        throw new Error(`"s" specified length of "${sLength}", max of "${maxEncodedParamLength}" is acceptable`);
+    }
+    const sOffset = offset;
+    offset += sLength;
+    if (offset !== inputLength) {
+        throw new Error(`Expected to consume entire buffer, but "${inputLength - offset}" bytes remain`);
+    }
+    const rPadding = paramBytes - rLength;
+    const sPadding = paramBytes - sLength;
+    const dst = Buffer.allocUnsafe(rPadding + rLength + sPadding + sLength);
+    for(offset = 0; offset < rPadding; ++offset){
+        dst[offset] = 0;
+    }
+    signature.copy(dst, offset, rOffset + Math.max(-rPadding, 0), rOffset + rLength);
+    offset = paramBytes;
+    for(const o = offset; offset < o + sPadding; ++offset){
+        dst[offset] = 0;
+    }
+    signature.copy(dst, offset, sOffset + Math.max(-sPadding, 0), sOffset + sLength);
+    return dst;
+};
+module.exports.joseToDer = (signature, alg)=>{
+    if (!Buffer.isBuffer(signature)) {
+        throw new TypeError('ECDSA signature must be a Buffer');
+    }
+    if (!paramBytesForAlg[alg]) {
+        throw new TypeError(`Unknown algorithm "${alg}"`);
+    }
+    const paramBytes = paramBytesForAlg[alg];
+    const signatureBytes = signature.length;
+    if (signatureBytes !== paramBytes * 2) {
+        throw new Error(`"${alg}" signatures must be "${paramBytes * 2}" bytes, saw "${signatureBytes}"`);
+    }
+    const rPadding = countPadding(signature, 0, paramBytes);
+    const sPadding = countPadding(signature, paramBytes, signature.length);
+    const rLength = paramBytes - rPadding;
+    const sLength = paramBytes - sPadding;
+    const rsBytes = 1 + 1 + rLength + 1 + 1 + sLength;
+    const shortLength = rsBytes < MAX_OCTET;
+    const dst = Buffer.allocUnsafe((shortLength ? 2 : 3) + rsBytes);
+    let offset = 0;
+    dst[offset++] = ENCODED_TAG_SEQ;
+    if (shortLength) {
+        // Bit 8 has value "0"
+        // bits 7-1 give the length.
+        dst[offset++] = rsBytes;
+    } else {
+        // Bit 8 of first octet has value "1"
+        // bits 7-1 give the number of additional length octets.
+        dst[offset++] = MAX_OCTET | 1; // eslint-disable-line no-tabs
+        // length, base 256
+        dst[offset++] = rsBytes & 0xff;
+    }
+    dst[offset++] = ENCODED_TAG_INT;
+    dst[offset++] = rLength;
+    if (rPadding < 0) {
+        dst[offset++] = 0;
+        offset += signature.copy(dst, offset, 0, paramBytes);
+    } else {
+        offset += signature.copy(dst, offset, rPadding, paramBytes);
+    }
+    dst[offset++] = ENCODED_TAG_INT;
+    dst[offset++] = sLength;
+    if (sPadding < 0) {
+        dst[offset++] = 0;
+        signature.copy(dst, offset, paramBytes);
+    } else {
+        signature.copy(dst, offset, paramBytes + sPadding);
+    }
+    return dst;
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwa/ecdsa.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { sign: signOneShot, verify: verifyOneShot, createSign, createVerify, getCurves } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+const { derToJose, joseToDer } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/ecdsa_signatures.js [app-route] (ecmascript)");
+const { KEYOBJECT } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/consts.js [app-route] (ecmascript)");
+const resolveNodeAlg = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/node_alg.js [app-route] (ecmascript)");
+const { asInput } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/key_object.js [app-route] (ecmascript)");
+const { dsaEncodingSupported } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/runtime_support.js [app-route] (ecmascript)");
+let sign, verify;
+if (dsaEncodingSupported) {
+    sign = (jwaAlg, nodeAlg, { [KEYOBJECT]: keyObject }, payload)=>{
+        if (typeof payload === 'string') {
+            payload = Buffer.from(payload);
+        }
+        return signOneShot(nodeAlg, payload, {
+            key: asInput(keyObject, false),
+            dsaEncoding: 'ieee-p1363'
+        });
+    };
+    verify = (jwaAlg, nodeAlg, { [KEYOBJECT]: keyObject }, payload, signature)=>{
+        try {
+            return verifyOneShot(nodeAlg, payload, {
+                key: asInput(keyObject, true),
+                dsaEncoding: 'ieee-p1363'
+            }, signature);
+        } catch (err) {
+            return false;
+        }
+    };
+} else {
+    sign = (jwaAlg, nodeAlg, { [KEYOBJECT]: keyObject }, payload)=>{
+        return derToJose(createSign(nodeAlg).update(payload).sign(asInput(keyObject, false)), jwaAlg);
+    };
+    verify = (jwaAlg, nodeAlg, { [KEYOBJECT]: keyObject }, payload, signature)=>{
+        try {
+            return createVerify(nodeAlg).update(payload).verify(asInput(keyObject, true), joseToDer(signature, jwaAlg));
+        } catch (err) {
+            return false;
+        }
+    };
+}
+const crvToAlg = (crv)=>{
+    switch(crv){
+        case 'P-256':
+            return 'ES256';
+        case 'secp256k1':
+            return 'ES256K';
+        case 'P-384':
+            return 'ES384';
+        case 'P-521':
+            return 'ES512';
+    }
+};
+module.exports = (JWA, JWK)=>{
+    const algs = [];
+    if (getCurves().includes('prime256v1')) {
+        algs.push('ES256');
+    }
+    if (getCurves().includes('secp256k1')) {
+        algs.push('ES256K');
+    }
+    if (getCurves().includes('secp384r1')) {
+        algs.push('ES384');
+    }
+    if (getCurves().includes('secp521r1')) {
+        algs.push('ES512');
+    }
+    algs.forEach((jwaAlg)=>{
+        const nodeAlg = resolveNodeAlg(jwaAlg);
+        JWA.sign.set(jwaAlg, sign.bind(undefined, jwaAlg, nodeAlg));
+        JWA.verify.set(jwaAlg, verify.bind(undefined, jwaAlg, nodeAlg));
+        JWK.EC.sign[jwaAlg] = (key)=>key.private && JWK.EC.verify[jwaAlg](key);
+        JWK.EC.verify[jwaAlg] = (key)=>(key.use === 'sig' || key.use === undefined) && crvToAlg(key.crv) === jwaAlg;
+    });
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwa/eddsa.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { sign: signOneShot, verify: verifyOneShot } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+const { KEYOBJECT } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/consts.js [app-route] (ecmascript)");
+const { edDSASupported } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/runtime_support.js [app-route] (ecmascript)");
+const sign = ({ [KEYOBJECT]: keyObject }, payload)=>{
+    if (typeof payload === 'string') {
+        payload = Buffer.from(payload);
+    }
+    return signOneShot(undefined, payload, keyObject);
+};
+const verify = ({ [KEYOBJECT]: keyObject }, payload, signature)=>{
+    return verifyOneShot(undefined, payload, keyObject, signature);
+};
+module.exports = (JWA, JWK)=>{
+    if (edDSASupported) {
+        JWA.sign.set('EdDSA', sign);
+        JWA.verify.set('EdDSA', verify);
+        JWK.OKP.sign.EdDSA = (key)=>key.private && JWK.OKP.verify.EdDSA(key);
+        JWK.OKP.verify.EdDSA = (key)=>(key.use === 'sig' || key.use === undefined) && key.keyObject.asymmetricKeyType.startsWith('ed');
+    }
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwa/rsassa_pss.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { createSign, createVerify, constants } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+const { KEYOBJECT } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/consts.js [app-route] (ecmascript)");
+const resolveNodeAlg = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/node_alg.js [app-route] (ecmascript)");
+const { asInput } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/key_object.js [app-route] (ecmascript)");
+const sign = (nodeAlg, { [KEYOBJECT]: keyObject }, payload)=>{
+    const key = asInput(keyObject, false);
+    return createSign(nodeAlg).update(payload).sign({
+        key,
+        padding: constants.RSA_PKCS1_PSS_PADDING,
+        saltLength: constants.RSA_PSS_SALTLEN_DIGEST
+    });
+};
+const verify = (nodeAlg, { [KEYOBJECT]: keyObject }, payload, signature)=>{
+    const key = asInput(keyObject, true);
+    return createVerify(nodeAlg).update(payload).verify({
+        key,
+        padding: constants.RSA_PKCS1_PSS_PADDING,
+        saltLength: constants.RSA_PSS_SALTLEN_DIGEST
+    }, signature);
+};
+const LENGTHS = {
+    PS256: 528,
+    PS384: 784,
+    PS512: 1040
+};
+module.exports = (JWA, JWK)=>{
+    [
+        'PS256',
+        'PS384',
+        'PS512'
+    ].forEach((jwaAlg)=>{
+        const nodeAlg = resolveNodeAlg(jwaAlg);
+        JWA.sign.set(jwaAlg, sign.bind(undefined, nodeAlg));
+        JWA.verify.set(jwaAlg, verify.bind(undefined, nodeAlg));
+        JWK.RSA.sign[jwaAlg] = (key)=>key.private && JWK.RSA.verify[jwaAlg](key);
+        JWK.RSA.verify[jwaAlg] = (key)=>(key.use === 'sig' || key.use === undefined) && key.length >= LENGTHS[jwaAlg];
+    });
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwa/rsassa.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { createSign, createVerify } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+const { KEYOBJECT } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/consts.js [app-route] (ecmascript)");
+const resolveNodeAlg = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/node_alg.js [app-route] (ecmascript)");
+const { asInput } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/key_object.js [app-route] (ecmascript)");
+const sign = (nodeAlg, { [KEYOBJECT]: keyObject }, payload)=>{
+    return createSign(nodeAlg).update(payload).sign(asInput(keyObject, false));
+};
+const verify = (nodeAlg, { [KEYOBJECT]: keyObject }, payload, signature)=>{
+    return createVerify(nodeAlg).update(payload).verify(asInput(keyObject, true), signature);
+};
+const LENGTHS = {
+    RS256: 0,
+    RS384: 624,
+    RS512: 752
+};
+module.exports = (JWA, JWK)=>{
+    [
+        'RS256',
+        'RS384',
+        'RS512'
+    ].forEach((jwaAlg)=>{
+        const nodeAlg = resolveNodeAlg(jwaAlg);
+        JWA.sign.set(jwaAlg, sign.bind(undefined, nodeAlg));
+        JWA.verify.set(jwaAlg, verify.bind(undefined, nodeAlg));
+        JWK.RSA.sign[jwaAlg] = (key)=>key.private && JWK.RSA.verify[jwaAlg](key);
+        JWK.RSA.verify[jwaAlg] = (key)=>(key.use === 'sig' || key.use === undefined) && key.length >= LENGTHS[jwaAlg];
+    });
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwa/none.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const sign = ()=>Buffer.from('');
+const verify = (key, payload, signature)=>!signature.length;
+module.exports = (JWA, JWK)=>{
+    JWA.sign.set('none', sign);
+    JWA.verify.set('none', verify);
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/uint64be.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const MAX_INT32 = Math.pow(2, 32);
+module.exports = (value, buf = Buffer.allocUnsafe(8))=>{
+    const high = Math.floor(value / MAX_INT32);
+    const low = value % MAX_INT32;
+    buf.writeUInt32BE(high, 0);
+    buf.writeUInt32BE(low, 4);
+    return buf;
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwa/aes_cbc_hmac_sha2.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { createCipheriv, createDecipheriv, getCiphers } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+const uint64be = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/uint64be.js [app-route] (ecmascript)");
+const timingSafeEqual = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/timing_safe_equal.js [app-route] (ecmascript)");
+const { KEYOBJECT } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/consts.js [app-route] (ecmascript)");
+const { JWEInvalid, JWEDecryptionFailed } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+const checkInput = function(size, iv, tag) {
+    if (iv.length !== 16) {
+        throw new JWEInvalid('invalid iv');
+    }
+    if (arguments.length === 3) {
+        if (tag.length !== size / 8) {
+            throw new JWEInvalid('invalid tag');
+        }
+    }
+};
+const encrypt = (size, sign, { [KEYOBJECT]: keyObject }, cleartext, { iv, aad = Buffer.alloc(0) })=>{
+    const key = keyObject.export();
+    checkInput(size, iv);
+    const keySize = size / 8;
+    const encKey = key.slice(keySize);
+    const cipher = createCipheriv(`aes-${size}-cbc`, encKey, iv);
+    const ciphertext = Buffer.concat([
+        cipher.update(cleartext),
+        cipher.final()
+    ]);
+    const macData = Buffer.concat([
+        aad,
+        iv,
+        ciphertext,
+        uint64be(aad.length * 8)
+    ]);
+    const macKey = key.slice(0, keySize);
+    const tag = sign({
+        [KEYOBJECT]: macKey
+    }, macData).slice(0, keySize);
+    return {
+        ciphertext,
+        tag
+    };
+};
+const decrypt = (size, sign, { [KEYOBJECT]: keyObject }, ciphertext, { iv, tag = Buffer.alloc(0), aad = Buffer.alloc(0) })=>{
+    checkInput(size, iv, tag);
+    const keySize = size / 8;
+    const key = keyObject.export();
+    const encKey = key.slice(keySize);
+    const macKey = key.slice(0, keySize);
+    const macData = Buffer.concat([
+        aad,
+        iv,
+        ciphertext,
+        uint64be(aad.length * 8)
+    ]);
+    const expectedTag = sign({
+        [KEYOBJECT]: macKey
+    }, macData, tag).slice(0, keySize);
+    const macCheckPassed = timingSafeEqual(tag, expectedTag);
+    if (!macCheckPassed) {
+        throw new JWEDecryptionFailed();
+    }
+    let cleartext;
+    try {
+        const cipher = createDecipheriv(`aes-${size}-cbc`, encKey, iv);
+        cleartext = Buffer.concat([
+            cipher.update(ciphertext),
+            cipher.final()
+        ]);
+    } catch (err) {}
+    if (!cleartext) {
+        throw new JWEDecryptionFailed();
+    }
+    return cleartext;
+};
+module.exports = (JWA, JWK)=>{
+    [
+        'A128CBC-HS256',
+        'A192CBC-HS384',
+        'A256CBC-HS512'
+    ].forEach((jwaAlg)=>{
+        const size = parseInt(jwaAlg.substr(1, 3), 10);
+        const sign = JWA.sign.get(`HS${size * 2}`);
+        if (getCiphers().includes(`aes-${size}-cbc`)) {
+            JWA.encrypt.set(jwaAlg, encrypt.bind(undefined, size, sign));
+            JWA.decrypt.set(jwaAlg, decrypt.bind(undefined, size, sign));
+            JWK.oct.encrypt[jwaAlg] = JWK.oct.decrypt[jwaAlg] = (key)=>(key.use === 'enc' || key.use === undefined) && key.length / 2 === size;
+        }
+    });
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwa/aes_gcm.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { createCipheriv, createDecipheriv, getCiphers } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+const { KEYOBJECT } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/consts.js [app-route] (ecmascript)");
+const { JWEInvalid, JWEDecryptionFailed } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+const { asInput } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/key_object.js [app-route] (ecmascript)");
+const checkInput = function(size, iv, tag) {
+    if (iv.length !== 12) {
+        throw new JWEInvalid('invalid iv');
+    }
+    if (arguments.length === 3) {
+        if (tag.length !== 16) {
+            throw new JWEInvalid('invalid tag');
+        }
+    }
+};
+const encrypt = (size, { [KEYOBJECT]: keyObject }, cleartext, { iv, aad = Buffer.alloc(0) })=>{
+    const key = asInput(keyObject, false);
+    checkInput(size, iv);
+    const cipher = createCipheriv(`aes-${size}-gcm`, key, iv, {
+        authTagLength: 16
+    });
+    cipher.setAAD(aad);
+    const ciphertext = Buffer.concat([
+        cipher.update(cleartext),
+        cipher.final()
+    ]);
+    const tag = cipher.getAuthTag();
+    return {
+        ciphertext,
+        tag
+    };
+};
+const decrypt = (size, { [KEYOBJECT]: keyObject }, ciphertext, { iv, tag = Buffer.alloc(0), aad = Buffer.alloc(0) })=>{
+    const key = asInput(keyObject, false);
+    checkInput(size, iv, tag);
+    try {
+        const cipher = createDecipheriv(`aes-${size}-gcm`, key, iv, {
+            authTagLength: 16
+        });
+        cipher.setAuthTag(tag);
+        cipher.setAAD(aad);
+        return Buffer.concat([
+            cipher.update(ciphertext),
+            cipher.final()
+        ]);
+    } catch (err) {
+        throw new JWEDecryptionFailed();
+    }
+};
+module.exports = (JWA, JWK)=>{
+    [
+        'A128GCM',
+        'A192GCM',
+        'A256GCM'
+    ].forEach((jwaAlg)=>{
+        const size = parseInt(jwaAlg.substr(1, 3), 10);
+        if (getCiphers().includes(`aes-${size}-gcm`)) {
+            JWA.encrypt.set(jwaAlg, encrypt.bind(undefined, size));
+            JWA.decrypt.set(jwaAlg, decrypt.bind(undefined, size));
+            JWK.oct.encrypt[jwaAlg] = JWK.oct.decrypt[jwaAlg] = (key)=>(key.use === 'enc' || key.use === undefined) && key.length === size;
+        }
+    });
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwa/rsaes.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { publicEncrypt, privateDecrypt, constants } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+const { oaepHashSupported } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/runtime_support.js [app-route] (ecmascript)");
+const { KEYOBJECT } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/consts.js [app-route] (ecmascript)");
+const { asInput } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/key_object.js [app-route] (ecmascript)");
+const resolvePadding = (alg)=>{
+    switch(alg){
+        case 'RSA-OAEP':
+        case 'RSA-OAEP-256':
+        case 'RSA-OAEP-384':
+        case 'RSA-OAEP-512':
+            return constants.RSA_PKCS1_OAEP_PADDING;
+        case 'RSA1_5':
+            return constants.RSA_PKCS1_PADDING;
+    }
+};
+const resolveOaepHash = (alg)=>{
+    switch(alg){
+        case 'RSA-OAEP':
+            return 'sha1';
+        case 'RSA-OAEP-256':
+            return 'sha256';
+        case 'RSA-OAEP-384':
+            return 'sha384';
+        case 'RSA-OAEP-512':
+            return 'sha512';
+        default:
+            return undefined;
+    }
+};
+const wrapKey = (padding, oaepHash, { [KEYOBJECT]: keyObject }, payload)=>{
+    const key = asInput(keyObject, true);
+    return {
+        wrapped: publicEncrypt({
+            key,
+            oaepHash,
+            padding
+        }, payload)
+    };
+};
+const unwrapKey = (padding, oaepHash, { [KEYOBJECT]: keyObject }, payload)=>{
+    const key = asInput(keyObject, false);
+    return privateDecrypt({
+        key,
+        oaepHash,
+        padding
+    }, payload);
+};
+const LENGTHS = {
+    RSA1_5: 0,
+    'RSA-OAEP': 592,
+    'RSA-OAEP-256': 784,
+    'RSA-OAEP-384': 1040,
+    'RSA-OAEP-512': 1296
+};
+module.exports = (JWA, JWK)=>{
+    const algs = [
+        'RSA-OAEP',
+        'RSA1_5'
+    ];
+    if (oaepHashSupported) {
+        algs.splice(1, 0, 'RSA-OAEP-256', 'RSA-OAEP-384', 'RSA-OAEP-512');
+    }
+    algs.forEach((jwaAlg)=>{
+        const padding = resolvePadding(jwaAlg);
+        const oaepHash = resolveOaepHash(jwaAlg);
+        JWA.keyManagementEncrypt.set(jwaAlg, wrapKey.bind(undefined, padding, oaepHash));
+        JWA.keyManagementDecrypt.set(jwaAlg, unwrapKey.bind(undefined, padding, oaepHash));
+        JWK.RSA.wrapKey[jwaAlg] = (key)=>(key.use === 'enc' || key.use === undefined) && key.length >= LENGTHS[jwaAlg];
+        JWK.RSA.unwrapKey[jwaAlg] = (key)=>key.private && (key.use === 'enc' || key.use === undefined) && key.length >= LENGTHS[jwaAlg];
+    });
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwa/aes_kw.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { createCipheriv, createDecipheriv, getCiphers } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+const { KEYOBJECT } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/consts.js [app-route] (ecmascript)");
+const { asInput } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/key_object.js [app-route] (ecmascript)");
+const checkInput = (data)=>{
+    if (data !== undefined && data.length % 8 !== 0) {
+        throw new Error('invalid data length');
+    }
+};
+const wrapKey = (alg, { [KEYOBJECT]: keyObject }, payload)=>{
+    const key = asInput(keyObject, false);
+    const cipher = createCipheriv(alg, key, Buffer.alloc(8, 'a6', 'hex'));
+    return {
+        wrapped: Buffer.concat([
+            cipher.update(payload),
+            cipher.final()
+        ])
+    };
+};
+const unwrapKey = (alg, { [KEYOBJECT]: keyObject }, payload)=>{
+    const key = asInput(keyObject, false);
+    checkInput(payload);
+    const cipher = createDecipheriv(alg, key, Buffer.alloc(8, 'a6', 'hex'));
+    return Buffer.concat([
+        cipher.update(payload),
+        cipher.final()
+    ]);
+};
+module.exports = (JWA, JWK)=>{
+    [
+        'A128KW',
+        'A192KW',
+        'A256KW'
+    ].forEach((jwaAlg)=>{
+        const size = parseInt(jwaAlg.substr(1, 3), 10);
+        const alg = `aes${size}-wrap`;
+        if (getCiphers().includes(alg)) {
+            JWA.keyManagementEncrypt.set(jwaAlg, wrapKey.bind(undefined, alg));
+            JWA.keyManagementDecrypt.set(jwaAlg, unwrapKey.bind(undefined, alg));
+            JWK.oct.wrapKey[jwaAlg] = JWK.oct.unwrapKey[jwaAlg] = (key)=>(key.use === 'enc' || key.use === undefined) && key.length === size;
+        }
+    });
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwa/aes_gcm_kw.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const generateIV = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/generate_iv.js [app-route] (ecmascript)");
+const base64url = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/base64url.js [app-route] (ecmascript)");
+module.exports = (JWA, JWK)=>{
+    [
+        'A128GCMKW',
+        'A192GCMKW',
+        'A256GCMKW'
+    ].forEach((jwaAlg)=>{
+        const encAlg = jwaAlg.substr(0, 7);
+        const size = parseInt(jwaAlg.substr(1, 3), 10);
+        const encrypt = JWA.encrypt.get(encAlg);
+        const decrypt = JWA.decrypt.get(encAlg);
+        if (encrypt && decrypt) {
+            JWA.keyManagementEncrypt.set(jwaAlg, (key, payload)=>{
+                const iv = generateIV(jwaAlg);
+                const { ciphertext, tag } = encrypt(key, payload, {
+                    iv
+                });
+                return {
+                    wrapped: ciphertext,
+                    header: {
+                        tag: base64url.encodeBuffer(tag),
+                        iv: base64url.encodeBuffer(iv)
+                    }
+                };
+            });
+            JWA.keyManagementDecrypt.set(jwaAlg, decrypt);
+            JWK.oct.wrapKey[jwaAlg] = JWK.oct.unwrapKey[jwaAlg] = (key)=>(key.use === 'enc' || key.use === undefined) && key.length === size;
+        }
+    });
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwa/pbes2.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { pbkdf2Sync: pbkdf2, randomBytes } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+const { KEYOBJECT } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/consts.js [app-route] (ecmascript)");
+const base64url = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/base64url.js [app-route] (ecmascript)");
+const SALT_LENGTH = 16;
+const NULL_BUFFER = Buffer.alloc(1, 0);
+const concatSalt = (alg, p2s)=>{
+    return Buffer.concat([
+        Buffer.from(alg, 'utf8'),
+        NULL_BUFFER,
+        p2s
+    ]);
+};
+const wrapKey = (keylen, sha, concat, wrap, { [KEYOBJECT]: keyObject }, payload)=>{
+    // Note that if password-based encryption is used for multiple
+    // recipients, it is expected that each recipient use different values
+    // for the PBES2 parameters "p2s" and "p2c".
+    // here we generate p2c between 2048 and 4096 and random p2s
+    const p2c = Math.floor(Math.random() * 2049 + 2048);
+    const p2s = randomBytes(SALT_LENGTH);
+    const salt = concat(p2s);
+    const derivedKey = pbkdf2(keyObject.export(), salt, p2c, keylen, sha);
+    const result = wrap({
+        [KEYOBJECT]: derivedKey
+    }, payload);
+    result.header = result.header || {};
+    Object.assign(result.header, {
+        p2c,
+        p2s: base64url.encodeBuffer(p2s)
+    });
+    return result;
+};
+const unwrapKey = (keylen, sha, concat, unwrap, { [KEYOBJECT]: keyObject }, payload, header)=>{
+    const { p2s, p2c } = header;
+    const salt = concat(p2s);
+    const derivedKey = pbkdf2(keyObject.export(), salt, p2c, keylen, sha);
+    return unwrap({
+        [KEYOBJECT]: derivedKey
+    }, payload, header);
+};
+module.exports = (JWA, JWK)=>{
+    [
+        'PBES2-HS256+A128KW',
+        'PBES2-HS384+A192KW',
+        'PBES2-HS512+A256KW'
+    ].forEach((jwaAlg)=>{
+        const kw = jwaAlg.substr(-6);
+        const kwWrap = JWA.keyManagementEncrypt.get(kw);
+        const kwUnwrap = JWA.keyManagementDecrypt.get(kw);
+        const keylen = parseInt(jwaAlg.substr(13, 3), 10) / 8;
+        const sha = `sha${jwaAlg.substr(8, 3)}`;
+        if (kwWrap && kwUnwrap) {
+            JWA.keyManagementEncrypt.set(jwaAlg, wrapKey.bind(undefined, keylen, sha, concatSalt.bind(undefined, jwaAlg), kwWrap));
+            JWA.keyManagementDecrypt.set(jwaAlg, unwrapKey.bind(undefined, keylen, sha, concatSalt.bind(undefined, jwaAlg), kwUnwrap));
+            JWK.oct.deriveKey[jwaAlg] = (key)=>key.use === 'enc' || key.use === undefined;
+        }
+    });
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwa/ecdh/compute_secret.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { improvedDH } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/runtime_support.js [app-route] (ecmascript)");
+if (improvedDH) {
+    const { diffieHellman } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+    const { KeyObject } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/key_object.js [app-route] (ecmascript)");
+    const importKey = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/import.js [app-route] (ecmascript)");
+    module.exports = ({ keyObject: privateKey }, publicKey)=>{
+        if (!(publicKey instanceof KeyObject)) {
+            ({ keyObject: publicKey } = importKey(publicKey));
+        }
+        return diffieHellman({
+            privateKey,
+            publicKey
+        });
+    };
+} else {
+    const { createECDH, constants: { POINT_CONVERSION_UNCOMPRESSED } } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+    const base64url = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/base64url.js [app-route] (ecmascript)");
+    const crvToCurve = (crv)=>{
+        switch(crv){
+            case 'P-256':
+                return 'prime256v1';
+            case 'P-384':
+                return 'secp384r1';
+            case 'P-521':
+                return 'secp521r1';
+        }
+    };
+    const UNCOMPRESSED = Buffer.alloc(1, POINT_CONVERSION_UNCOMPRESSED);
+    const pubToBuffer = (x, y)=>Buffer.concat([
+            UNCOMPRESSED,
+            base64url.decodeToBuffer(x),
+            base64url.decodeToBuffer(y)
+        ]);
+    module.exports = ({ crv, d }, { x, y })=>{
+        const curve = crvToCurve(crv);
+        const exchange = createECDH(curve);
+        exchange.setPrivateKey(base64url.decodeToBuffer(d));
+        return exchange.computeSecret(pubToBuffer(x, y));
+    };
+}
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwa/ecdh/derive.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { createHash } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+const ecdhComputeSecret = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwa/ecdh/compute_secret.js [app-route] (ecmascript)");
+const concat = (key, length, value)=>{
+    const iterations = Math.ceil(length / 32);
+    let res;
+    for(let iter = 1; iter <= iterations; iter++){
+        const buf = Buffer.allocUnsafe(4 + key.length + value.length);
+        buf.writeUInt32BE(iter, 0);
+        key.copy(buf, 4);
+        value.copy(buf, 4 + key.length);
+        if (!res) {
+            res = createHash('sha256').update(buf).digest();
+        } else {
+            res = Buffer.concat([
+                res,
+                createHash('sha256').update(buf).digest()
+            ]);
+        }
+    }
+    return res.slice(0, length);
+};
+const uint32be = (value, buf = Buffer.allocUnsafe(4))=>{
+    buf.writeUInt32BE(value);
+    return buf;
+};
+const lengthAndInput = (input)=>Buffer.concat([
+        uint32be(input.length),
+        input
+    ]);
+module.exports = (alg, keyLen, privKey, pubKey, { apu = Buffer.alloc(0), apv = Buffer.alloc(0) } = {}, computeSecret = ecdhComputeSecret)=>{
+    const value = Buffer.concat([
+        lengthAndInput(Buffer.from(alg)),
+        lengthAndInput(apu),
+        lengthAndInput(apv),
+        uint32be(keyLen)
+    ]);
+    const sharedSecret = computeSecret(privKey, pubKey);
+    return concat(sharedSecret, keyLen / 8, value);
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwa/ecdh/dir.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { improvedDH } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/runtime_support.js [app-route] (ecmascript)");
+const { KEYLENGTHS } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/registry/index.js [app-route] (ecmascript)");
+const { generateSync } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/generate.js [app-route] (ecmascript)");
+const derive = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwa/ecdh/derive.js [app-route] (ecmascript)");
+const wrapKey = (key, payload, { enc })=>{
+    const epk = generateSync(key.kty, key.crv);
+    const derivedKey = derive(enc, KEYLENGTHS.get(enc), epk, key);
+    return {
+        wrapped: derivedKey,
+        header: {
+            epk: {
+                kty: key.kty,
+                crv: key.crv,
+                x: epk.x,
+                y: epk.y
+            }
+        }
+    };
+};
+const unwrapKey = (key, payload, header)=>{
+    const { enc, epk } = header;
+    return derive(enc, KEYLENGTHS.get(enc), key, epk, header);
+};
+module.exports = (JWA, JWK)=>{
+    JWA.keyManagementEncrypt.set('ECDH-ES', wrapKey);
+    JWA.keyManagementDecrypt.set('ECDH-ES', unwrapKey);
+    JWK.EC.deriveKey['ECDH-ES'] = (key)=>(key.use === 'enc' || key.use === undefined) && key.crv !== 'secp256k1';
+    if (improvedDH) {
+        JWK.OKP.deriveKey['ECDH-ES'] = (key)=>(key.use === 'enc' || key.use === undefined) && key.keyObject.asymmetricKeyType.startsWith('x');
+    }
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwa/ecdh/kw.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { improvedDH } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/runtime_support.js [app-route] (ecmascript)");
+const { KEYOBJECT } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/consts.js [app-route] (ecmascript)");
+const { generateSync } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/generate.js [app-route] (ecmascript)");
+const { ECDH_DERIVE_LENGTHS } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/registry/index.js [app-route] (ecmascript)");
+const derive = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwa/ecdh/derive.js [app-route] (ecmascript)");
+const wrapKey = (wrap, derive, key, payload)=>{
+    const epk = generateSync(key.kty, key.crv);
+    const derivedKey = derive(epk, key, payload);
+    const result = wrap({
+        [KEYOBJECT]: derivedKey
+    }, payload);
+    result.header = result.header || {};
+    Object.assign(result.header, {
+        epk: {
+            kty: key.kty,
+            crv: key.crv,
+            x: epk.x,
+            y: epk.y
+        }
+    });
+    return result;
+};
+const unwrapKey = (unwrap, derive, key, payload, header)=>{
+    const { epk } = header;
+    const derivedKey = derive(key, epk, header);
+    return unwrap({
+        [KEYOBJECT]: derivedKey
+    }, payload, header);
+};
+module.exports = (JWA, JWK)=>{
+    [
+        'ECDH-ES+A128KW',
+        'ECDH-ES+A192KW',
+        'ECDH-ES+A256KW'
+    ].forEach((jwaAlg)=>{
+        const kw = jwaAlg.substr(-6);
+        const kwWrap = JWA.keyManagementEncrypt.get(kw);
+        const kwUnwrap = JWA.keyManagementDecrypt.get(kw);
+        const keylen = parseInt(jwaAlg.substr(9, 3), 10);
+        ECDH_DERIVE_LENGTHS.set(jwaAlg, keylen);
+        if (kwWrap && kwUnwrap) {
+            JWA.keyManagementEncrypt.set(jwaAlg, wrapKey.bind(undefined, kwWrap, derive.bind(undefined, jwaAlg, keylen)));
+            JWA.keyManagementDecrypt.set(jwaAlg, unwrapKey.bind(undefined, kwUnwrap, derive.bind(undefined, jwaAlg, keylen)));
+            JWK.EC.deriveKey[jwaAlg] = (key)=>(key.use === 'enc' || key.use === undefined) && key.crv !== 'secp256k1';
+            if (improvedDH) {
+                JWK.OKP.deriveKey[jwaAlg] = (key)=>(key.use === 'enc' || key.use === undefined) && key.keyObject.asymmetricKeyType.startsWith('x');
+            }
+        }
+    });
+};
+module.exports.wrapKey = wrapKey;
+module.exports.unwrapKey = unwrapKey;
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwa/index.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { JWKKeySupport, JOSENotSupported } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+const { KEY_MANAGEMENT_ENCRYPT, KEY_MANAGEMENT_DECRYPT } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/consts.js [app-route] (ecmascript)");
+const { JWA, JWK } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/registry/index.js [app-route] (ecmascript)");
+// sign, verify
+__turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwa/hmac.js [app-route] (ecmascript)")(JWA, JWK);
+__turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwa/ecdsa.js [app-route] (ecmascript)")(JWA, JWK);
+__turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwa/eddsa.js [app-route] (ecmascript)")(JWA, JWK);
+__turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwa/rsassa_pss.js [app-route] (ecmascript)")(JWA, JWK);
+__turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwa/rsassa.js [app-route] (ecmascript)")(JWA, JWK);
+__turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwa/none.js [app-route] (ecmascript)")(JWA);
+// encrypt, decrypt
+__turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwa/aes_cbc_hmac_sha2.js [app-route] (ecmascript)")(JWA, JWK);
+__turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwa/aes_gcm.js [app-route] (ecmascript)")(JWA, JWK);
+// wrapKey, unwrapKey
+__turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwa/rsaes.js [app-route] (ecmascript)")(JWA, JWK);
+__turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwa/aes_kw.js [app-route] (ecmascript)")(JWA, JWK);
+__turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwa/aes_gcm_kw.js [app-route] (ecmascript)")(JWA, JWK);
+// deriveKey
+__turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwa/pbes2.js [app-route] (ecmascript)")(JWA, JWK);
+__turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwa/ecdh/dir.js [app-route] (ecmascript)")(JWA, JWK);
+__turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwa/ecdh/kw.js [app-route] (ecmascript)")(JWA, JWK);
+const check = (key, op, alg)=>{
+    const cache = `_${op}_${alg}`;
+    let label;
+    let keyOp;
+    if (op === 'keyManagementEncrypt') {
+        label = 'key management (encryption)';
+        keyOp = KEY_MANAGEMENT_ENCRYPT;
+    } else if (op === 'keyManagementDecrypt') {
+        label = 'key management (decryption)';
+        keyOp = KEY_MANAGEMENT_DECRYPT;
+    }
+    if (cache in key) {
+        if (key[cache]) {
+            return;
+        }
+        throw new JWKKeySupport(`the key does not support ${alg} ${label || op} algorithm`);
+    }
+    let value = true;
+    if (!JWA[op].has(alg)) {
+        throw new JOSENotSupported(`unsupported ${label || op} alg: ${alg}`);
+    } else if (!key.algorithms(keyOp).has(alg)) {
+        value = false;
+    }
+    Object.defineProperty(key, cache, {
+        value,
+        enumerable: false
+    });
+    if (!value) {
+        return check(key, op, alg);
+    }
+};
+module.exports = {
+    check,
+    sign: (alg, key, payload)=>{
+        check(key, 'sign', alg);
+        return JWA.sign.get(alg)(key, payload);
+    },
+    verify: (alg, key, payload, signature)=>{
+        check(key, 'verify', alg);
+        return JWA.verify.get(alg)(key, payload, signature);
+    },
+    keyManagementEncrypt: (alg, key, payload, opts)=>{
+        check(key, 'keyManagementEncrypt', alg);
+        return JWA.keyManagementEncrypt.get(alg)(key, payload, opts);
+    },
+    keyManagementDecrypt: (alg, key, payload, opts)=>{
+        check(key, 'keyManagementDecrypt', alg);
+        return JWA.keyManagementDecrypt.get(alg)(key, payload, opts);
+    },
+    encrypt: (alg, key, cleartext, opts)=>{
+        check(key, 'encrypt', alg);
+        return JWA.encrypt.get(alg)(key, cleartext, opts);
+    },
+    decrypt: (alg, key, ciphertext, opts)=>{
+        check(key, 'decrypt', alg);
+        return JWA.decrypt.get(alg)(key, ciphertext, opts);
+    }
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/validate_crit.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { JOSECritNotUnderstood, JWSInvalid } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+const DEFINED = new Set([
+    'alg',
+    'jku',
+    'jwk',
+    'kid',
+    'x5u',
+    'x5c',
+    'x5t',
+    'x5t#S256',
+    'typ',
+    'cty',
+    'crit',
+    'enc',
+    'zip',
+    'epk',
+    'apu',
+    'apv',
+    'iv',
+    'tag',
+    'p2s',
+    'p2c'
+]);
+module.exports = function validateCrit(Err, protectedHeader, unprotectedHeader, understood) {
+    if (protectedHeader && 'crit' in protectedHeader) {
+        if (!Array.isArray(protectedHeader.crit) || protectedHeader.crit.length === 0 || protectedHeader.crit.some((s)=>typeof s !== 'string' || !s)) {
+            throw new Err('"crit" Header Parameter MUST be an array of non-empty strings when present');
+        }
+        const whitelisted = new Set(understood);
+        const combined = {
+            ...protectedHeader,
+            ...unprotectedHeader
+        };
+        protectedHeader.crit.forEach((parameter)=>{
+            if (DEFINED.has(parameter)) {
+                throw new Err(`The critical list contains a non-extension Header Parameter ${parameter}`);
+            }
+            if (!whitelisted.has(parameter)) {
+                throw new JOSECritNotUnderstood(`critical "${parameter}" is not understood`);
+            }
+            if (parameter === 'b64') {
+                if (!('b64' in protectedHeader)) {
+                    throw new JWSInvalid('"b64" critical parameter must be integrity protected');
+                }
+                if (typeof protectedHeader.b64 !== 'boolean') {
+                    throw new JWSInvalid('"b64" critical parameter must be a boolean');
+                }
+            } else if (!(parameter in combined)) {
+                throw new Err(`critical parameter "${parameter}" is missing`);
+            }
+        });
+    }
+    if (unprotectedHeader && 'crit' in unprotectedHeader) {
+        throw new Err('"crit" Header Parameter MUST be integrity protected when present');
+    }
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwe/serializers.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const isObject = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/is_object.js [app-route] (ecmascript)");
+let validateCrit = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/validate_crit.js [app-route] (ecmascript)");
+const { JWEInvalid } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+validateCrit = validateCrit.bind(undefined, JWEInvalid);
+const compactSerializer = (final, [recipient])=>{
+    return `${final.protected}.${recipient.encrypted_key}.${final.iv}.${final.ciphertext}.${final.tag}`;
+};
+compactSerializer.validate = (protectedHeader, unprotectedHeader, aad, { 0: { header }, length })=>{
+    if (length !== 1 || aad || unprotectedHeader || header) {
+        throw new JWEInvalid('JWE Compact Serialization doesn\'t support multiple recipients, JWE unprotected headers or AAD');
+    }
+    validateCrit(protectedHeader, unprotectedHeader, protectedHeader ? protectedHeader.crit : undefined);
+};
+const flattenedSerializer = (final, [recipient])=>{
+    const { header, encrypted_key: encryptedKey } = recipient;
+    return {
+        ...final.protected ? {
+            protected: final.protected
+        } : undefined,
+        ...final.unprotected ? {
+            unprotected: final.unprotected
+        } : undefined,
+        ...header ? {
+            header
+        } : undefined,
+        ...encryptedKey ? {
+            encrypted_key: encryptedKey
+        } : undefined,
+        ...final.aad ? {
+            aad: final.aad
+        } : undefined,
+        iv: final.iv,
+        ciphertext: final.ciphertext,
+        tag: final.tag
+    };
+};
+flattenedSerializer.validate = (protectedHeader, unprotectedHeader, aad, { 0: { header }, length })=>{
+    if (length !== 1) {
+        throw new JWEInvalid('Flattened JWE JSON Serialization doesn\'t support multiple recipients');
+    }
+    validateCrit(protectedHeader, {
+        ...unprotectedHeader,
+        ...header
+    }, protectedHeader ? protectedHeader.crit : undefined);
+};
+const generalSerializer = (final, recipients)=>{
+    const result = {
+        ...final.protected ? {
+            protected: final.protected
+        } : undefined,
+        ...final.unprotected ? {
+            unprotected: final.unprotected
+        } : undefined,
+        recipients: recipients.map(({ header, encrypted_key: encryptedKey, generatedHeader })=>{
+            if (!header && !encryptedKey && !generatedHeader) {
+                return false;
+            }
+            return {
+                ...header || generatedHeader ? {
+                    header: {
+                        ...header,
+                        ...generatedHeader
+                    }
+                } : undefined,
+                ...encryptedKey ? {
+                    encrypted_key: encryptedKey
+                } : undefined
+            };
+        }).filter(Boolean),
+        ...final.aad ? {
+            aad: final.aad
+        } : undefined,
+        iv: final.iv,
+        ciphertext: final.ciphertext,
+        tag: final.tag
+    };
+    if (!result.recipients.length) {
+        delete result.recipients;
+    }
+    return result;
+};
+generalSerializer.validate = (protectedHeader, unprotectedHeader, aad, recipients)=>{
+    recipients.forEach(({ header })=>{
+        validateCrit(protectedHeader, {
+            ...header,
+            ...unprotectedHeader
+        }, protectedHeader ? protectedHeader.crit : undefined);
+    });
+};
+const isJSON = (input)=>{
+    return isObject(input) && typeof input.ciphertext === 'string' && typeof input.iv === 'string' && typeof input.tag === 'string' && (input.unprotected === undefined || isObject(input.unprotected)) && (input.protected === undefined || typeof input.protected === 'string') && (input.aad === undefined || typeof input.aad === 'string');
+};
+const isSingleRecipient = (input)=>{
+    return (input.encrypted_key === undefined || typeof input.encrypted_key === 'string') && (input.header === undefined || isObject(input.header));
+};
+const isValidRecipient = (recipient)=>{
+    return isObject(recipient) && typeof recipient.encrypted_key === 'string' && (recipient.header === undefined || isObject(recipient.header));
+};
+const isMultiRecipient = (input)=>{
+    if (Array.isArray(input.recipients) && input.recipients.every(isValidRecipient)) {
+        return true;
+    }
+    return false;
+};
+const detect = (input)=>{
+    if (typeof input === 'string' && input.split('.').length === 5) {
+        return 'compact';
+    }
+    if (isJSON(input)) {
+        if (isMultiRecipient(input)) {
+            return 'general';
+        }
+        if (isSingleRecipient(input)) {
+            return 'flattened';
+        }
+    }
+    throw new JWEInvalid('JWE malformed or invalid serialization');
+};
+module.exports = {
+    compact: compactSerializer,
+    flattened: flattenedSerializer,
+    general: generalSerializer,
+    detect
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwe/generate_cek.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { randomBytes } = __turbopack_context__.r("[externals]/crypto [external] (crypto, cjs)");
+const { createSecretKey } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/key_object.js [app-route] (ecmascript)");
+const { KEYLENGTHS } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/registry/index.js [app-route] (ecmascript)");
+const Key = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/key/oct.js [app-route] (ecmascript)");
+module.exports = (alg)=>{
+    const keyLength = KEYLENGTHS.get(alg);
+    if (!keyLength) {
+        return new Key({
+            type: 'secret'
+        });
+    }
+    return new Key(createSecretKey(randomBytes(keyLength / 8)), {
+        use: 'enc',
+        alg
+    });
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/is_disjoint.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+module.exports = (a = {}, b = {})=>{
+    const keysA = Object.keys(a);
+    const keysB = new Set(Object.keys(b));
+    return !keysA.some((ka)=>keysB.has(ka));
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwe/validate_headers.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const isDisjoint = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/is_disjoint.js [app-route] (ecmascript)");
+const base64url = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/base64url.js [app-route] (ecmascript)");
+let validateCrit = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/validate_crit.js [app-route] (ecmascript)");
+const { JWEInvalid, JOSENotSupported } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+validateCrit = validateCrit.bind(undefined, JWEInvalid);
+module.exports = (prot, unprotected, recipients, checkAlgorithms, crit)=>{
+    if (typeof prot === 'string') {
+        try {
+            prot = base64url.JSON.decode(prot);
+        } catch (err) {
+            throw new JWEInvalid('could not parse JWE protected header');
+        }
+    }
+    let alg = [];
+    const enc = new Set();
+    if (!isDisjoint(prot, unprotected) || !recipients.every(({ header })=>{
+        if (typeof header === 'object') {
+            alg.push(header.alg);
+            enc.add(header.enc);
+        }
+        const combined = {
+            ...unprotected,
+            ...header
+        };
+        validateCrit(prot, combined, crit);
+        if ('zip' in combined) {
+            throw new JWEInvalid('"zip" Header Parameter MUST be integrity protected');
+        } else if (prot && 'zip' in prot && prot.zip !== 'DEF') {
+            throw new JOSENotSupported('only "DEF" compression algorithm is supported');
+        }
+        return isDisjoint(header, prot) && isDisjoint(header, unprotected);
+    })) {
+        throw new JWEInvalid('JWE Shared Protected, JWE Shared Unprotected and JWE Per-Recipient Header Parameter names must be disjoint');
+    }
+    if (typeof prot === 'object') {
+        alg.push(prot.alg);
+        enc.add(prot.enc);
+    }
+    if (typeof unprotected === 'object') {
+        alg.push(unprotected.alg);
+        enc.add(unprotected.enc);
+    }
+    alg = alg.filter(Boolean);
+    enc.delete(undefined);
+    if (recipients.length !== 1) {
+        if (alg.includes('dir') || alg.includes('ECDH-ES')) {
+            throw new JWEInvalid('dir and ECDH-ES alg may only be used with a single recipient');
+        }
+    }
+    if (checkAlgorithms) {
+        if (alg.length !== recipients.length) {
+            throw new JWEInvalid('missing Key Management algorithm');
+        }
+        if (enc.size === 0) {
+            throw new JWEInvalid('missing Content Encryption algorithm');
+        } else if (enc.size !== 1) {
+            throw new JWEInvalid('there must only be one Content Encryption algorithm');
+        }
+    } else {
+        if (enc.size > 1) {
+            throw new JWEInvalid('there must only be one Content Encryption algorithm');
+        }
+    }
+    return [
+        ...enc
+    ][0];
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwe/encrypt.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { deflateRawSync } = __turbopack_context__.r("[externals]/zlib [external] (zlib, cjs)");
+const { KEYOBJECT } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/consts.js [app-route] (ecmascript)");
+const generateIV = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/generate_iv.js [app-route] (ecmascript)");
+const base64url = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/base64url.js [app-route] (ecmascript)");
+const getKey = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/get_key.js [app-route] (ecmascript)");
+const isObject = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/is_object.js [app-route] (ecmascript)");
+const { createSecretKey } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/key_object.js [app-route] (ecmascript)");
+const deepClone = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/deep_clone.js [app-route] (ecmascript)");
+const importKey = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/import.js [app-route] (ecmascript)");
+const { JWEInvalid } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+const { check, keyManagementEncrypt, encrypt } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwa/index.js [app-route] (ecmascript)");
+const serializers = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwe/serializers.js [app-route] (ecmascript)");
+const generateCEK = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwe/generate_cek.js [app-route] (ecmascript)");
+const validateHeaders = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwe/validate_headers.js [app-route] (ecmascript)");
+const PROCESS_RECIPIENT = Symbol('PROCESS_RECIPIENT');
+class Encrypt {
+    constructor(cleartext, protectedHeader, aad, unprotectedHeader){
+        if (!Buffer.isBuffer(cleartext) && typeof cleartext !== 'string') {
+            throw new TypeError('cleartext argument must be a Buffer or a string');
+        }
+        cleartext = Buffer.from(cleartext);
+        if (aad !== undefined && !Buffer.isBuffer(aad) && typeof aad !== 'string') {
+            throw new TypeError('aad argument must be a Buffer or a string when provided');
+        }
+        aad = aad ? Buffer.from(aad) : undefined;
+        if (protectedHeader !== undefined && !isObject(protectedHeader)) {
+            throw new TypeError('protectedHeader argument must be a plain object when provided');
+        }
+        if (unprotectedHeader !== undefined && !isObject(unprotectedHeader)) {
+            throw new TypeError('unprotectedHeader argument must be a plain object when provided');
+        }
+        this._recipients = [];
+        this._cleartext = cleartext;
+        this._aad = aad;
+        this._unprotected = unprotectedHeader ? deepClone(unprotectedHeader) : undefined;
+        this._protected = protectedHeader ? deepClone(protectedHeader) : undefined;
+    }
+    /*
+   * @public
+   */ recipient(key, header) {
+        key = getKey(key);
+        if (header !== undefined && !isObject(header)) {
+            throw new TypeError('header argument must be a plain object when provided');
+        }
+        this._recipients.push({
+            key,
+            header: header ? deepClone(header) : undefined
+        });
+        return this;
+    }
+    /*
+   * @private
+   */ [PROCESS_RECIPIENT](recipient) {
+        const unprotectedHeader = this._unprotected;
+        const protectedHeader = this._protected;
+        const { length: recipientCount } = this._recipients;
+        const jweHeader = {
+            ...protectedHeader,
+            ...unprotectedHeader,
+            ...recipient.header
+        };
+        const { key } = recipient;
+        const enc = jweHeader.enc;
+        let alg = jweHeader.alg;
+        if (key.use === 'sig') {
+            throw new TypeError('a key with "use":"sig" is not usable for encryption');
+        }
+        if (alg === 'dir') {
+            check(key, 'encrypt', enc);
+        } else if (alg) {
+            check(key, 'keyManagementEncrypt', alg);
+        } else {
+            alg = key.alg || [
+                ...key.algorithms('wrapKey')
+            ][0] || [
+                ...key.algorithms('deriveKey')
+            ][0];
+            if (alg === 'ECDH-ES' && recipientCount !== 1) {
+                alg = [
+                    ...key.algorithms('deriveKey')
+                ][1];
+            }
+            if (!alg) {
+                throw new JWEInvalid('could not resolve a usable "alg" for a recipient');
+            }
+            if (recipientCount === 1) {
+                if (protectedHeader) {
+                    protectedHeader.alg = alg;
+                } else {
+                    this._protected = {
+                        alg
+                    };
+                }
+            } else {
+                if (recipient.header) {
+                    recipient.header.alg = alg;
+                } else {
+                    recipient.header = {
+                        alg
+                    };
+                }
+            }
+        }
+        let wrapped;
+        let generatedHeader;
+        if (key.kty === 'oct' && alg === 'dir') {
+            this._cek = importKey(key[KEYOBJECT], {
+                use: 'enc',
+                alg: enc
+            });
+        } else {
+            check(this._cek, 'encrypt', enc);
+            ({ wrapped, header: generatedHeader } = keyManagementEncrypt(alg, key, this._cek[KEYOBJECT].export(), {
+                enc,
+                alg
+            }));
+            if (alg === 'ECDH-ES') {
+                this._cek = importKey(createSecretKey(wrapped), {
+                    use: 'enc',
+                    alg: enc
+                });
+            }
+        }
+        if (alg === 'dir' || alg === 'ECDH-ES') {
+            recipient.encrypted_key = '';
+        } else {
+            recipient.encrypted_key = base64url.encodeBuffer(wrapped);
+        }
+        if (generatedHeader) {
+            recipient.generatedHeader = generatedHeader;
+        }
+    }
+    /*
+   * @public
+   */ encrypt(serialization) {
+        const serializer = serializers[serialization];
+        if (!serializer) {
+            throw new TypeError('serialization must be one of "compact", "flattened", "general"');
+        }
+        if (!this._recipients.length) {
+            throw new JWEInvalid('missing recipients');
+        }
+        serializer.validate(this._protected, this._unprotected, this._aad, this._recipients);
+        let enc = validateHeaders(this._protected, this._unprotected, this._recipients, false, this._protected ? this._protected.crit : undefined);
+        if (!enc) {
+            enc = 'A128CBC-HS256';
+            if (this._protected) {
+                this._protected.enc = enc;
+            } else {
+                this._protected = {
+                    enc
+                };
+            }
+        }
+        const final = {};
+        this._cek = generateCEK(enc);
+        for (const recipient of this._recipients){
+            this[PROCESS_RECIPIENT](recipient);
+        }
+        const iv = generateIV(enc);
+        final.iv = base64url.encodeBuffer(iv);
+        if (this._recipients.length === 1 && this._recipients[0].generatedHeader) {
+            const [{ generatedHeader }] = this._recipients;
+            delete this._recipients[0].generatedHeader;
+            this._protected = {
+                ...this._protected,
+                ...generatedHeader
+            };
+        }
+        if (this._protected) {
+            final.protected = base64url.JSON.encode(this._protected);
+        }
+        final.unprotected = this._unprotected;
+        let aad;
+        if (this._aad) {
+            final.aad = base64url.encode(this._aad);
+            aad = Buffer.concat([
+                Buffer.from(final.protected || ''),
+                Buffer.from('.'),
+                Buffer.from(final.aad)
+            ]);
+        } else {
+            aad = Buffer.from(final.protected || '');
+        }
+        let cleartext = this._cleartext;
+        if (this._protected && 'zip' in this._protected) {
+            cleartext = deflateRawSync(cleartext);
+        }
+        const { ciphertext, tag } = encrypt(enc, this._cek, cleartext, {
+            iv,
+            aad
+        });
+        final.tag = base64url.encodeBuffer(tag);
+        final.ciphertext = base64url.encodeBuffer(ciphertext);
+        return serializer(final, this._recipients);
+    }
+}
+module.exports = Encrypt;
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwks/index.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const KeyStore = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwks/keystore.js [app-route] (ecmascript)");
+module.exports = KeyStore;
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwe/decrypt.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { inflateRawSync } = __turbopack_context__.r("[externals]/zlib [external] (zlib, cjs)");
+const base64url = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/base64url.js [app-route] (ecmascript)");
+const getKey = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/get_key.js [app-route] (ecmascript)");
+const { KeyStore } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwks/index.js [app-route] (ecmascript)");
+const errors = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+const { check, decrypt, keyManagementDecrypt } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwa/index.js [app-route] (ecmascript)");
+const JWK = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/index.js [app-route] (ecmascript)");
+const { createSecretKey } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/key_object.js [app-route] (ecmascript)");
+const generateCEK = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwe/generate_cek.js [app-route] (ecmascript)");
+const validateHeaders = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwe/validate_headers.js [app-route] (ecmascript)");
+const { detect: resolveSerialization } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwe/serializers.js [app-route] (ecmascript)");
+const SINGLE_RECIPIENT = new Set([
+    'compact',
+    'flattened'
+]);
+const combineHeader = (prot = {}, unprotected = {}, header = {})=>{
+    if (typeof prot === 'string') {
+        prot = base64url.JSON.decode(prot);
+    }
+    const p2s = prot.p2s || unprotected.p2s || header.p2s;
+    const apu = prot.apu || unprotected.apu || header.apu;
+    const apv = prot.apv || unprotected.apv || header.apv;
+    const iv = prot.iv || unprotected.iv || header.iv;
+    const tag = prot.tag || unprotected.tag || header.tag;
+    return {
+        ...prot,
+        ...unprotected,
+        ...header,
+        ...typeof p2s === 'string' ? {
+            p2s: base64url.decodeToBuffer(p2s)
+        } : undefined,
+        ...typeof apu === 'string' ? {
+            apu: base64url.decodeToBuffer(apu)
+        } : undefined,
+        ...typeof apv === 'string' ? {
+            apv: base64url.decodeToBuffer(apv)
+        } : undefined,
+        ...typeof iv === 'string' ? {
+            iv: base64url.decodeToBuffer(iv)
+        } : undefined,
+        ...typeof tag === 'string' ? {
+            tag: base64url.decodeToBuffer(tag)
+        } : undefined
+    };
+};
+const validateAlgorithms = (algorithms, option)=>{
+    if (algorithms !== undefined && (!Array.isArray(algorithms) || algorithms.some((s)=>typeof s !== 'string' || !s))) {
+        throw new TypeError(`"${option}" option must be an array of non-empty strings`);
+    }
+    if (!algorithms) {
+        return undefined;
+    }
+    return new Set(algorithms);
+};
+/*
+ * @public
+ */ const jweDecrypt = (skipValidateHeaders, serialization, jwe, key, { crit = [], complete = false, keyManagementAlgorithms, contentEncryptionAlgorithms, maxPBES2Count = 10000, inflateRawSyncLimit = 250000 } = {})=>{
+    key = getKey(key, true);
+    keyManagementAlgorithms = validateAlgorithms(keyManagementAlgorithms, 'keyManagementAlgorithms');
+    contentEncryptionAlgorithms = validateAlgorithms(contentEncryptionAlgorithms, 'contentEncryptionAlgorithms');
+    if (!Array.isArray(crit) || crit.some((s)=>typeof s !== 'string' || !s)) {
+        throw new TypeError('"crit" option must be an array of non-empty strings');
+    }
+    if (!serialization) {
+        serialization = resolveSerialization(jwe);
+    }
+    let alg, ciphertext, enc, encryptedKey, iv, opts, prot, tag, unprotected, cek, aad, header;
+    // treat general format with one recipient as flattened
+    // skips iteration and avoids multi errors in this case
+    if (serialization === 'general' && jwe.recipients.length === 1) {
+        serialization = 'flattened';
+        const { recipients, ...root } = jwe;
+        jwe = {
+            ...root,
+            ...recipients[0]
+        };
+    }
+    if (SINGLE_RECIPIENT.has(serialization)) {
+        if (serialization === 'compact') {
+            [prot, encryptedKey, iv, ciphertext, tag] = jwe.split('.');
+        } else {
+            ({ protected: prot, encrypted_key: encryptedKey, iv, ciphertext, tag, unprotected, aad, header } = jwe);
+        }
+        if (!skipValidateHeaders) {
+            validateHeaders(prot, unprotected, [
+                {
+                    header
+                }
+            ], true, crit);
+        }
+        opts = combineHeader(prot, unprotected, header);
+        ({ alg, enc } = opts);
+        if (keyManagementAlgorithms && !keyManagementAlgorithms.has(alg)) {
+            throw new errors.JOSEAlgNotWhitelisted('key management algorithm not whitelisted');
+        }
+        if (contentEncryptionAlgorithms && !contentEncryptionAlgorithms.has(enc)) {
+            throw new errors.JOSEAlgNotWhitelisted('content encryption algorithm not whitelisted');
+        }
+        if (key instanceof KeyStore) {
+            const keystore = key;
+            let keys;
+            if (opts.alg === 'dir') {
+                keys = keystore.all({
+                    kid: opts.kid,
+                    alg: opts.enc,
+                    key_ops: [
+                        'decrypt'
+                    ]
+                });
+            } else {
+                keys = keystore.all({
+                    kid: opts.kid,
+                    alg: opts.alg,
+                    key_ops: [
+                        'unwrapKey'
+                    ]
+                });
+            }
+            switch(keys.length){
+                case 0:
+                    throw new errors.JWKSNoMatchingKey();
+                case 1:
+                    // treat the call as if a Key instance was passed in
+                    // skips iteration and avoids multi errors in this case
+                    key = keys[0];
+                    break;
+                default:
+                    {
+                        const errs = [];
+                        for (const key of keys){
+                            try {
+                                return jweDecrypt(true, serialization, jwe, key, {
+                                    crit,
+                                    complete,
+                                    contentEncryptionAlgorithms: contentEncryptionAlgorithms ? [
+                                        ...contentEncryptionAlgorithms
+                                    ] : undefined,
+                                    keyManagementAlgorithms: keyManagementAlgorithms ? [
+                                        ...keyManagementAlgorithms
+                                    ] : undefined
+                                });
+                            } catch (err) {
+                                errs.push(err);
+                                continue;
+                            }
+                        }
+                        const multi = new errors.JOSEMultiError(errs);
+                        if ([
+                            ...multi
+                        ].some((e)=>e instanceof errors.JWEDecryptionFailed)) {
+                            throw new errors.JWEDecryptionFailed();
+                        }
+                        throw multi;
+                    }
+            }
+        }
+        check(key, ...alg === 'dir' ? [
+            'decrypt',
+            enc
+        ] : [
+            'keyManagementDecrypt',
+            alg
+        ]);
+        if (alg.startsWith('PBES2')) {
+            if (opts && opts.p2c > maxPBES2Count) {
+                throw new errors.JWEInvalid('JOSE Header "p2c" (PBES2 Count) out is of acceptable bounds');
+            }
+        }
+        try {
+            if (alg === 'dir') {
+                cek = JWK.asKey(key, {
+                    alg: enc,
+                    use: 'enc'
+                });
+            } else if (alg === 'ECDH-ES') {
+                const unwrapped = keyManagementDecrypt(alg, key, undefined, opts);
+                cek = JWK.asKey(createSecretKey(unwrapped), {
+                    alg: enc,
+                    use: 'enc'
+                });
+            } else {
+                const unwrapped = keyManagementDecrypt(alg, key, base64url.decodeToBuffer(encryptedKey), opts);
+                cek = JWK.asKey(createSecretKey(unwrapped), {
+                    alg: enc,
+                    use: 'enc'
+                });
+            }
+        } catch (err) {
+            // To mitigate the attacks described in RFC 3218, the
+            // recipient MUST NOT distinguish between format, padding, and length
+            // errors of encrypted keys.  It is strongly recommended, in the event
+            // of receiving an improperly formatted key, that the recipient
+            // substitute a randomly generated CEK and proceed to the next step, to
+            // mitigate timing attacks.
+            cek = generateCEK(enc);
+        }
+        let adata;
+        if (aad) {
+            adata = Buffer.concat([
+                Buffer.from(prot || ''),
+                Buffer.from('.'),
+                Buffer.from(aad)
+            ]);
+        } else {
+            adata = Buffer.from(prot || '');
+        }
+        try {
+            iv = base64url.decodeToBuffer(iv);
+        } catch (err) {}
+        try {
+            tag = base64url.decodeToBuffer(tag);
+        } catch (err) {}
+        let cleartext = decrypt(enc, cek, base64url.decodeToBuffer(ciphertext), {
+            iv,
+            tag,
+            aad: adata
+        });
+        if (opts.zip) {
+            cleartext = inflateRawSync(cleartext, {
+                maxOutputLength: inflateRawSyncLimit
+            });
+        }
+        if (complete) {
+            const result = {
+                cleartext,
+                key,
+                cek
+            };
+            if (aad) result.aad = aad;
+            if (header) result.header = header;
+            if (unprotected) result.unprotected = unprotected;
+            if (prot) result.protected = base64url.JSON.decode(prot);
+            return result;
+        }
+        return cleartext;
+    }
+    validateHeaders(jwe.protected, jwe.unprotected, jwe.recipients.map(({ header })=>({
+            header
+        })), true, crit);
+    // general serialization format
+    const { recipients, ...root } = jwe;
+    const errs = [];
+    for (const recipient of recipients){
+        try {
+            return jweDecrypt(true, 'flattened', {
+                ...root,
+                ...recipient
+            }, key, {
+                crit,
+                complete,
+                contentEncryptionAlgorithms: contentEncryptionAlgorithms ? [
+                    ...contentEncryptionAlgorithms
+                ] : undefined,
+                keyManagementAlgorithms: keyManagementAlgorithms ? [
+                    ...keyManagementAlgorithms
+                ] : undefined
+            });
+        } catch (err) {
+            errs.push(err);
+            continue;
+        }
+    }
+    const multi = new errors.JOSEMultiError(errs);
+    if ([
+        ...multi
+    ].some((e)=>e instanceof errors.JWEDecryptionFailed)) {
+        throw new errors.JWEDecryptionFailed();
+    } else if ([
+        ...multi
+    ].every((e)=>e instanceof errors.JWKSNoMatchingKey)) {
+        throw new errors.JWKSNoMatchingKey();
+    }
+    throw multi;
+};
+module.exports = jweDecrypt.bind(undefined, false, undefined);
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwe/index.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const Encrypt = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwe/encrypt.js [app-route] (ecmascript)");
+const decrypt = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwe/decrypt.js [app-route] (ecmascript)");
+const single = (serialization, cleartext, key, protectedHeader, aad, unprotectedHeader)=>{
+    return new Encrypt(cleartext, protectedHeader, aad, unprotectedHeader).recipient(key).encrypt(serialization);
+};
+module.exports.Encrypt = Encrypt;
+module.exports.encrypt = single.bind(undefined, 'compact');
+module.exports.encrypt.flattened = single.bind(undefined, 'flattened');
+module.exports.encrypt.general = single.bind(undefined, 'general');
+module.exports.decrypt = decrypt;
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jws/serializers.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const isObject = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/is_object.js [app-route] (ecmascript)");
+let validateCrit = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/validate_crit.js [app-route] (ecmascript)");
+const { JWSInvalid } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+validateCrit = validateCrit.bind(undefined, JWSInvalid);
+const compactSerializer = (payload, [recipient])=>{
+    return `${recipient.protected}.${payload}.${recipient.signature}`;
+};
+compactSerializer.validate = (jws, { 0: { unprotectedHeader, protectedHeader }, length })=>{
+    if (length !== 1 || unprotectedHeader) {
+        throw new JWSInvalid('JWS Compact Serialization doesn\'t support multiple recipients or JWS unprotected headers');
+    }
+    validateCrit(protectedHeader, unprotectedHeader, protectedHeader ? protectedHeader.crit : undefined);
+};
+const flattenedSerializer = (payload, [recipient])=>{
+    const { header, signature, protected: prot } = recipient;
+    return {
+        payload,
+        ...prot ? {
+            protected: prot
+        } : undefined,
+        ...header ? {
+            header
+        } : undefined,
+        signature
+    };
+};
+flattenedSerializer.validate = (jws, { 0: { unprotectedHeader, protectedHeader }, length })=>{
+    if (length !== 1) {
+        throw new JWSInvalid('Flattened JWS JSON Serialization doesn\'t support multiple recipients');
+    }
+    validateCrit(protectedHeader, unprotectedHeader, protectedHeader ? protectedHeader.crit : undefined);
+};
+const generalSerializer = (payload, recipients)=>{
+    return {
+        payload,
+        signatures: recipients.map(({ header, signature, protected: prot })=>{
+            return {
+                ...prot ? {
+                    protected: prot
+                } : undefined,
+                ...header ? {
+                    header
+                } : undefined,
+                signature
+            };
+        })
+    };
+};
+generalSerializer.validate = (jws, recipients)=>{
+    let validateB64 = false;
+    recipients.forEach(({ protectedHeader, unprotectedHeader })=>{
+        if (protectedHeader && !validateB64 && 'b64' in protectedHeader) {
+            validateB64 = true;
+        }
+        validateCrit(protectedHeader, unprotectedHeader, protectedHeader ? protectedHeader.crit : undefined);
+    });
+    if (validateB64) {
+        const values = recipients.map(({ protectedHeader })=>protectedHeader && protectedHeader.b64);
+        if (!values.every((actual, i, [expected])=>actual === expected)) {
+            throw new JWSInvalid('the "b64" Header Parameter value MUST be the same for all recipients');
+        }
+    }
+};
+const isJSON = (input)=>{
+    return isObject(input) && (typeof input.payload === 'string' || Buffer.isBuffer(input.payload));
+};
+const isValidRecipient = (recipient)=>{
+    return isObject(recipient) && typeof recipient.signature === 'string' && (recipient.header === undefined || isObject(recipient.header)) && (recipient.protected === undefined || typeof recipient.protected === 'string');
+};
+const isMultiRecipient = (input)=>{
+    if (Array.isArray(input.signatures) && input.signatures.every(isValidRecipient)) {
+        return true;
+    }
+    return false;
+};
+const detect = (input)=>{
+    if (typeof input === 'string' && input.split('.').length === 3) {
+        return 'compact';
+    }
+    if (isJSON(input)) {
+        if (isMultiRecipient(input)) {
+            return 'general';
+        }
+        if (isValidRecipient(input)) {
+            return 'flattened';
+        }
+    }
+    throw new JWSInvalid('JWS malformed or invalid serialization');
+};
+module.exports = {
+    compact: compactSerializer,
+    flattened: flattenedSerializer,
+    general: generalSerializer,
+    detect
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jws/sign.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const base64url = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/base64url.js [app-route] (ecmascript)");
+const isDisjoint = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/is_disjoint.js [app-route] (ecmascript)");
+const isObject = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/is_object.js [app-route] (ecmascript)");
+const deepClone = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/deep_clone.js [app-route] (ecmascript)");
+const { JWSInvalid } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+const { sign } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwa/index.js [app-route] (ecmascript)");
+const getKey = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/get_key.js [app-route] (ecmascript)");
+const serializers = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jws/serializers.js [app-route] (ecmascript)");
+const PROCESS_RECIPIENT = Symbol('PROCESS_RECIPIENT');
+class Sign {
+    constructor(payload){
+        if (typeof payload === 'string') {
+            payload = base64url.encode(payload);
+        } else if (Buffer.isBuffer(payload)) {
+            payload = base64url.encodeBuffer(payload);
+            this._binary = true;
+        } else if (isObject(payload)) {
+            payload = base64url.JSON.encode(payload);
+        } else {
+            throw new TypeError('payload argument must be a Buffer, string or an object');
+        }
+        this._payload = payload;
+        this._recipients = [];
+    }
+    /*
+   * @public
+   */ recipient(key, protectedHeader, unprotectedHeader) {
+        key = getKey(key);
+        if (protectedHeader !== undefined && !isObject(protectedHeader)) {
+            throw new TypeError('protectedHeader argument must be a plain object when provided');
+        }
+        if (unprotectedHeader !== undefined && !isObject(unprotectedHeader)) {
+            throw new TypeError('unprotectedHeader argument must be a plain object when provided');
+        }
+        if (!isDisjoint(protectedHeader, unprotectedHeader)) {
+            throw new JWSInvalid('JWS Protected and JWS Unprotected Header Parameter names must be disjoint');
+        }
+        this._recipients.push({
+            key,
+            protectedHeader: protectedHeader ? deepClone(protectedHeader) : undefined,
+            unprotectedHeader: unprotectedHeader ? deepClone(unprotectedHeader) : undefined
+        });
+        return this;
+    }
+    /*
+   * @private
+   */ [PROCESS_RECIPIENT](recipient, first) {
+        const { key, protectedHeader, unprotectedHeader } = recipient;
+        if (key.use === 'enc') {
+            throw new TypeError('a key with "use":"enc" is not usable for signing');
+        }
+        const joseHeader = {
+            protected: protectedHeader || {},
+            unprotected: unprotectedHeader || {}
+        };
+        let alg = joseHeader.protected.alg || joseHeader.unprotected.alg;
+        if (!alg) {
+            alg = key.alg || [
+                ...key.algorithms('sign')
+            ][0];
+            if (recipient.protectedHeader) {
+                joseHeader.protected.alg = recipient.protectedHeader.alg = alg;
+            } else {
+                joseHeader.protected = recipient.protectedHeader = {
+                    alg
+                };
+            }
+        }
+        if (!alg) {
+            throw new JWSInvalid('could not resolve a usable "alg" for a recipient');
+        }
+        recipient.header = unprotectedHeader;
+        recipient.protected = Object.keys(joseHeader.protected).length ? base64url.JSON.encode(joseHeader.protected) : '';
+        if (first && joseHeader.protected.crit && joseHeader.protected.crit.includes('b64') && joseHeader.protected.b64 === false) {
+            if (this._binary) {
+                this._payload = base64url.decodeToBuffer(this._payload);
+            } else {
+                this._payload = base64url.decode(this._payload);
+            }
+        }
+        const data = Buffer.concat([
+            Buffer.from(recipient.protected || ''),
+            Buffer.from('.'),
+            Buffer.from(this._payload)
+        ]);
+        recipient.signature = base64url.encodeBuffer(sign(alg, key, data));
+    }
+    /*
+   * @public
+   */ sign(serialization) {
+        const serializer = serializers[serialization];
+        if (!serializer) {
+            throw new TypeError('serialization must be one of "compact", "flattened", "general"');
+        }
+        if (!this._recipients.length) {
+            throw new JWSInvalid('missing recipients');
+        }
+        serializer.validate(this, this._recipients);
+        this._recipients.forEach((recipient, i)=>{
+            this[PROCESS_RECIPIENT](recipient, i === 0);
+        });
+        return serializer(this._payload, this._recipients);
+    }
+}
+module.exports = Sign;
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jws/verify.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { EOL } = __turbopack_context__.r("[externals]/os [external] (os, cjs)");
+const base64url = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/base64url.js [app-route] (ecmascript)");
+const isDisjoint = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/is_disjoint.js [app-route] (ecmascript)");
+const isObject = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/is_object.js [app-route] (ecmascript)");
+let validateCrit = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/validate_crit.js [app-route] (ecmascript)");
+const getKey = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/get_key.js [app-route] (ecmascript)");
+const { KeyStore } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwks/index.js [app-route] (ecmascript)");
+const errors = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+const { check, verify } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwa/index.js [app-route] (ecmascript)");
+const JWK = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/index.js [app-route] (ecmascript)");
+const { detect: resolveSerialization } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jws/serializers.js [app-route] (ecmascript)");
+validateCrit = validateCrit.bind(undefined, errors.JWSInvalid);
+const SINGLE_RECIPIENT = new Set([
+    'compact',
+    'flattened',
+    'preparsed'
+]);
+/*
+ * @public
+ */ const jwsVerify = (skipDisjointCheck, serialization, jws, key, { crit = [], complete = false, algorithms } = {})=>{
+    key = getKey(key, true);
+    if (algorithms !== undefined && (!Array.isArray(algorithms) || algorithms.some((s)=>typeof s !== 'string' || !s))) {
+        throw new TypeError('"algorithms" option must be an array of non-empty strings');
+    } else if (algorithms) {
+        algorithms = new Set(algorithms);
+    }
+    if (!Array.isArray(crit) || crit.some((s)=>typeof s !== 'string' || !s)) {
+        throw new TypeError('"crit" option must be an array of non-empty strings');
+    }
+    if (!serialization) {
+        serialization = resolveSerialization(jws);
+    }
+    let prot // protected header
+    ;
+    let header // unprotected header
+    ;
+    let payload;
+    let signature;
+    let alg;
+    // treat general format with one recipient as flattened
+    // skips iteration and avoids multi errors in this case
+    if (serialization === 'general' && jws.signatures.length === 1) {
+        serialization = 'flattened';
+        const { signatures, ...root } = jws;
+        jws = {
+            ...root,
+            ...signatures[0]
+        };
+    }
+    let decoded;
+    if (SINGLE_RECIPIENT.has(serialization)) {
+        let parsedProt = {};
+        switch(serialization){
+            case 'compact':
+                [prot, payload, signature] = jws.split('.');
+                break;
+            case 'flattened':
+                ({ protected: prot, payload, signature, header } = jws);
+                break;
+            case 'preparsed':
+                {
+                    ({ decoded } = jws);
+                    [prot, payload, signature] = jws.token.split('.');
+                    break;
+                }
+        }
+        if (!header) {
+            skipDisjointCheck = true;
+        }
+        if (decoded) {
+            parsedProt = decoded.header;
+        } else if (prot) {
+            try {
+                parsedProt = base64url.JSON.decode(prot);
+            } catch (err) {
+                throw new errors.JWSInvalid('could not parse JWS protected header');
+            }
+        } else {
+            skipDisjointCheck = skipDisjointCheck || true;
+        }
+        if (!skipDisjointCheck && !isDisjoint(parsedProt, header)) {
+            throw new errors.JWSInvalid('JWS Protected and JWS Unprotected Header Parameter names must be disjoint');
+        }
+        const combinedHeader = {
+            ...parsedProt,
+            ...header
+        };
+        validateCrit(parsedProt, header, crit);
+        alg = parsedProt.alg || header && header.alg;
+        if (!alg) {
+            throw new errors.JWSInvalid('missing JWS signature algorithm');
+        } else if (algorithms && !algorithms.has(alg)) {
+            throw new errors.JOSEAlgNotWhitelisted('alg not whitelisted');
+        }
+        if (key instanceof KeyStore) {
+            const keystore = key;
+            const keys = keystore.all({
+                kid: combinedHeader.kid,
+                alg: combinedHeader.alg,
+                key_ops: [
+                    'verify'
+                ]
+            });
+            switch(keys.length){
+                case 0:
+                    throw new errors.JWKSNoMatchingKey();
+                case 1:
+                    // treat the call as if a Key instance was passed in
+                    // skips iteration and avoids multi errors in this case
+                    key = keys[0];
+                    break;
+                default:
+                    {
+                        const errs = [];
+                        for (const key of keys){
+                            try {
+                                return jwsVerify(true, serialization, jws, key, {
+                                    crit,
+                                    complete,
+                                    algorithms: algorithms ? [
+                                        ...algorithms
+                                    ] : undefined
+                                });
+                            } catch (err) {
+                                errs.push(err);
+                                continue;
+                            }
+                        }
+                        const multi = new errors.JOSEMultiError(errs);
+                        if ([
+                            ...multi
+                        ].some((e)=>e instanceof errors.JWSVerificationFailed)) {
+                            throw new errors.JWSVerificationFailed();
+                        }
+                        throw multi;
+                    }
+            }
+        }
+        if (key === JWK.EmbeddedJWK) {
+            if (!isObject(combinedHeader.jwk)) {
+                throw new errors.JWSInvalid('JWS Header Parameter "jwk" must be a JSON object');
+            }
+            key = JWK.asKey(combinedHeader.jwk);
+            if (key.type !== 'public') {
+                throw new errors.JWSInvalid('JWS Header Parameter "jwk" must be a public key');
+            }
+        } else if (key === JWK.EmbeddedX5C) {
+            if (!Array.isArray(combinedHeader.x5c) || !combinedHeader.x5c.length || combinedHeader.x5c.some((c)=>typeof c !== 'string' || !c)) {
+                throw new errors.JWSInvalid('JWS Header Parameter "x5c" must be a JSON array of certificate value strings');
+            }
+            key = JWK.asKey(`-----BEGIN CERTIFICATE-----${EOL}${(combinedHeader.x5c[0].match(/.{1,64}/g) || []).join(EOL)}${EOL}-----END CERTIFICATE-----`, {
+                x5c: combinedHeader.x5c
+            });
+        }
+        check(key, 'verify', alg);
+        const toBeVerified = Buffer.concat([
+            Buffer.from(prot || ''),
+            Buffer.from('.'),
+            Buffer.isBuffer(payload) ? payload : Buffer.from(payload)
+        ]);
+        if (!verify(alg, key, toBeVerified, base64url.decodeToBuffer(signature))) {
+            throw new errors.JWSVerificationFailed();
+        }
+        if (combinedHeader.b64 === false) {
+            payload = Buffer.from(payload);
+        } else {
+            payload = base64url.decodeToBuffer(payload);
+        }
+        if (complete) {
+            const result = {
+                payload,
+                key
+            };
+            if (prot) result.protected = parsedProt;
+            if (header) result.header = header;
+            return result;
+        }
+        return payload;
+    }
+    // general serialization format
+    const { signatures, ...root } = jws;
+    const errs = [];
+    for (const recipient of signatures){
+        try {
+            return jwsVerify(false, 'flattened', {
+                ...root,
+                ...recipient
+            }, key, {
+                crit,
+                complete,
+                algorithms: algorithms ? [
+                    ...algorithms
+                ] : undefined
+            });
+        } catch (err) {
+            errs.push(err);
+            continue;
+        }
+    }
+    const multi = new errors.JOSEMultiError(errs);
+    if ([
+        ...multi
+    ].some((e)=>e instanceof errors.JWSVerificationFailed)) {
+        throw new errors.JWSVerificationFailed();
+    } else if ([
+        ...multi
+    ].every((e)=>e instanceof errors.JWKSNoMatchingKey)) {
+        throw new errors.JWKSNoMatchingKey();
+    }
+    throw multi;
+};
+module.exports = {
+    bare: jwsVerify,
+    verify: jwsVerify.bind(undefined, false, undefined)
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jws/index.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const Sign = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jws/sign.js [app-route] (ecmascript)");
+const { verify } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jws/verify.js [app-route] (ecmascript)");
+const single = (serialization, payload, key, protectedHeader, unprotectedHeader)=>{
+    return new Sign(payload).recipient(key, protectedHeader, unprotectedHeader).sign(serialization);
+};
+module.exports.Sign = Sign;
+module.exports.sign = single.bind(undefined, 'compact');
+module.exports.sign.flattened = single.bind(undefined, 'flattened');
+module.exports.sign.general = single.bind(undefined, 'general');
+module.exports.verify = verify;
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwt/decode.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const base64url = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/base64url.js [app-route] (ecmascript)");
+const errors = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+module.exports = (token, { complete = false } = {})=>{
+    if (typeof token !== 'string' || !token) {
+        throw new TypeError('JWT must be a string');
+    }
+    const { 0: header, 1: payload, 2: signature, length } = token.split('.');
+    if (length === 5) {
+        throw new TypeError('encrypted JWTs cannot be decoded');
+    }
+    if (length !== 3) {
+        throw new errors.JWTMalformed('JWTs must have three components');
+    }
+    try {
+        const result = {
+            header: base64url.JSON.decode(header),
+            payload: base64url.JSON.decode(payload),
+            signature
+        };
+        return complete ? result : result.payload;
+    } catch (err) {
+        throw new errors.JWTMalformed('JWT is malformed');
+    }
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/secs.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const minute = 60;
+const hour = minute * 60;
+const day = hour * 24;
+const week = day * 7;
+const year = day * 365.25;
+const REGEX = /^(\d+|\d+\.\d+) ?(seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|weeks?|w|years?|yrs?|y)$/i;
+module.exports = (str)=>{
+    const matched = REGEX.exec(str);
+    if (!matched) {
+        throw new TypeError(`invalid time period format ("${str}")`);
+    }
+    const value = parseFloat(matched[1]);
+    const unit = matched[2].toLowerCase();
+    switch(unit){
+        case 'sec':
+        case 'secs':
+        case 'second':
+        case 'seconds':
+        case 's':
+            return Math.round(value);
+        case 'minute':
+        case 'minutes':
+        case 'min':
+        case 'mins':
+        case 'm':
+            return Math.round(value * minute);
+        case 'hour':
+        case 'hours':
+        case 'hr':
+        case 'hrs':
+        case 'h':
+            return Math.round(value * hour);
+        case 'day':
+        case 'days':
+        case 'd':
+            return Math.round(value * day);
+        case 'week':
+        case 'weeks':
+        case 'w':
+            return Math.round(value * week);
+        case 'year':
+        case 'years':
+        case 'yr':
+        case 'yrs':
+        case 'y':
+            return Math.round(value * year);
+    }
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/help/epoch.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+module.exports = (date)=>Math.floor(date.getTime() / 1000);
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwt/shared_validations.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { JWTClaimInvalid } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+const isNotString = (val)=>typeof val !== 'string' || val.length === 0;
+const isNotArrayOfStrings = (val)=>!Array.isArray(val) || val.length === 0 || val.some(isNotString);
+const isRequired = (Err, value, label, claim)=>{
+    if (value === undefined) {
+        throw new Err(`${label} is missing`, claim, 'missing');
+    }
+};
+const isString = (Err, value, label, claim, required = false)=>{
+    if (required) {
+        isRequired(Err, value, label, claim);
+    }
+    if (value !== undefined && isNotString(value)) {
+        throw new Err(`${label} must be a string`, claim, 'invalid');
+    }
+};
+const isTimestamp = (value, label, required = false)=>{
+    if (required && value === undefined) {
+        throw new JWTClaimInvalid(`"${label}" claim is missing`, label, 'missing');
+    }
+    if (value !== undefined && typeof value !== 'number') {
+        throw new JWTClaimInvalid(`"${label}" claim must be a JSON numeric value`, label, 'invalid');
+    }
+};
+const isStringOrArrayOfStrings = (value, label, required = false)=>{
+    if (required && value === undefined) {
+        throw new JWTClaimInvalid(`"${label}" claim is missing`, label, 'missing');
+    }
+    if (value !== undefined && isNotString(value) && isNotArrayOfStrings(value)) {
+        throw new JWTClaimInvalid(`"${label}" claim must be a string or array of strings`, label, 'invalid');
+    }
+};
+module.exports = {
+    isNotArrayOfStrings,
+    isRequired,
+    isNotString,
+    isString,
+    isTimestamp,
+    isStringOrArrayOfStrings
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwt/sign.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const isObject = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/is_object.js [app-route] (ecmascript)");
+const secs = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/secs.js [app-route] (ecmascript)");
+const epoch = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/epoch.js [app-route] (ecmascript)");
+const getKey = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/get_key.js [app-route] (ecmascript)");
+const JWS = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jws/index.js [app-route] (ecmascript)");
+const isString = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwt/shared_validations.js [app-route] (ecmascript)").isString.bind(undefined, TypeError);
+const validateOptions = (options)=>{
+    if (typeof options.iat !== 'boolean') {
+        throw new TypeError('options.iat must be a boolean');
+    }
+    if (typeof options.kid !== 'boolean') {
+        throw new TypeError('options.kid must be a boolean');
+    }
+    isString(options.subject, 'options.subject');
+    isString(options.issuer, 'options.issuer');
+    if (options.audience !== undefined && (typeof options.audience !== 'string' || !options.audience) && (!Array.isArray(options.audience) || options.audience.length === 0 || options.audience.some((a)=>!a || typeof a !== 'string'))) {
+        throw new TypeError('options.audience must be a string or an array of strings');
+    }
+    if (!isObject(options.header)) {
+        throw new TypeError('options.header must be an object');
+    }
+    isString(options.algorithm, 'options.algorithm');
+    isString(options.expiresIn, 'options.expiresIn');
+    isString(options.notBefore, 'options.notBefore');
+    isString(options.jti, 'options.jti');
+    if (options.now !== undefined && (!(options.now instanceof Date) || !options.now.getTime())) {
+        throw new TypeError('options.now must be a valid Date object');
+    }
+};
+module.exports = (payload, key, options = {})=>{
+    if (!isObject(options)) {
+        throw new TypeError('options must be an object');
+    }
+    const { algorithm, audience, expiresIn, header = {}, iat = true, issuer, jti, kid = true, notBefore, subject, now } = options;
+    validateOptions({
+        algorithm,
+        audience,
+        expiresIn,
+        header,
+        iat,
+        issuer,
+        jti,
+        kid,
+        notBefore,
+        now,
+        subject
+    });
+    if (!isObject(payload)) {
+        throw new TypeError('payload must be an object');
+    }
+    let unix;
+    if (expiresIn || notBefore || iat) {
+        unix = epoch(now || new Date());
+    }
+    payload = {
+        ...payload,
+        sub: subject || payload.sub,
+        aud: audience || payload.aud,
+        iss: issuer || payload.iss,
+        jti: jti || payload.jti,
+        iat: iat ? unix : payload.iat,
+        exp: expiresIn ? unix + secs(expiresIn) : payload.exp,
+        nbf: notBefore ? unix + secs(notBefore) : payload.nbf
+    };
+    key = getKey(key);
+    let includeKid;
+    if (typeof options.kid === 'boolean') {
+        includeKid = kid;
+    } else {
+        includeKid = !key.secret;
+    }
+    return JWS.sign(JSON.stringify(payload), key, {
+        ...header,
+        alg: algorithm || header.alg,
+        kid: includeKid ? key.kid : header.kid
+    });
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwt/verify.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const isObject = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/is_object.js [app-route] (ecmascript)");
+const epoch = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/epoch.js [app-route] (ecmascript)");
+const secs = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/secs.js [app-route] (ecmascript)");
+const getKey = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/get_key.js [app-route] (ecmascript)");
+const { bare: verify } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jws/verify.js [app-route] (ecmascript)");
+const { JWTClaimInvalid, JWTExpired } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+const { isString, isNotString, isNotArrayOfStrings, isTimestamp, isStringOrArrayOfStrings } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwt/shared_validations.js [app-route] (ecmascript)");
+const decode = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwt/decode.js [app-route] (ecmascript)");
+const isPayloadString = isString.bind(undefined, JWTClaimInvalid);
+const isOptionString = isString.bind(undefined, TypeError);
+const normalizeTyp = (value)=>value.toLowerCase().replace(/^application\//, '');
+const validateOptions = ({ algorithms, audience, clockTolerance, complete = false, crit, ignoreExp = false, ignoreIat = false, ignoreNbf = false, issuer, jti, maxTokenAge, now = new Date(), subject, typ })=>{
+    if (typeof complete !== 'boolean') {
+        throw new TypeError('options.complete must be a boolean');
+    }
+    if (typeof ignoreExp !== 'boolean') {
+        throw new TypeError('options.ignoreExp must be a boolean');
+    }
+    if (typeof ignoreNbf !== 'boolean') {
+        throw new TypeError('options.ignoreNbf must be a boolean');
+    }
+    if (typeof ignoreIat !== 'boolean') {
+        throw new TypeError('options.ignoreIat must be a boolean');
+    }
+    isOptionString(maxTokenAge, 'options.maxTokenAge');
+    isOptionString(subject, 'options.subject');
+    isOptionString(jti, 'options.jti');
+    isOptionString(clockTolerance, 'options.clockTolerance');
+    isOptionString(typ, 'options.typ');
+    if (issuer !== undefined && isNotString(issuer) && isNotArrayOfStrings(issuer)) {
+        throw new TypeError('options.issuer must be a string or an array of strings');
+    }
+    if (audience !== undefined && isNotString(audience) && isNotArrayOfStrings(audience)) {
+        throw new TypeError('options.audience must be a string or an array of strings');
+    }
+    if (algorithms !== undefined && isNotArrayOfStrings(algorithms)) {
+        throw new TypeError('options.algorithms must be an array of strings');
+    }
+    if (!(now instanceof Date) || !now.getTime()) {
+        throw new TypeError('options.now must be a valid Date object');
+    }
+    if (ignoreIat && maxTokenAge !== undefined) {
+        throw new TypeError('options.ignoreIat and options.maxTokenAge cannot used together');
+    }
+    if (crit !== undefined && isNotArrayOfStrings(crit)) {
+        throw new TypeError('options.crit must be an array of strings');
+    }
+    return {
+        algorithms,
+        audience,
+        clockTolerance,
+        complete,
+        crit,
+        ignoreExp,
+        ignoreIat,
+        ignoreNbf,
+        issuer,
+        jti,
+        maxTokenAge,
+        now,
+        subject,
+        typ
+    };
+};
+const validateTypes = ({ header, payload }, options)=>{
+    isPayloadString(header.alg, '"alg" header parameter', 'alg', true);
+    isTimestamp(payload.iat, 'iat', !!options.maxTokenAge);
+    isTimestamp(payload.exp, 'exp');
+    isTimestamp(payload.nbf, 'nbf');
+    isPayloadString(payload.jti, '"jti" claim', 'jti', !!options.jti);
+    isStringOrArrayOfStrings(payload.iss, 'iss', !!options.issuer);
+    isPayloadString(payload.sub, '"sub" claim', 'sub', !!options.subject);
+    isStringOrArrayOfStrings(payload.aud, 'aud', !!options.audience);
+    isPayloadString(header.typ, '"typ" header parameter', 'typ', !!options.typ);
+};
+const checkAudiencePresence = (audPayload, audOption)=>{
+    if (typeof audPayload === 'string') {
+        return audOption.includes(audPayload);
+    }
+    // Each principal intended to process the JWT MUST
+    // identify itself with a value in the audience claim
+    audPayload = new Set(audPayload);
+    return audOption.some(Set.prototype.has.bind(audPayload));
+};
+module.exports = (token, key, options = {})=>{
+    if (!isObject(options)) {
+        throw new TypeError('options must be an object');
+    }
+    const { algorithms, audience, clockTolerance, complete, crit, ignoreExp, ignoreIat, ignoreNbf, issuer, jti, maxTokenAge, now, subject, typ } = options = validateOptions(options);
+    const decoded = decode(token, {
+        complete: true
+    });
+    key = getKey(key, true);
+    if (complete) {
+        ({ key } = verify(true, 'preparsed', {
+            decoded,
+            token
+        }, key, {
+            crit,
+            algorithms,
+            complete: true
+        }));
+        decoded.key = key;
+    } else {
+        verify(true, 'preparsed', {
+            decoded,
+            token
+        }, key, {
+            crit,
+            algorithms
+        });
+    }
+    const unix = epoch(now);
+    validateTypes(decoded, options);
+    if (issuer && (typeof decoded.payload.iss !== 'string' || !(typeof issuer === 'string' ? [
+        issuer
+    ] : issuer).includes(decoded.payload.iss))) {
+        throw new JWTClaimInvalid('unexpected "iss" claim value', 'iss', 'check_failed');
+    }
+    if (subject && decoded.payload.sub !== subject) {
+        throw new JWTClaimInvalid('unexpected "sub" claim value', 'sub', 'check_failed');
+    }
+    if (jti && decoded.payload.jti !== jti) {
+        throw new JWTClaimInvalid('unexpected "jti" claim value', 'jti', 'check_failed');
+    }
+    if (audience && !checkAudiencePresence(decoded.payload.aud, typeof audience === 'string' ? [
+        audience
+    ] : audience)) {
+        throw new JWTClaimInvalid('unexpected "aud" claim value', 'aud', 'check_failed');
+    }
+    if (typ && normalizeTyp(decoded.header.typ) !== normalizeTyp(typ)) {
+        throw new JWTClaimInvalid('unexpected "typ" JWT header value', 'typ', 'check_failed');
+    }
+    const tolerance = clockTolerance ? secs(clockTolerance) : 0;
+    if (!ignoreIat && !('exp' in decoded.payload) && 'iat' in decoded.payload && decoded.payload.iat > unix + tolerance) {
+        throw new JWTClaimInvalid('"iat" claim timestamp check failed (it should be in the past)', 'iat', 'check_failed');
+    }
+    if (!ignoreNbf && 'nbf' in decoded.payload && decoded.payload.nbf > unix + tolerance) {
+        throw new JWTClaimInvalid('"nbf" claim timestamp check failed', 'nbf', 'check_failed');
+    }
+    if (!ignoreExp && 'exp' in decoded.payload && decoded.payload.exp <= unix - tolerance) {
+        throw new JWTExpired('"exp" claim timestamp check failed', 'exp', 'check_failed');
+    }
+    if (maxTokenAge) {
+        const age = unix - decoded.payload.iat;
+        const max = secs(maxTokenAge);
+        if (age - tolerance > max) {
+            throw new JWTExpired('"iat" claim timestamp check failed (too far in the past)', 'iat', 'check_failed');
+        }
+        if (age < 0 - tolerance) {
+            throw new JWTClaimInvalid('"iat" claim timestamp check failed (it should be in the past)', 'iat', 'check_failed');
+        }
+    }
+    return complete ? decoded : decoded.payload;
+};
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwt/profiles.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const { JWTClaimInvalid } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)");
+const secs = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/secs.js [app-route] (ecmascript)");
+const epoch = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/epoch.js [app-route] (ecmascript)");
+const isObject = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/help/is_object.js [app-route] (ecmascript)");
+const verify = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwt/verify.js [app-route] (ecmascript)");
+const { isString, isRequired, isTimestamp, isStringOrArrayOfStrings } = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwt/shared_validations.js [app-route] (ecmascript)");
+const isPayloadRequired = isRequired.bind(undefined, JWTClaimInvalid);
+const isPayloadString = isString.bind(undefined, JWTClaimInvalid);
+const isOptionString = isString.bind(undefined, TypeError);
+const defineLazyExportWithWarning = (obj, property, name, definition)=>{
+    Object.defineProperty(obj, property, {
+        enumerable: true,
+        configurable: true,
+        value (...args) {
+            process.emitWarning(`The ${name} API implements an IETF draft. Breaking draft implementations are included as minor versions of the jose library, therefore, the ~ semver operator should be used and close attention be payed to library changelog as well as the drafts themselves.`, 'DraftWarning');
+            Object.defineProperty(obj, property, {
+                enumerable: true,
+                configurable: true,
+                value: definition
+            });
+            return obj[property](...args);
+        }
+    });
+};
+const validateCommonOptions = (options, profile)=>{
+    if (!isObject(options)) {
+        throw new TypeError('options must be an object');
+    }
+    if (!options.issuer) {
+        throw new TypeError(`"issuer" option is required to validate ${profile}`);
+    }
+    if (!options.audience) {
+        throw new TypeError(`"audience" option is required to validate ${profile}`);
+    }
+};
+module.exports = {
+    IdToken: {
+        verify: (token, key, options = {})=>{
+            validateCommonOptions(options, 'an ID Token');
+            if ('maxAuthAge' in options) {
+                isOptionString(options.maxAuthAge, 'options.maxAuthAge');
+            }
+            if ('nonce' in options) {
+                isOptionString(options.nonce, 'options.nonce');
+            }
+            const unix = epoch(options.now || new Date());
+            const result = verify(token, key, {
+                ...options
+            });
+            const payload = options.complete ? result.payload : result;
+            if (Array.isArray(payload.aud) && payload.aud.length > 1) {
+                isPayloadRequired(payload.azp, '"azp" claim', 'azp');
+            }
+            isPayloadRequired(payload.iat, '"iat" claim', 'iat');
+            isPayloadRequired(payload.sub, '"sub" claim', 'sub');
+            isPayloadRequired(payload.exp, '"exp" claim', 'exp');
+            isTimestamp(payload.auth_time, 'auth_time', !!options.maxAuthAge);
+            isPayloadString(payload.nonce, '"nonce" claim', 'nonce', !!options.nonce);
+            isPayloadString(payload.acr, '"acr" claim', 'acr');
+            isStringOrArrayOfStrings(payload.amr, 'amr');
+            if (options.nonce && payload.nonce !== options.nonce) {
+                throw new JWTClaimInvalid('unexpected "nonce" claim value', 'nonce', 'check_failed');
+            }
+            const tolerance = options.clockTolerance ? secs(options.clockTolerance) : 0;
+            if (options.maxAuthAge) {
+                const maxAuthAgeSeconds = secs(options.maxAuthAge);
+                if (payload.auth_time + maxAuthAgeSeconds < unix - tolerance) {
+                    throw new JWTClaimInvalid('"auth_time" claim timestamp check failed (too much time has elapsed since the last End-User authentication)', 'auth_time', 'check_failed');
+                }
+            }
+            if (Array.isArray(payload.aud) && payload.aud.length > 1 && payload.azp !== options.audience) {
+                throw new JWTClaimInvalid('unexpected "azp" claim value', 'azp', 'check_failed');
+            }
+            return result;
+        }
+    },
+    LogoutToken: {},
+    AccessToken: {}
+};
+defineLazyExportWithWarning(module.exports.LogoutToken, 'verify', 'jose.JWT.LogoutToken.verify', (token, key, options = {})=>{
+    validateCommonOptions(options, 'a Logout Token');
+    const result = verify(token, key, {
+        ...options
+    });
+    const payload = options.complete ? result.payload : result;
+    isPayloadRequired(payload.iat, '"iat" claim', 'iat');
+    isPayloadRequired(payload.jti, '"jti" claim', 'jti');
+    isPayloadString(payload.sid, '"sid" claim', 'sid');
+    if (!('sid' in payload) && !('sub' in payload)) {
+        throw new JWTClaimInvalid('either "sid" or "sub" (or both) claims must be present');
+    }
+    if ('nonce' in payload) {
+        throw new JWTClaimInvalid('"nonce" claim is prohibited', 'nonce', 'prohibited');
+    }
+    if (!('events' in payload)) {
+        throw new JWTClaimInvalid('"events" claim is missing', 'events', 'missing');
+    }
+    if (!isObject(payload.events)) {
+        throw new JWTClaimInvalid('"events" claim must be an object', 'events', 'invalid');
+    }
+    if (!('http://schemas.openid.net/event/backchannel-logout' in payload.events)) {
+        throw new JWTClaimInvalid('"http://schemas.openid.net/event/backchannel-logout" member is missing in the "events" claim', 'events', 'invalid');
+    }
+    if (!isObject(payload.events['http://schemas.openid.net/event/backchannel-logout'])) {
+        throw new JWTClaimInvalid('"http://schemas.openid.net/event/backchannel-logout" member in the "events" claim must be an object', 'events', 'invalid');
+    }
+    return result;
+});
+defineLazyExportWithWarning(module.exports.AccessToken, 'verify', 'jose.JWT.AccessToken.verify', (token, key, options = {})=>{
+    validateCommonOptions(options, 'a JWT Access Token');
+    isOptionString(options.maxAuthAge, 'options.maxAuthAge');
+    const unix = epoch(options.now || new Date());
+    const typ = 'at+JWT';
+    const result = verify(token, key, {
+        ...options,
+        typ
+    });
+    const payload = options.complete ? result.payload : result;
+    isPayloadRequired(payload.iat, '"iat" claim', 'iat');
+    isPayloadRequired(payload.exp, '"exp" claim', 'exp');
+    isPayloadRequired(payload.sub, '"sub" claim', 'sub');
+    isPayloadRequired(payload.jti, '"jti" claim', 'jti');
+    isPayloadString(payload.client_id, '"client_id" claim', 'client_id', true);
+    isTimestamp(payload.auth_time, 'auth_time', !!options.maxAuthAge);
+    isPayloadString(payload.acr, '"acr" claim', 'acr');
+    isStringOrArrayOfStrings(payload.amr, 'amr');
+    const tolerance = options.clockTolerance ? secs(options.clockTolerance) : 0;
+    if (options.maxAuthAge) {
+        const maxAuthAgeSeconds = secs(options.maxAuthAge);
+        if (payload.auth_time + maxAuthAgeSeconds < unix - tolerance) {
+            throw new JWTClaimInvalid('"auth_time" claim timestamp check failed (too much time has elapsed since the last End-User authentication)', 'auth_time', 'check_failed');
+        }
+    }
+    return result;
+});
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/jwt/index.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+const decode = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwt/decode.js [app-route] (ecmascript)");
+const sign = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwt/sign.js [app-route] (ecmascript)");
+const verify = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwt/verify.js [app-route] (ecmascript)");
+const profiles = __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwt/profiles.js [app-route] (ecmascript)");
+module.exports = {
+    sign,
+    verify,
+    ...profiles
+};
+Object.defineProperty(module.exports, 'decode', {
+    enumerable: false,
+    configurable: true,
+    value: decode
+});
+}}),
+"[project]/node_modules/xero-node/node_modules/jose/lib/index.js [app-route] (ecmascript)": ((__turbopack_context__) => {
+
+var { m: module, e: exports } = __turbopack_context__;
+{
+module.exports = {
+    JWE: __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwe/index.js [app-route] (ecmascript)"),
+    JWK: __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwk/index.js [app-route] (ecmascript)"),
+    JWKS: __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwks/index.js [app-route] (ecmascript)"),
+    JWS: __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jws/index.js [app-route] (ecmascript)"),
+    JWT: __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/jwt/index.js [app-route] (ecmascript)"),
+    errors: __turbopack_context__.r("[project]/node_modules/xero-node/node_modules/jose/lib/errors.js [app-route] (ecmascript)")
+};
+}}),
+
+};
+
+//# sourceMappingURL=2e591_jose_lib_23f184b3._.js.map

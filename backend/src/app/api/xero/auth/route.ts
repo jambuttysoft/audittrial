@@ -1,0 +1,122 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { XeroClient } from 'xero-node';
+
+// Initialize Xero client using environment variables
+const getXeroClient = () => {
+  const client_id: string = process.env.XERO_CLIENT_ID!;
+  const client_secret: string = process.env.XERO_CLIENT_SECRET!;
+  const redirectUrl: string = process.env.XERO_REDIRECT_URI!;
+  const scopes: string = process.env.XERO_SCOPES || 'openid profile email accounting.settings accounting.reports.read accounting.journals.read accounting.contacts accounting.attachments accounting.transactions offline_access';
+
+  console.log('=== XERO AUTH CLIENT INITIALIZATION DEBUG ===');
+  console.log('client_id:', client_id ? `${client_id.substring(0, 8)}...` : 'MISSING');
+  console.log('client_secret:', client_secret ? `${client_secret.substring(0, 8)}...` : 'MISSING');
+  console.log('redirectUrl:', redirectUrl);
+  console.log('scopes:', scopes.split(' '));
+  console.log('XERO_SCOPES env var:', process.env.XERO_SCOPES);
+
+  if (!client_id || !client_secret || !redirectUrl) {
+    const error = `Environment Variables not all set - client_id=${!!client_id}, client_secret=${!!client_secret}, redirectUrl=${!!redirectUrl}`;
+    console.error('ERROR:', error);
+    throw Error(error);
+  }
+
+  const xeroConfig = {
+    clientId: client_id,
+    clientSecret: client_secret,
+    redirectUris: [redirectUrl],
+    scopes: scopes.split(' '),
+  };
+  
+  console.log('XeroClient auth config:', {
+    ...xeroConfig,
+    clientSecret: '[HIDDEN]'
+  });
+
+  try {
+    const client = new XeroClient(xeroConfig);
+    console.log('XeroClient for auth created successfully');
+    return client;
+  } catch (error) {
+    console.error('Error creating XeroClient for auth:', error);
+    throw error;
+  }
+};
+
+// Handle CORS preflight requests
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': 'http://localhost:3000',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  });
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'User ID is required' },
+        { 
+          status: 400,
+          headers: {
+            'Access-Control-Allow-Origin': 'http://localhost:3000',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          }
+        }
+      );
+    }
+
+    // Validate environment variables
+    if (!process.env.XERO_CLIENT_ID || !process.env.XERO_CLIENT_SECRET || !process.env.XERO_REDIRECT_URI) {
+      return NextResponse.json(
+        { error: 'Xero configuration is missing. Please check environment variables.' },
+        { 
+          status: 500,
+          headers: {
+            'Access-Control-Allow-Origin': 'http://localhost:3000',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          }
+        }
+      );
+    }
+
+    const xero = getXeroClient();
+    
+    // Build consent URL with user ID in state
+    const consentUrl = await xero.buildConsentUrl();
+    const urlWithUserId = `${consentUrl}&state=${encodeURIComponent(`userId=${userId}`)}`;
+    
+    return NextResponse.json(
+      { authUrl: urlWithUserId },
+      {
+        headers: {
+          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        }
+      }
+    );
+  } catch (error) {
+    console.error('Xero auth error:', error);
+    return NextResponse.json(
+      { error: 'Failed to generate Xero authorization URL' },
+      { 
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        }
+      }
+    );
+  }
+}
