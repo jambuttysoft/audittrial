@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
+import { getCorsHeaders, handleCorsOptions } from '@/lib/cors';
 
 interface RegisterRequest {
   email: string;
@@ -18,18 +19,15 @@ interface RegisterRequest {
 
 // Handle CORS preflight requests
 export async function OPTIONS(request: NextRequest) {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': 'http://localhost:3111',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  });
+  const origin = request.headers.get('origin');
+  return handleCorsOptions(origin);
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const origin = request.headers.get('origin');
+    const corsHeaders = getCorsHeaders(origin);
+    
     const body: RegisterRequest = await request.json();
     const { 
       email, 
@@ -50,11 +48,7 @@ export async function POST(request: NextRequest) {
         { error: 'Email, имя и тип пользователя обязательны' },
         { 
           status: 400,
-          headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3111',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
-          }
+          headers: corsHeaders
         }
       );
     }
@@ -65,11 +59,7 @@ export async function POST(request: NextRequest) {
         { error: 'Пароль обязателен' },
         { 
           status: 400,
-          headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3111',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
-          }
+          headers: corsHeaders
         }
       );
     }
@@ -78,7 +68,7 @@ export async function POST(request: NextRequest) {
     if (isOAuthUser && (!oauthProvider || !oauthId)) {
       return NextResponse.json(
         { error: 'OAuth провайдер и ID обязательны для OAuth регистрации' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -92,11 +82,7 @@ export async function POST(request: NextRequest) {
         { error: 'Пользователь с таким email уже существует' },
         { 
           status: 409,
-          headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3111',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
-          }
+          headers: corsHeaders
         }
       );
     }
@@ -179,24 +165,18 @@ export async function POST(request: NextRequest) {
       company: createdCompany
     }, { 
       status: 201,
-      headers: {
-        'Access-Control-Allow-Origin': 'http://localhost:3111',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      }
+      headers: corsHeaders
     });
 
   } catch (error) {
     console.error('Registration error:', error);
+    const origin = request.headers.get('origin');
+    const corsHeaders = getCorsHeaders(origin);
     return NextResponse.json(
       { error: 'Внутренняя ошибка сервера' },
       { 
         status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        }
+        headers: corsHeaders
       }
     );
   }

@@ -1,16 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
 
-// Handle CORS preflight requests
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': 'http://localhost:3111',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
-  })
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin')
+  return handleCorsOptions(origin)
 }
 
 export async function GET(
@@ -23,11 +17,10 @@ export async function GET(
     const userId = searchParams.get('userId')
 
     if (!userId) {
+      const corsHeaders = getCorsHeaders(request)
       return NextResponse.json({ error: 'User ID is required' }, { 
         status: 400,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       })
     }
 
@@ -40,11 +33,10 @@ export async function GET(
     })
 
     if (!company) {
+      const corsHeaders = getCorsHeaders(request)
       return NextResponse.json({ error: 'Company not found' }, { 
         status: 404,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       })
     }
 
@@ -74,26 +66,26 @@ export async function GET(
       },
     })
 
+    const corsHeaders = getCorsHeaders(request)
     return NextResponse.json({
       success: true,
       documents,
       company,
     }, {
       headers: {
-        'Access-Control-Allow-Origin': 'http://localhost:3111',
+        ...corsHeaders,
         'Cross-Origin-Resource-Policy': 'cross-origin',
         'Cross-Origin-Embedder-Policy': 'unsafe-none',
       },
     })
   } catch (error) {
     console.error('Get company files error:', error)
+    const corsHeaders = getCorsHeaders(request)
     return NextResponse.json(
       { error: 'Failed to get company files' },
       { 
         status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders,
       }
     )
   } finally {

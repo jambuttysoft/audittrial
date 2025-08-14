@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { prisma } from '@/lib/prisma'
+import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
 
 // Request/Response interfaces
 interface LoginRequest {
@@ -27,18 +28,14 @@ interface LoginResponse {
 
 // Handle CORS preflight requests
 export async function OPTIONS(request: NextRequest) {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': 'http://localhost:3111',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
-  })
+  const origin = request.headers.get('origin');
+  return handleCorsOptions(origin);
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const origin = request.headers.get('origin');
+    const corsHeaders = getCorsHeaders(origin);
     const { email, password, isOAuthUser = false, oauthProvider, oauthId }: LoginRequest = await request.json()
 
     // Validate required fields
@@ -47,9 +44,7 @@ export async function POST(request: NextRequest) {
         { success: false, message: 'Email is required' } as LoginResponse,
         { 
           status: 400,
-          headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3111',
-          },
+          headers: corsHeaders
         }
       )
     }
@@ -60,9 +55,7 @@ export async function POST(request: NextRequest) {
         { success: false, message: 'OAuth provider and ID are required for OAuth login' } as LoginResponse,
         { 
           status: 400,
-          headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3111',
-          },
+          headers: corsHeaders
         }
       )
     }
@@ -73,9 +66,7 @@ export async function POST(request: NextRequest) {
         { success: false, message: 'Password is required' } as LoginResponse,
         { 
           status: 400,
-          headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3111',
-          },
+          headers: corsHeaders
         }
       )
     }
@@ -102,9 +93,7 @@ export async function POST(request: NextRequest) {
         { success: false, message: 'Invalid email or password' } as LoginResponse,
         { 
           status: 401,
-          headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3111',
-          },
+          headers: corsHeaders
         }
       )
     }
@@ -115,9 +104,7 @@ export async function POST(request: NextRequest) {
         { success: false, message: 'Account is deactivated' } as LoginResponse,
         { 
           status: 401,
-          headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3111',
-          },
+          headers: corsHeaders
         }
       )
     }
@@ -129,9 +116,7 @@ export async function POST(request: NextRequest) {
           { success: false, message: 'Invalid OAuth credentials' } as LoginResponse,
           { 
             status: 401,
-            headers: {
-              'Access-Control-Allow-Origin': 'http://localhost:3111',
-            },
+            headers: corsHeaders
           }
         )
       }
@@ -142,9 +127,7 @@ export async function POST(request: NextRequest) {
           { success: false, message: 'This account uses OAuth login' } as LoginResponse,
           { 
             status: 401,
-            headers: {
-              'Access-Control-Allow-Origin': 'http://localhost:3111',
-            },
+            headers: corsHeaders
           }
         )
       }
@@ -156,9 +139,7 @@ export async function POST(request: NextRequest) {
           { success: false, message: 'Invalid email or password' } as LoginResponse,
           { 
             status: 401,
-            headers: {
-              'Access-Control-Allow-Origin': 'http://localhost:3111',
-            },
+            headers: corsHeaders
           }
         )
       }
@@ -191,20 +172,18 @@ export async function POST(request: NextRequest) {
       } as LoginResponse,
       { 
         status: 200,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders
       }
     )
   } catch (error) {
     console.error('Login error:', error)
+    const origin = request.headers.get('origin');
+    const corsHeaders = getCorsHeaders(origin);
     return NextResponse.json(
       { success: false, message: 'Internal server error' } as LoginResponse,
       { 
         status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders
       }
     )
   }

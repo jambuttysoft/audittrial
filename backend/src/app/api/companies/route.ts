@@ -1,29 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
 
-// Handle CORS preflight requests
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': 'http://localhost:3111',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
-  })
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  return handleCorsOptions(origin);
 }
 
 export async function GET(request: NextRequest) {
   try {
+    const origin = request.headers.get('origin');
+    const corsHeaders = getCorsHeaders(origin);
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { 
         status: 400,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders
       })
     }
 
@@ -56,19 +50,17 @@ export async function GET(request: NextRequest) {
       success: true,
       companies: transformedCompanies,
     }, {
-      headers: {
-        'Access-Control-Allow-Origin': 'http://localhost:3111',
-      },
+      headers: corsHeaders
     })
   } catch (error) {
     console.error('Get companies error:', error)
+    const origin = request.headers.get('origin');
+    const corsHeaders = getCorsHeaders(origin);
     return NextResponse.json(
       { error: 'Failed to get companies' },
       { 
         status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders
       }
     )
   } finally {
@@ -78,6 +70,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const origin = request.headers.get('origin');
+    const corsHeaders = getCorsHeaders(origin);
     const body = await request.json()
     const { name, description, email, phone, address, website, abn, industry, userId } = body
 
@@ -86,9 +80,7 @@ export async function POST(request: NextRequest) {
         { error: 'Company name and user ID are required' },
         { 
           status: 400,
-          headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3111',
-          },
+          headers: corsHeaders
         }
       )
     }
@@ -127,19 +119,17 @@ export async function POST(request: NextRequest) {
       company: transformedCompany,
       message: 'Company created successfully',
     }, {
-      headers: {
-        'Access-Control-Allow-Origin': 'http://localhost:3111',
-      },
+      headers: corsHeaders
     })
   } catch (error) {
     console.error('Create company error:', error)
+    const origin = request.headers.get('origin');
+    const corsHeaders = getCorsHeaders(origin);
     return NextResponse.json(
       { error: 'Failed to create company' },
       { 
         status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders
       }
     )
   } finally {

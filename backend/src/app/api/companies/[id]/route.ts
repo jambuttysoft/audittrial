@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const origin = request.headers.get('origin');
+    const corsHeaders = getCorsHeaders(origin);
     const { id } = await params
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
@@ -13,9 +16,7 @@ export async function PUT(
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { 
         status: 400,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders
       })
     }
 
@@ -30,9 +31,7 @@ export async function PUT(
     if (!existingCompany) {
       return NextResponse.json({ error: 'Company not found' }, { 
         status: 404,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders
       })
     }
 
@@ -71,19 +70,17 @@ export async function PUT(
     }
 
     return NextResponse.json(transformedCompany, {
-      headers: {
-        'Access-Control-Allow-Origin': 'http://localhost:3111',
-      },
+      headers: corsHeaders
     })
   } catch (error) {
     console.error('Update company error:', error)
+    const origin = request.headers.get('origin');
+    const corsHeaders = getCorsHeaders(origin);
     return NextResponse.json(
       { error: 'Failed to update company' },
       { 
         status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-        },
+        headers: corsHeaders
       }
     )
   } finally {
@@ -91,12 +88,7 @@ export async function PUT(
   }
 }
 
-export async function OPTIONS() {
-  return NextResponse.json({}, {
-    headers: {
-      'Access-Control-Allow-Origin': 'http://localhost:3111',
-      'Access-Control-Allow-Methods': 'PUT, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  })
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  return handleCorsOptions(origin);
 }
