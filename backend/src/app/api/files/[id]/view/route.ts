@@ -102,7 +102,7 @@ export async function GET(
     headers.set('Cross-Origin-Resource-Policy', 'cross-origin')
     headers.set('Cross-Origin-Embedder-Policy', 'unsafe-none')
 
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(new Uint8Array(fileBuffer), {
       status: 200,
       headers,
     })

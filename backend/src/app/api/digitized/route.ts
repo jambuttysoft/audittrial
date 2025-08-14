@@ -130,7 +130,7 @@ export async function DELETE(request: NextRequest) {
     if (!id || !userId) {
       return NextResponse.json(
         { error: 'Document ID and User ID are required' },
-        { status: 400, headers: corsHeaders }
+        { status: 400, headers: getCorsHeaders() }
       );
     }
 
@@ -161,7 +161,7 @@ export async function DELETE(request: NextRequest) {
     console.error('Error deleting digitized document:', error);
     return NextResponse.json(
       { error: 'Failed to delete document' },
-      { status: 500, headers: corsHeaders }
+      { status: 500, headers: getCorsHeaders() }
     );
   }
 }

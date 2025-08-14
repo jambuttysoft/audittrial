@@ -292,7 +292,7 @@ function DashboardContent() {
     }, 30000)
 
     return () => clearInterval(interval)
-  }, [user?.id])
+  }, [user?.id, selectedCompany?.id])
 
   const loadDashboardData = async (userData: UserData) => {
     try {
@@ -398,7 +398,10 @@ function DashboardContent() {
   }
 
   const loadDigitizedDocuments = async (companyId: string) => {
-    if (!user?.id) return
+    if (!user?.id || !companyId) {
+      console.log('Missing user ID or company ID for loading digitized documents')
+      return
+    }
     
     try {
       const response = await fetch(`http://localhost:3110/api/digitized?userId=${user.id}&companyId=${companyId}`)

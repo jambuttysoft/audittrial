@@ -213,7 +213,7 @@ export async function POST(
       })
 
       // Создаем запись в таблице Digitized
-      const digitizedDocument = await prisma.Digitized.create({
+      const digitizedDocument = await prisma.digitized.create({
         data: {
           companyId: documentWithRelations.companyId,
           userId: documentWithRelations.userId,
