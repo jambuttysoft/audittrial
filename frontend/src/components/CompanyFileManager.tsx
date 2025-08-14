@@ -110,8 +110,9 @@ export default function CompanyFileManager({ companyId, userId, onDocumentsUpdat
       formData.append('userId', userId)
       formData.append('companyId', companyId)
 
-      const response = await fetch('http://localhost:3110/api/documents/upload', {
+      const response = await fetch('/api/documents/upload', {
         method: 'POST',
+        credentials: 'include',
         body: formData,
       })
 

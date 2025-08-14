@@ -327,7 +327,9 @@ function DashboardContent() {
 
   const loadCompanies = async (userData: UserData) => {
     try {
-      const response = await fetch(`http://localhost:3110/api/companies?userId=${userData.id}`)
+      const response = await fetch(`/api/companies?userId=${userData.id}`, {
+        credentials: 'include'
+      })
       if (response.ok) {
         const companiesData = await response.json()
         console.log('Companies API response:', companiesData)
@@ -355,7 +357,9 @@ function DashboardContent() {
     console.log('Loading documents for company:', companyId, 'user:', user.id)
     
     try {
-      const response = await fetch(`http://localhost:3110/api/companies/${companyId}/files?userId=${user.id}`)
+      const response = await fetch(`/api/companies/${companyId}/files?userId=${user.id}`, {
+        credentials: 'include'
+      })
       console.log('Documents API response status:', response.status)
       
       if (response.ok) {
@@ -404,7 +408,9 @@ function DashboardContent() {
     }
     
     try {
-      const response = await fetch(`http://localhost:3110/api/digitized?userId=${user.id}&companyId=${companyId}`)
+      const response = await fetch(`/api/digitized?userId=${user.id}&companyId=${companyId}`, {
+        credentials: 'include'
+      })
       if (response.ok) {
         const digitizedResponse = await response.json()
         console.log('Digitized documents API response:', digitizedResponse)
@@ -425,11 +431,12 @@ function DashboardContent() {
     if (!editedCompany || !user?.id) return
 
     try {
-      const response = await fetch(`http://localhost:3110/api/companies/${editedCompany.id}?userId=${user.id}`, {
+      const response = await fetch(`/api/companies/${editedCompany.id}?userId=${user.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           name: editedCompany.name,
           description: editedCompany.description,
@@ -472,11 +479,12 @@ function DashboardContent() {
 
     setIsCreatingCompany(true)
     try {
-      const response = await fetch('http://localhost:3110/api/companies', {
+      const response = await fetch('/api/companies', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           ...newCompanyData,
           userId: user.id
@@ -586,11 +594,12 @@ function DashboardContent() {
     try {
       console.log(`Starting digitization for document ${documentId}...`)
       
-      const response = await fetch(`http://localhost:3110/api/documents/${documentId}/digitize?userId=${user.id}`, {
+      const response = await fetch(`/api/documents/${documentId}/digitize?userId=${user.id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
       })
 
       console.log(`Digitization response status: ${response.status}`)
@@ -672,8 +681,9 @@ function DashboardContent() {
     if (!documentToDelete) return
     
     try {
-      const response = await fetch(`http://localhost:3110/api/documents/${documentToDelete}?userId=${user?.id}`, {
+      const response = await fetch(`/api/documents/${documentToDelete}?userId=${user?.id}`, {
         method: 'DELETE',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -720,8 +730,9 @@ function DashboardContent() {
     if (!digitizedDocumentToDelete) return
     
     try {
-      const response = await fetch(`http://localhost:3110/api/digitized?id=${digitizedDocumentToDelete}&userId=${user?.id}`, {
+      const response = await fetch(`/api/digitized?id=${digitizedDocumentToDelete}&userId=${user?.id}`, {
         method: 'DELETE',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -790,8 +801,9 @@ function DashboardContent() {
         formData.append('companyId', selectedCompany.id)
         formData.append('userId', user.id)
 
-        const response = await fetch('http://localhost:3110/api/documents/upload', {
+        const response = await fetch('/api/documents/upload', {
           method: 'POST',
+          credentials: 'include',
           body: formData,
         })
 
@@ -833,7 +845,9 @@ function DashboardContent() {
     setAbnData(null)
     
     try {
-      const response = await fetch(`http://localhost:3110/api/abn-lookup?abn=${abn}`)
+      const response = await fetch(`/api/abn-lookup?abn=${abn}`, {
+        credentials: 'include'
+      })
       
       if (response.ok) {
         const data = await response.json()
@@ -892,7 +906,9 @@ function DashboardContent() {
     if (!user?.id) return
     
     try {
-      const response = await fetch(`http://localhost:3110/api/xero/status?userId=${user.id}`)
+      const response = await fetch(`/api/xero/status?userId=${user.id}`, {
+        credentials: 'include'
+      })
       if (response.ok) {
         const status = await response.json()
         setXeroStatus(status)
@@ -907,7 +923,9 @@ function DashboardContent() {
     
     setIsLoadingXero(true)
     try {
-      const response = await fetch(`http://localhost:3110/api/xero/auth?userId=${user.id}`)
+      const response = await fetch(`/api/xero/auth?userId=${user.id}`, {
+        credentials: 'include'
+      })
       if (response.ok) {
         const { consentUrl } = await response.json()
         window.open(consentUrl, '_blank', 'width=600,height=700')
@@ -944,8 +962,9 @@ function DashboardContent() {
     
     setIsLoadingXero(true)
     try {
-      const response = await fetch(`http://localhost:3110/api/xero/status?userId=${user.id}`, {
-        method: 'DELETE'
+      const response = await fetch(`/api/xero/status?userId=${user.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
       })
       
       if (response.ok) {
@@ -974,7 +993,9 @@ function DashboardContent() {
     setIsTestingXero(true)
     setXeroTestResult(null)
     try {
-      const response = await fetch(`http://localhost:3110/api/xero/test?userId=${user.id}`)
+      const response = await fetch(`/api/xero/test?userId=${user.id}`, {
+        credentials: 'include'
+      })
       const result = await response.json()
       
       if (response.ok) {
@@ -1025,7 +1046,9 @@ function DashboardContent() {
     setIsTestingXero(true)
     setXeroTestResult(null)
     try {
-      const response = await fetch(`http://localhost:3110/api/xero/test?userId=${user.id}`)
+      const response = await fetch(`/api/xero/test?userId=${user.id}`, {
+        credentials: 'include'
+      })
       const result = await response.json()
       
       if (response.ok) {
@@ -1292,7 +1315,7 @@ function DashboardContent() {
                           {doc.mimeType.startsWith('image/') ? (
                             <div className="relative w-10 h-10 rounded-md overflow-hidden bg-muted flex-shrink-0">
                               <img 
-                                src={`http://localhost:3110/api/files/${doc.id}/view?userId=${user?.id}`}
+                                src={`/api/files/${doc.id}/view?userId=${user?.id}`}
                                 alt={doc.originalName}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
@@ -2103,7 +2126,7 @@ function DashboardContent() {
                   size="sm" 
                   onClick={() => {
                      if (selectedDocumentForImage) {
-                       const imageUrl = `http://localhost:3110/api/files/${selectedDocumentForImage.id}/view?userId=${user?.id}`
+                       const imageUrl = `/api/files/${selectedDocumentForImage.id}/view?userId=${user?.id}`
                        window.open(imageUrl, '_blank')
                      }
                    }}
@@ -2153,7 +2176,7 @@ function DashboardContent() {
                 
                 <img 
                   ref={imageRef}
-                  src={`http://localhost:3110/api/files/${selectedDocumentForImage.id}/view?userId=${user?.id}`}
+                  src={`/api/files/${selectedDocumentForImage.id}/view?userId=${user?.id}`}
                   alt={selectedDocumentForImage.originalName}
                   className="absolute top-1/2 left-1/2 max-w-none shadow-2xl transition-transform duration-200 ease-out"
                   style={{
@@ -2592,11 +2615,12 @@ function CreateCompanyDialog({ onCompanyCreated }: { onCompanyCreated: (userData
       }
 
       const user = JSON.parse(userData)
-      const response = await fetch('http://localhost:3110/api/companies', {
+      const response = await fetch('/api/companies', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           ...companyData,
           userId: user.id

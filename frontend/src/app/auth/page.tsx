@@ -61,11 +61,12 @@ export default function AuthPage() {
     setError('')
     
     try {
-      const response = await fetch('http://localhost:3110/api/auth/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(loginData),
       })
       
@@ -95,11 +96,12 @@ export default function AuthPage() {
     setError('')
     
     try {
-      const response = await fetch('http://localhost:3110/api/auth/register', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(registerData),
       })
       
@@ -110,11 +112,12 @@ export default function AuthPage() {
         
         // Автоматический логин после успешной регистрации
         try {
-          const loginResponse = await fetch('http://localhost:3110/api/auth/login', {
+          const loginResponse = await fetch('/api/auth/login', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
+            credentials: 'include',
             body: JSON.stringify({
               email: registerData.email,
               password: registerData.password
