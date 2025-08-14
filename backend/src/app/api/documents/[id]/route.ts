@@ -9,7 +9,7 @@ export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': 'http://localhost:3000',
+      'Access-Control-Allow-Origin': 'http://localhost:3111',
       'Access-Control-Allow-Methods': 'GET, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
@@ -29,7 +29,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'User ID is required' }, { 
         status: 400,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       })
     }
@@ -46,7 +46,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Document not found' }, { 
         status: 404,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       })
     }
@@ -73,7 +73,7 @@ export async function DELETE(
       message: 'Document deleted successfully',
     }, {
       headers: {
-        'Access-Control-Allow-Origin': 'http://localhost:3000',
+        'Access-Control-Allow-Origin': 'http://localhost:3111',
       },
     })
   } catch (error) {
@@ -83,7 +83,7 @@ export async function DELETE(
       { 
         status: 500,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       }
     )
@@ -105,7 +105,7 @@ export async function GET(
       return NextResponse.json({ error: 'User ID is required' }, { 
         status: 400,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       })
     }
@@ -137,7 +137,7 @@ export async function GET(
       return NextResponse.json({ error: 'Document not found' }, { 
         status: 404,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       })
     }
@@ -147,7 +147,7 @@ export async function GET(
       document,
     }, {
       headers: {
-        'Access-Control-Allow-Origin': 'http://localhost:3000',
+        'Access-Control-Allow-Origin': 'http://localhost:3111',
       },
     })
   } catch (error) {
@@ -157,7 +157,7 @@ export async function GET(
       { 
         status: 500,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       }
     )

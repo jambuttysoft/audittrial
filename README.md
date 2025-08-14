@@ -97,8 +97,8 @@ npx shadcn@latest add [component-name]
 
 ## Порты
 
-- **Frontend**: http://localhost:3000
-- **Backend**: http://localhost:3001
+- **Frontend**: http://localhost:3111
+- **Backend**: http://localhost:3110
 - **Prisma Studio**: http://localhost:5555
 
 ## Лицензия 

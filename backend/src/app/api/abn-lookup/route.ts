@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   
   // Добавляем CORS заголовки
   const corsHeaders = {
-    'Access-Control-Allow-Origin': 'http://localhost:3000',
+    'Access-Control-Allow-Origin': 'http://localhost:3111',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   }
@@ -91,7 +91,7 @@ export async function OPTIONS(request: NextRequest) {
   return new Response(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': 'http://localhost:3000',
+      'Access-Control-Allow-Origin': 'http://localhost:3111',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },

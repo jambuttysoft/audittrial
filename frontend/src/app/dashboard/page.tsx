@@ -355,7 +355,7 @@ export default function DashboardPage() {
     console.log('Loading documents for company:', companyId, 'user:', user.id)
     
     try {
-      const response = await fetch(`http://localhost:3001/api/companies/${companyId}/files?userId=${user.id}`)
+      const response = await fetch(`http://localhost:3110/api/companies/${companyId}/files?userId=${user.id}`)
       console.log('Documents API response status:', response.status)
       
       if (response.ok) {
@@ -669,7 +669,7 @@ export default function DashboardPage() {
     if (!documentToDelete) return
     
     try {
-      const response = await fetch(`http://localhost:3001/api/documents/${documentToDelete}?userId=${user?.id}`, {
+      const response = await fetch(`http://localhost:3110/api/documents/${documentToDelete}?userId=${user?.id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -717,7 +717,7 @@ export default function DashboardPage() {
     if (!digitizedDocumentToDelete) return
     
     try {
-      const response = await fetch(`http://localhost:3001/api/digitized?id=${digitizedDocumentToDelete}&userId=${user?.id}`, {
+      const response = await fetch(`http://localhost:3110/api/digitized?id=${digitizedDocumentToDelete}&userId=${user?.id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -787,7 +787,7 @@ export default function DashboardPage() {
         formData.append('companyId', selectedCompany.id)
         formData.append('userId', user.id)
 
-        const response = await fetch('http://localhost:3001/api/documents/upload', {
+        const response = await fetch('http://localhost:3110/api/documents/upload', {
           method: 'POST',
           body: formData,
         })
@@ -941,7 +941,7 @@ export default function DashboardPage() {
     
     setIsLoadingXero(true)
     try {
-      const response = await fetch(`http://localhost:3001/api/xero/status?userId=${user.id}`, {
+      const response = await fetch(`http://localhost:3110/api/xero/status?userId=${user.id}`, {
         method: 'DELETE'
       })
       
@@ -1022,7 +1022,7 @@ export default function DashboardPage() {
     setIsTestingXero(true)
     setXeroTestResult(null)
     try {
-      const response = await fetch(`http://localhost:3001/api/xero/test?userId=${user.id}`)
+      const response = await fetch(`http://localhost:3110/api/xero/test?userId=${user.id}`)
       const result = await response.json()
       
       if (response.ok) {
@@ -1289,7 +1289,7 @@ export default function DashboardPage() {
                           {doc.mimeType.startsWith('image/') ? (
                             <div className="relative w-10 h-10 rounded-md overflow-hidden bg-muted flex-shrink-0">
                               <img 
-                                src={`http://localhost:3001/api/files/${doc.id}/view?userId=${user?.id}`}
+                                src={`http://localhost:3110/api/files/${doc.id}/view?userId=${user?.id}`}
                                 alt={doc.originalName}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
@@ -2100,7 +2100,7 @@ export default function DashboardPage() {
                   size="sm" 
                   onClick={() => {
                      if (selectedDocumentForImage) {
-                       const imageUrl = `http://localhost:3001/api/files/${selectedDocumentForImage.id}/view?userId=${user?.id}`
+                       const imageUrl = `http://localhost:3110/api/files/${selectedDocumentForImage.id}/view?userId=${user?.id}`
                        window.open(imageUrl, '_blank')
                      }
                    }}
@@ -2150,7 +2150,7 @@ export default function DashboardPage() {
                 
                 <img 
                   ref={imageRef}
-                  src={`http://localhost:3001/api/files/${selectedDocumentForImage.id}/view?userId=${user?.id}`}
+                  src={`http://localhost:3110/api/files/${selectedDocumentForImage.id}/view?userId=${user?.id}`}
                   alt={selectedDocumentForImage.originalName}
                   className="absolute top-1/2 left-1/2 max-w-none shadow-2xl transition-transform duration-200 ease-out"
                   style={{
@@ -2581,7 +2581,7 @@ function CreateCompanyDialog({ onCompanyCreated }: { onCompanyCreated: (userData
       }
 
       const user = JSON.parse(userData)
-      const response = await fetch('http://localhost:3001/api/companies', {
+      const response = await fetch('http://localhost:3110/api/companies', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

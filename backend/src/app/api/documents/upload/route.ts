@@ -9,7 +9,7 @@ export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': 'http://localhost:3000',
+      'Access-Control-Allow-Origin': 'http://localhost:3111',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { 
         status: 400,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       })
     }
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { 
         status: 400,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       })
     }
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
         { 
           status: 400,
           headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3000',
+            'Access-Control-Allow-Origin': 'http://localhost:3111',
           },
         }
       )
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
         { 
           status: 400,
           headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3000',
+            'Access-Control-Allow-Origin': 'http://localhost:3111',
           },
         }
       )
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { 
         status: 404,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       })
     }
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Company not found' }, { 
           status: 404,
           headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3000',
+            'Access-Control-Allow-Origin': 'http://localhost:3111',
           },
         })
       }
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
       message: 'File uploaded successfully',
     }, {
       headers: {
-        'Access-Control-Allow-Origin': 'http://localhost:3000',
+        'Access-Control-Allow-Origin': 'http://localhost:3111',
       },
     })
   } catch (error) {
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
       { 
         status: 500,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       }
     )

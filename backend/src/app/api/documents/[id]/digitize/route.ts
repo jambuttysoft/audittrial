@@ -21,7 +21,7 @@ export async function POST(
       return NextResponse.json({ error: 'User ID is required' }, { 
         status: 400,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       })
     }
@@ -38,7 +38,7 @@ export async function POST(
       return NextResponse.json({ error: 'Document not found' }, { 
         status: 404,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       })
     }
@@ -47,7 +47,7 @@ export async function POST(
       return NextResponse.json({ error: 'Document already digitized' }, { 
         status: 400,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       })
     }
@@ -254,7 +254,7 @@ export async function POST(
         message: 'Document digitization completed successfully',
       }, {
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       })
     } catch (processingError) {
@@ -304,7 +304,7 @@ export async function POST(
         { 
           status: shouldRetryLater ? 503 : 500,
           headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3000',
+            'Access-Control-Allow-Origin': 'http://localhost:3111',
           },
         }
       )
@@ -316,7 +316,7 @@ export async function POST(
       { 
         status: 500,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       }
     )
@@ -328,7 +328,7 @@ export async function POST(
 export async function OPTIONS() {
   return NextResponse.json({}, {
     headers: {
-      'Access-Control-Allow-Origin': 'http://localhost:3000',
+      'Access-Control-Allow-Origin': 'http://localhost:3111',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     },

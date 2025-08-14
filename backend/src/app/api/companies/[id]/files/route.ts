@@ -6,7 +6,7 @@ export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': 'http://localhost:3000',
+      'Access-Control-Allow-Origin': 'http://localhost:3111',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
@@ -26,7 +26,7 @@ export async function GET(
       return NextResponse.json({ error: 'User ID is required' }, { 
         status: 400,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       })
     }
@@ -43,7 +43,7 @@ export async function GET(
       return NextResponse.json({ error: 'Company not found' }, { 
         status: 404,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       })
     }
@@ -80,7 +80,7 @@ export async function GET(
       company,
     }, {
       headers: {
-        'Access-Control-Allow-Origin': 'http://localhost:3000',
+        'Access-Control-Allow-Origin': 'http://localhost:3111',
         'Cross-Origin-Resource-Policy': 'cross-origin',
         'Cross-Origin-Embedder-Policy': 'unsafe-none',
       },
@@ -92,7 +92,7 @@ export async function GET(
       { 
         status: 500,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       }
     )

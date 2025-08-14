@@ -48,7 +48,7 @@ export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': 'http://localhost:3000',
+      'Access-Control-Allow-Origin': 'http://localhost:3111',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     },
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
         { 
           status: 400,
           headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3000',
+            'Access-Control-Allow-Origin': 'http://localhost:3111',
             'Access-Control-Allow-Methods': 'GET, OPTIONS',
             'Access-Control-Allow-Headers': 'Content-Type',
           }
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
         { 
           status: 500,
           headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3000',
+            'Access-Control-Allow-Origin': 'http://localhost:3111',
             'Access-Control-Allow-Methods': 'GET, OPTIONS',
             'Access-Control-Allow-Headers': 'Content-Type',
           }
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
       { authUrl: urlWithUserId },
       {
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
           'Access-Control-Allow-Methods': 'GET, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type',
         }
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
       { 
         status: 500,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
           'Access-Control-Allow-Methods': 'GET, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type',
         }

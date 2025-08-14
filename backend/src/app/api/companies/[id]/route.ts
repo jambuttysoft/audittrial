@@ -14,7 +14,7 @@ export async function PUT(
       return NextResponse.json({ error: 'User ID is required' }, { 
         status: 400,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       })
     }
@@ -31,7 +31,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Company not found' }, { 
         status: 404,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       })
     }
@@ -72,7 +72,7 @@ export async function PUT(
 
     return NextResponse.json(transformedCompany, {
       headers: {
-        'Access-Control-Allow-Origin': 'http://localhost:3000',
+        'Access-Control-Allow-Origin': 'http://localhost:3111',
       },
     })
   } catch (error) {
@@ -82,7 +82,7 @@ export async function PUT(
       { 
         status: 500,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       }
     )
@@ -94,7 +94,7 @@ export async function PUT(
 export async function OPTIONS() {
   return NextResponse.json({}, {
     headers: {
-      'Access-Control-Allow-Origin': 'http://localhost:3000',
+      'Access-Control-Allow-Origin': 'http://localhost:3111',
       'Access-Control-Allow-Methods': 'PUT, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     },

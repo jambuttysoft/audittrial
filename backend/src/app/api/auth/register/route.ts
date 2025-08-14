@@ -21,7 +21,7 @@ export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': 'http://localhost:3000',
+      'Access-Control-Allow-Origin': 'http://localhost:3111',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     },
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
         { 
           status: 400,
           headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3000',
+            'Access-Control-Allow-Origin': 'http://localhost:3111',
             'Access-Control-Allow-Methods': 'POST, OPTIONS',
             'Access-Control-Allow-Headers': 'Content-Type',
           }
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         { 
           status: 400,
           headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3000',
+            'Access-Control-Allow-Origin': 'http://localhost:3111',
             'Access-Control-Allow-Methods': 'POST, OPTIONS',
             'Access-Control-Allow-Headers': 'Content-Type',
           }
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
         { 
           status: 409,
           headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3000',
+            'Access-Control-Allow-Origin': 'http://localhost:3111',
             'Access-Control-Allow-Methods': 'POST, OPTIONS',
             'Access-Control-Allow-Headers': 'Content-Type',
           }
@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
     }, { 
       status: 201,
       headers: {
-        'Access-Control-Allow-Origin': 'http://localhost:3000',
+        'Access-Control-Allow-Origin': 'http://localhost:3111',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
       }
@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
       { 
         status: 500,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
           'Access-Control-Allow-Methods': 'POST, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type',
         }

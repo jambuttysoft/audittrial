@@ -110,7 +110,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
     setIsCreatingCompany(true)
     try {
-      const response = await fetch(`http://localhost:3001/api/companies?userId=${userData.id}`, {
+      const response = await fetch(`http://localhost:3110/api/companies?userId=${userData.id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -156,7 +156,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       }
       
       try {
-        const response = await fetch(`http://localhost:3001/api/companies?userId=${userData.id}`)
+        const response = await fetch(`http://localhost:3110/api/companies?userId=${userData.id}`)
         if (response.ok) {
           const companiesData = await response.json()
           setCompanies(companiesData)

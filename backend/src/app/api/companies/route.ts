@@ -6,7 +6,7 @@ export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': 'http://localhost:3000',
+      'Access-Control-Allow-Origin': 'http://localhost:3111',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { 
         status: 400,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       })
     }
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
       companies: transformedCompanies,
     }, {
       headers: {
-        'Access-Control-Allow-Origin': 'http://localhost:3000',
+        'Access-Control-Allow-Origin': 'http://localhost:3111',
       },
     })
   } catch (error) {
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
       { 
         status: 500,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       }
     )
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
         { 
           status: 400,
           headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3000',
+            'Access-Control-Allow-Origin': 'http://localhost:3111',
           },
         }
       )
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
       message: 'Company created successfully',
     }, {
       headers: {
-        'Access-Control-Allow-Origin': 'http://localhost:3000',
+        'Access-Control-Allow-Origin': 'http://localhost:3111',
       },
     })
   } catch (error) {
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
       { 
         status: 500,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Origin': 'http://localhost:3111',
         },
       }
     )

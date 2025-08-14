@@ -57,13 +57,13 @@ export async function GET(request: NextRequest) {
     if (error) {
       const errorDescription = searchParams.get('error_description') || 'Authorization failed';
       return NextResponse.redirect(
-        `http://localhost:3002/dashboard?xero_error=${encodeURIComponent(errorDescription)}`
+        `http://localhost:3111/dashboard?xero_error=${encodeURIComponent(errorDescription)}`
       );
     }
     
     if (!code || !state) {
       return NextResponse.redirect(
-        `http://localhost:3002/dashboard?xero_error=${encodeURIComponent('Missing authorization code or state')}`
+        `http://localhost:3111/dashboard?xero_error=${encodeURIComponent('Missing authorization code or state')}`
       );
     }
     
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
     const userIdMatch = state.match(/userId=([^&]+)/);
     if (!userIdMatch) {
       return NextResponse.redirect(
-        `http://localhost:3002/dashboard?xero_error=${encodeURIComponent('Invalid state parameter')}`
+        `http://localhost:3111/dashboard?xero_error=${encodeURIComponent('Invalid state parameter')}`
       );
     }
     
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
     
     if (!user) {
       return NextResponse.redirect(
-        `http://localhost:3002/dashboard?xero_error=${encodeURIComponent('User not found')}`
+        `http://localhost:3111/dashboard?xero_error=${encodeURIComponent('User not found')}`
       );
     }
     
@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
     
     if (!tokenSet.access_token || !tokenSet.refresh_token) {
       return NextResponse.redirect(
-        `http://localhost:3002/dashboard?xero_error=${encodeURIComponent('Failed to obtain tokens')}`
+        `http://localhost:3111/dashboard?xero_error=${encodeURIComponent('Failed to obtain tokens')}`
       );
     }
     
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
     
     if (!activeTenant) {
       return NextResponse.redirect(
-        `http://localhost:3002/dashboard?xero_error=${encodeURIComponent('No active Xero organisation found')}`
+        `http://localhost:3111/dashboard?xero_error=${encodeURIComponent('No active Xero organisation found')}`
       );
     }
     
@@ -165,13 +165,13 @@ export async function GET(request: NextRequest) {
     
     // Redirect back to dashboard with success message
     return NextResponse.redirect(
-      `http://localhost:3002/dashboard?xero_success=${encodeURIComponent('Xero connected successfully')}`
+      `http://localhost:3111/dashboard?xero_success=${encodeURIComponent('Xero connected successfully')}`
     );
     
   } catch (error) {
     console.error('Xero callback error:', error);
     return NextResponse.redirect(
-      `http://localhost:3002/dashboard?xero_error=${encodeURIComponent('Failed to connect to Xero')}`
+      `http://localhost:3111/dashboard?xero_error=${encodeURIComponent('Failed to connect to Xero')}`
     );
   }
 }
