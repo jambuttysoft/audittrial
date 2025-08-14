@@ -2085,11 +2085,11 @@ function DashboardContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Улучшенное модальное окно для отображения изображений после оцифровки */}
+      {/* Enhanced modal window for displaying images after digitization */}
       <Dialog open={isImageModalOpen} onOpenChange={(open) => {
         setIsImageModalOpen(open)
         if (!open) {
-          // Сброс зума и позиции при закрытии модального окна
+          // Reset zoom and position when closing modal window
           setImageZoom(1)
           setImagePosition({ x: 0, y: 0 })
           setIsDragging(false)
@@ -2100,7 +2100,7 @@ function DashboardContent() {
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <DialogTitle className="text-lg font-semibold text-foreground">
-                  Просмотр документа
+                  Document View
                 </DialogTitle>
                 <p className="text-sm text-muted-foreground mt-1">
                   {selectedDocumentForImage?.originalName}
@@ -2108,7 +2108,7 @@ function DashboardContent() {
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
-                  <span>Масштаб: {Math.round(imageZoom * 100)}%</span>
+                  <span>Zoom: {Math.round(imageZoom * 100)}%</span>
                 </div>
                 <Button 
                   variant="outline" 
@@ -2119,7 +2119,7 @@ function DashboardContent() {
                   }}
                   className="bg-background/80 hover:bg-background"
                 >
-                  Сбросить
+                  Reset
                 </Button>
                 <Button 
                   variant="outline" 
@@ -2132,7 +2132,7 @@ function DashboardContent() {
                    }}
                   className="bg-background/80 hover:bg-background"
                 >
-                  Открыть в новой вкладке
+                  Open in New Tab
                 </Button>
               </div>
             </div>
@@ -2166,11 +2166,11 @@ function DashboardContent() {
           >
             {selectedDocumentForImage && (
               <>
-                {/* Индикатор загрузки */}
+                {/* Loading indicator */}
                 <div className="loading-indicator absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm">
                   <div className="text-center text-white">
                     <Loader2 className="h-8 w-8 animate-spin mx-auto mb-3" />
-                    <p className="text-sm opacity-80">Загрузка изображения...</p>
+                    <p className="text-sm opacity-80">Loading image...</p>
                   </div>
                 </div>
                 
@@ -2185,56 +2185,56 @@ function DashboardContent() {
                     filter: 'drop-shadow(0 10px 25px rgba(0,0,0,0.5))'
                   }}
                   onError={(e) => {
-                    console.error('Ошибка загрузки изображения для документа:', selectedDocumentForImage.id)
-                    console.error('URL изображения:', e.currentTarget.src)
+                    console.error('Image loading error for document:', selectedDocumentForImage.id)
+                    console.error('Image URL:', e.currentTarget.src)
                     
-                    // Скрыть изображение и индикатор загрузки
+                    // Hide image and loading indicator
                     e.currentTarget.style.display = 'none'
                     const loadingDiv = e.currentTarget.parentElement?.querySelector('.loading-indicator') as HTMLElement
                     if (loadingDiv) loadingDiv.style.display = 'none'
                     
-                    // Показать сообщение об ошибке
+                    // Show error message
                     const errorDiv = e.currentTarget.parentElement?.querySelector('.error-message') as HTMLElement
                     if (errorDiv) {
                       errorDiv.style.display = 'flex'
                     }
                     
                     toast({
-                      title: "Ошибка загрузки изображения",
-                      description: `Не удалось загрузить изображение документа: ${selectedDocumentForImage.originalName}`,
+                      title: "Image Loading Error",
+                      description: `Failed to load document image: ${selectedDocumentForImage.originalName}`,
                       variant: "destructive"
                     })
                   }}
                   onLoad={() => {
-                    console.log('Изображение успешно загружено для документа:', selectedDocumentForImage.id)
+                    console.log('Image successfully loaded for document:', selectedDocumentForImage.id)
                     
-                    // Скрыть индикатор загрузки
+                    // Hide loading indicator
                     const loadingDiv = imageRef.current?.parentElement?.querySelector('.loading-indicator') as HTMLElement
                     if (loadingDiv) loadingDiv.style.display = 'none'
                     
-                    // Скрыть сообщение об ошибке если оно было показано
+                    // Hide error message if it was shown
                     const errorDiv = imageRef.current?.parentElement?.querySelector('.error-message') as HTMLElement
                     if (errorDiv) errorDiv.style.display = 'none'
                   }}
                   draggable={false}
                 />
                 
-                {/* Сообщение об ошибке */}
+                {/* Error message */}
                 <div className="error-message hidden absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
                   <div className="text-center text-white bg-red-900/20 border border-red-500/30 rounded-lg p-8 max-w-md mx-4">
                     <AlertCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Ошибка загрузки изображения</h3>
-                    <p className="text-sm opacity-80 mb-4">Не удалось загрузить изображение документа</p>
+                    <h3 className="text-lg font-semibold mb-2">Image Loading Error</h3>
+                    <p className="text-sm opacity-80 mb-4">Failed to load document image</p>
                     <div className="text-xs opacity-60 space-y-1">
-                      <p>ID документа: {selectedDocumentForImage.id}</p>
-                      <p>Файл: {selectedDocumentForImage.originalName}</p>
+                      <p>Document ID: {selectedDocumentForImage.id}</p>
+                      <p>File: {selectedDocumentForImage.originalName}</p>
                     </div>
                     <Button 
                       variant="outline" 
                       size="sm" 
                       className="mt-4 bg-white/10 border-white/20 text-white hover:bg-white/20"
                       onClick={() => {
-                        // Попробовать перезагрузить изображение
+                        // Try to reload the image
                         const img = imageRef.current
                         if (img) {
                           const loadingDiv = img.parentElement?.querySelector('.loading-indicator') as HTMLElement
@@ -2242,11 +2242,11 @@ function DashboardContent() {
                           if (loadingDiv) loadingDiv.style.display = 'flex'
                           if (errorDiv) errorDiv.style.display = 'none'
                           img.style.display = 'block'
-                          img.src = img.src + '&t=' + Date.now() // Принудительная перезагрузка
+                          img.src = img.src + '&t=' + Date.now() // Force reload
                         }
                       }}
                     >
-                      Попробовать снова
+                      Try Again
                     </Button>
                   </div>
                 </div>
