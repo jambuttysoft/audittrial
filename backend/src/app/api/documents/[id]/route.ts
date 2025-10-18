@@ -77,8 +77,6 @@ export async function DELETE(
         headers: corsHeaders,
       }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }
 
@@ -147,7 +145,5 @@ export async function GET(
         headers: corsHeaders,
       }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }

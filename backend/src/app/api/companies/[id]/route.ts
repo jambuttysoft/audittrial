@@ -83,8 +83,6 @@ export async function PUT(
         headers: corsHeaders
       }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }
 

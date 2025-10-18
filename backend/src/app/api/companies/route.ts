@@ -63,8 +63,6 @@ export async function GET(request: NextRequest) {
         headers: corsHeaders
       }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }
 
@@ -132,7 +130,5 @@ export async function POST(request: NextRequest) {
         headers: corsHeaders
       }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }

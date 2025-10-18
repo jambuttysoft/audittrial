@@ -318,8 +318,6 @@ export async function POST(
         headers: corsHeaders,
       }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }
 

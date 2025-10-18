@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { XeroClient, AccountingApi } from 'xero-node'
+import { XeroClient } from 'xero-node'
 import { prisma } from '@/lib/prisma'
 import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
 
@@ -46,10 +46,12 @@ function getXeroClient() {
 
 // CORS preflight
 export async function OPTIONS(request: NextRequest) {
-  return handleCorsOptions(request.headers.get('origin') || '')
+  const origin = request.headers.get('origin')
+  return handleCorsOptions(origin)
 }
 
 export async function GET(request: NextRequest) {
+  const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
   try {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
@@ -72,7 +74,7 @@ export async function GET(request: NextRequest) {
       console.log('ERROR: No userId provided')
       return NextResponse.json(
         { error: 'User ID is required' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
@@ -104,7 +106,7 @@ export async function GET(request: NextRequest) {
       })
       return NextResponse.json(
         { error: 'User not connected to Xero or missing tokens' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       )
     }
 
@@ -115,7 +117,7 @@ export async function GET(request: NextRequest) {
     if (tokenExpiry && now >= tokenExpiry) {
       return NextResponse.json(
         { error: 'Xero token has expired. Please reconnect.' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       )
     }
 
@@ -159,7 +161,7 @@ export async function GET(request: NextRequest) {
         bankAccountType: account.bankAccountType,
         currencyCode: account.currencyCode,
       })),
-    })
+    }, { headers: corsHeaders })
   } catch (error: any) {
     console.error('Error fetching Xero accounts:', error)
     
@@ -171,26 +173,24 @@ export async function GET(request: NextRequest) {
       if (status === 401) {
         return NextResponse.json(
           { error: 'Unauthorized: Invalid or expired Xero token' },
-          { status: 401 }
+          { status: 401, headers: corsHeaders }
         )
       } else if (status === 403) {
         return NextResponse.json(
           { error: 'Forbidden: Insufficient permissions for Xero API' },
-          { status: 403 }
+          { status: 403, headers: corsHeaders }
         )
       } else {
         return NextResponse.json(
           { error: `Xero API error: ${message}` },
-          { status: status }
+          { status: status, headers: corsHeaders }
         )
       }
     }
     
     return NextResponse.json(
       { error: 'Failed to fetch accounts from Xero', details: error.message },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }

@@ -70,25 +70,15 @@ export async function GET(
     return NextResponse.json({
       success: true,
       documents,
-      company,
-    }, {
-      headers: {
-        ...corsHeaders,
-        'Cross-Origin-Resource-Policy': 'cross-origin',
-        'Cross-Origin-Embedder-Policy': 'unsafe-none',
-      },
+    }, { 
+      headers: corsHeaders,
     })
   } catch (error) {
-    console.error('Get company files error:', error)
     const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
-    return NextResponse.json(
-      { error: 'Failed to get company files' },
-      { 
-        status: 500,
-        headers: corsHeaders,
-      }
-    )
-  } finally {
-    await prisma.$disconnect()
+    console.error('Get company files error:', error)
+    return NextResponse.json({ error: 'Failed to get company files' }, { 
+      status: 500,
+      headers: corsHeaders,
+    })
   }
 }

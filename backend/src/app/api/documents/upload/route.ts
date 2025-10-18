@@ -155,7 +155,5 @@ export async function POST(request: NextRequest) {
         headers: corsHeaders,
       }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }

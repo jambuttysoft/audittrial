@@ -116,7 +116,5 @@ export async function GET(
         headers: corsHeaders,
       }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }
