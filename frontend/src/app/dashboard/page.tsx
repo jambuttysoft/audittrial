@@ -1365,6 +1365,14 @@ function DashboardContent() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => {
+                                    if (!user?.id) {
+                                      toast({
+                                        title: 'Not signed in',
+                                        description: 'Please sign in to view images.',
+                                        variant: 'destructive',
+                                      })
+                                      return
+                                    }
                                     setSelectedDocumentForImage(doc)
                                     setIsImageModalOpen(true)
                                   }}
@@ -1579,6 +1587,14 @@ function DashboardContent() {
                               size="sm"
                               onClick={(e) => {
                                 e.stopPropagation()
+                                if (!user?.id) {
+                                  toast({
+                                    title: 'Not signed in',
+                                    description: 'Please sign in to view images.',
+                                    variant: 'destructive',
+                                  })
+                                  return
+                                }
                                 // Convert DigitizedData to DocumentData format for modal compatibility
                                 // Try to use originalDocumentId first, then fallback to digitized document's own ID
                                 const imageId = doc.originalDocumentId || doc.id
@@ -2126,6 +2142,14 @@ function DashboardContent() {
                   variant="outline" 
                   size="sm" 
                   onClick={() => {
+                     if (!user?.id) {
+                       toast({
+                         title: 'Not signed in',
+                         description: 'Please sign in to view images.',
+                         variant: 'destructive',
+                       })
+                       return
+                     }
                      if (selectedDocumentForImage) {
                        const imageUrl = `/api/files/${selectedDocumentForImage.id}/view?userId=${user?.id}`
                        window.open(imageUrl, '_blank')
