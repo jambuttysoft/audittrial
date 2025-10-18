@@ -19,7 +19,7 @@ audittrial/
 cd backend
 npm install
 npm run db:push          # Создание таблиц в базе данных
-npm run dev              # Запуск на порту 3001
+npm run dev              # Запуск на порту 3645
 ```
 
 ### 2. Запуск фронтенда
@@ -27,7 +27,7 @@ npm run dev              # Запуск на порту 3001
 ```bash
 cd frontend
 npm install
-npm run dev              # Запуск на порту 3000
+npm run dev              # Запуск на порту 3646
 ```
 
 ## Технологии
@@ -97,8 +97,8 @@ npx shadcn@latest add [component-name]
 
 ## Порты
 
-- **Frontend**: http://localhost:3111
-- **Backend**: http://localhost:3110
+- **Frontend**: http://localhost:3646
+- **Backend**: http://localhost:3645
 - **Prisma Studio**: http://localhost:5555
 
 ## Лицензия 

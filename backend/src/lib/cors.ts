@@ -1,8 +1,7 @@
 // CORS utility for handling cross-origin requests
 
 const ALLOWED_ORIGINS = [
-  'http://localhost:3112',
-  'http://localhost:3111',
+  'http://localhost:3646',
   'https://auditrail.trakit.biz'
 ]
 

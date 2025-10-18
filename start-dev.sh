@@ -20,17 +20,17 @@ if [ ! -d "backend" ]; then
     exit 1
 fi
 
-# Запуск бэкенда на порту 3110
-echo "📦 Запуск Backend на порту 3110..."
+# Запуск бэкенда на порту 3645
+echo "📦 Запуск Backend на порту 3645..."
 cd backend
 npm run dev &
 BACKEND_PID=$!
 cd ..
 
-# Запуск фронтенда на порту 3112
-echo "🌐 Запуск Frontend на порту 3112..."
+# Запуск фронтенда на порту 3646
+echo "🌐 Запуск Frontend на порту 3646..."
 cd frontend
-npx next dev -p 3112 &
+npx next dev -p 3646 &
 FRONTEND_PID=$!
 cd ..
 
@@ -38,8 +38,8 @@ cd ..
 sleep 5
 
 echo "✅ Серверы запущены:"
-echo "   🔧 Backend: http://localhost:3110"
-echo "   🌐 Frontend: http://localhost:3112"
+echo "   🔧 Backend: http://localhost:3645"
+echo "   🌐 Frontend: http://localhost:3646"
 echo "   🧪 Xero тест: http://localhost:3003"
 echo ""
 echo "💡 Для остановки нажмите Ctrl+C"
