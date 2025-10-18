@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
       userId,
       originalDocumentId,
       fileName,
+      originalName,
       filePath,
       fileSize,
       mimeType,
@@ -85,10 +86,11 @@ export async function POST(request: NextRequest) {
     // Создаем запись в таблице Digitized
     const digitizedDocument = await prisma.digitized.create({
       data: {
-        companyId,
-        userId,
+        company: { connect: { id: companyId } },
+        user: { connect: { id: userId } },
         originalDocumentId,
         fileName,
+        originalName: originalName ?? fileName,
         filePath,
         fileSize,
         mimeType,
