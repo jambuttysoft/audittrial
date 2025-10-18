@@ -18,6 +18,7 @@ module.exports = {
       env: { NODE_ENV: 'production', PORT: 3645, NEXT_TELEMETRY_DISABLED: '1', GEMINI_MODEL: 'gemini-2.5-flash-lite' },
       instances: 1,
       exec_mode: 'fork',
+      PRISMA_CLIENT_ENGINE_TYPE: 'binary',
       watch: false
     }
   ]
