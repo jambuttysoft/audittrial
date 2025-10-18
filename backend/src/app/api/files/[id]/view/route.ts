@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { readFile } from 'fs/promises'
 import { existsSync } from 'fs'
 import { join } from 'path'
@@ -6,13 +6,13 @@ import { prisma } from '@/lib/prisma'
 import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
 
 // Handle CORS preflight requests
-export async function OPTIONS(request: NextRequest) {
+export async function OPTIONS(request: Request) {
   return handleCorsOptions(request.headers.get('origin') || '')
 }
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  request: Request,
+  { params }
 ) {
   try {
     const { id } = params
