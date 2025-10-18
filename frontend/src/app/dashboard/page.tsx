@@ -41,7 +41,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -2055,6 +2055,7 @@ function DashboardContent() {
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Digitization Data - {selectedDocumentForJson?.originalName}</DialogTitle>
+            <DialogDescription>Parsed results and metadata for the selected document.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             {selectedDocumentForJson && (
@@ -2102,9 +2103,9 @@ function DashboardContent() {
                 <DialogTitle className="text-lg font-semibold text-foreground">
                   Document View
                 </DialogTitle>
-                <p className="text-sm text-muted-foreground mt-1">
+                <DialogDescription className="text-sm text-muted-foreground mt-1">
                   {selectedDocumentForImage?.originalName}
-                </p>
+                </DialogDescription>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
@@ -2266,6 +2267,7 @@ function DashboardContent() {
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Vendor Check - {selectedDocumentForAbn?.vendor || 'Unknown vendor'}</DialogTitle>
+            <DialogDescription>ABR lookup details for the selected vendor.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             {isLoadingAbn ? (
@@ -2360,6 +2362,7 @@ function DashboardContent() {
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Xero Accounts - {xeroTestResult?.tenantName}</DialogTitle>
+            <DialogDescription>Chart of accounts retrieved from Xero for this tenant.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             {xeroTestResult?.accounts && xeroTestResult.accounts.length > 0 ? (

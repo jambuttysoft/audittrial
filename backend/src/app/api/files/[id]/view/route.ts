@@ -37,29 +37,22 @@ export async function GET(
 
     // If not found in Document table, check if it's a digitized document
     if (!document) {
-      // First try to find by originalDocumentId (for backward compatibility)
-      let digitizedDocs = await prisma.$queryRaw`
-        SELECT "filePath", "mimeType", "fileName" as "originalName" 
-        FROM "Digitized" 
-        WHERE "originalDocumentId" = ${id} AND "userId" = ${userId}
-        LIMIT 1
-      ` as any[]
-      
-      // If not found by originalDocumentId, try to find by the digitized document's own ID
-      if (digitizedDocs.length === 0) {
-        digitizedDocs = await prisma.$queryRaw`
-          SELECT "filePath", "mimeType", "fileName" as "originalName" 
-          FROM "Digitized" 
-          WHERE "id" = ${id} AND "userId" = ${userId}
-          LIMIT 1
-        ` as any[]
-      }
-      
-      if (digitizedDocs.length > 0) {
+      // Prefer ORM over raw SQL for MySQL compatibility
+      const digitized =
+        (await prisma.digitized.findFirst({
+          where: { originalDocumentId: id, userId },
+          select: { filePath: true, mimeType: true, originalName: true },
+        })) ??
+        (await prisma.digitized.findFirst({
+          where: { id, userId },
+          select: { filePath: true, mimeType: true, originalName: true },
+        }))
+
+      if (digitized) {
         document = {
-          filePath: digitizedDocs[0].filePath,
-          mimeType: digitizedDocs[0].mimeType,
-          originalName: digitizedDocs[0].originalName,
+          filePath: digitized.filePath,
+          mimeType: digitized.mimeType,
+          originalName: digitized.originalName,
         } as any
       }
     }
