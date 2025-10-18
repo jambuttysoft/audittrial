@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!email || !name || !userType) {
       return NextResponse.json(
-        { error: 'Email, имя и тип пользователя обязательны' },
+        { error: 'Email, name, and user type are required' },
         { 
           status: 400,
           headers: corsHeaders
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     // For non-OAuth users, password is required
     if (!isOAuthUser && !password) {
       return NextResponse.json(
-        { error: 'Пароль обязателен' },
+        { error: 'Password is required' },
         { 
           status: 400,
           headers: corsHeaders
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     // For OAuth users, provider and ID are required
     if (isOAuthUser && (!oauthProvider || !oauthId)) {
       return NextResponse.json(
-        { error: 'OAuth провайдер и ID обязательны для OAuth регистрации' },
+        { error: 'OAuth provider and ID are required for OAuth registration' },
         { status: 400, headers: corsHeaders }
       );
     }
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     if (existingUser) {
       return NextResponse.json(
-        { error: 'Пользователь с таким email уже существует' },
+        { error: 'A user with this email already exists' },
         { 
           status: 409,
           headers: corsHeaders
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      message: 'Пользователь успешно зарегистрирован',
+      message: 'User registered successfully',
       user: newUser,
       company: createdCompany
     }, { 
@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
     const origin = request.headers.get('origin');
     const corsHeaders = getCorsHeaders(origin);
     return NextResponse.json(
-      { error: 'Внутренняя ошибка сервера' },
+      { error: 'Internal server error' },
       { 
         status: 500,
         headers: corsHeaders

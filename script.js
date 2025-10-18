@@ -288,16 +288,16 @@ function processDocument(docId) {
         showTab('digitized');
         
         // Show notification
-        showNotification(`Документ "${docName}" успешно обработан!`, 'success');
+        showNotification(`Document "${docName}" processed successfully!`, 'success');
     }, 2000);
 }
 
 function deleteDocument(docId) {
-    if (confirm('Вы уверены, что хотите удалить этот документ?')) {
+    if (confirm('Are you sure you want to delete this document?')) {
         const docElement = document.getElementById(docId).closest('tr');
         const docName = docElement.cells[2].textContent;
         docElement.remove();
-        showNotification(`Документ "${docName}" удален.`, 'info');
+        showNotification(`Document "${docName}" deleted.`, 'info');
     }
 }
 
@@ -311,7 +311,7 @@ function generateMockData(docName) {
     
     const descriptions = [
         'AS+MINI CLASSIC boots',
-        'Возврат подушек Zanzibar',
+        'Zanzibar pillows return',
         'Goods: microwave, screen',
         'Groceries and household items'
     ];
@@ -400,20 +400,20 @@ function editDocument(docId) {
 }
 
 function deleteDigitizedDocument(docId) {
-    if (confirm('Вы уверены, что хотите удалить этот оцифрованный документ?')) {
+    if (confirm('Are you sure you want to delete this digitized document?')) {
         const docIndex = processedDocuments.findIndex(d => d.id === docId);
         if (docIndex !== -1) {
             const docName = processedDocuments[docIndex].document;
             processedDocuments.splice(docIndex, 1);
             updateDigitizedTab();
-            showNotification(`Документ "${docName}" удален из оцифрованных.`, 'info');
+            showNotification(`Document "${docName}" deleted from digitized.`, 'info');
         }
     }
 }
 
 function exportToExcel() {
     if (processedDocuments.length === 0) {
-        showNotification('Нет данных для экспорта', 'error');
+        showNotification('No data to export', 'error');
         return;
     }
     
@@ -444,7 +444,7 @@ function exportToExcel() {
     a.click();
     
     URL.revokeObjectURL(url);
-    showNotification('Данные экспортированы в Excel!', 'success');
+    showNotification('Data exported to Excel!', 'success');
 }
 
 // Tab Management
@@ -559,22 +559,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedYear = e.target.value;
         const selectedMonth = document.getElementById('month-filter').value;
         console.log('Year filter changed to:', selectedYear);
-        showNotification(`Фильтрация документов за ${getMonthName(selectedMonth)} ${selectedYear}`, 'info');
+        showNotification(`Filtering documents for ${getMonthName(selectedMonth)} ${selectedYear}`, 'info');
     });
     
     document.getElementById('month-filter').addEventListener('change', function(e) {
         const selectedMonth = e.target.value;
         const selectedYear = document.getElementById('year-filter').value;
         console.log('Month filter changed to:', selectedMonth);
-        showNotification(`Фильтрация документов за ${getMonthName(selectedMonth)} ${selectedYear}`, 'info');
+        showNotification(`Filtering documents for ${getMonthName(selectedMonth)} ${selectedYear}`, 'info');
     });
 });
 
 function getMonthName(monthValue) {
     const months = {
-        '01': 'Январь', '02': 'Февраль', '03': 'Март', '04': 'Апрель',
-        '05': 'Май', '06': 'Июнь', '07': 'Июль', '08': 'Август',
-        '09': 'Сентябрь', '10': 'Октябрь', '11': 'Ноябрь', '12': 'Декабрь'
+        '01': 'January', '02': 'February', '03': 'March', '04': 'April',
+        '05': 'May', '06': 'June', '07': 'July', '08': 'August',
+        '09': 'September', '10': 'October', '11': 'November', '12': 'December'
     };
     return months[monthValue] || monthValue;
 }

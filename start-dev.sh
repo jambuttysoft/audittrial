@@ -1,48 +1,48 @@
 #!/bin/bash
 
-# Скрипт для запуска бэкенда и фронтенда для тестирования
+# Script to start backend and frontend for testing
 
-echo "🚀 Запуск серверов разработки..."
+echo "🚀 Starting development servers..."
 
-# Функция для остановки всех процессов при выходе
+# Function to stop all processes on exit
 cleanup() {
-    echo "\n🛑 Остановка серверов..."
+    echo "\n🛑 Stopping servers..."
     kill $(jobs -p) 2>/dev/null
     exit
 }
 
-# Обработка сигналов для корректного завершения
+# Handle signals for graceful shutdown
 trap cleanup SIGINT SIGTERM
 
-# Проверка существования директорий
+# Check directories exist
 if [ ! -d "backend" ]; then
-    echo "❌ Директория backend не найдена!"
+    echo "❌ Backend directory not found!"
     exit 1
 fi
 
-# Запуск бэкенда на порту 3645
-echo "📦 Запуск Backend на порту 3645..."
+# Start backend on port 3645
+echo "📦 Starting Backend on port 3645..."
 cd backend
 npm run dev &
 BACKEND_PID=$!
 cd ..
 
-# Запуск фронтенда на порту 3646
-echo "🌐 Запуск Frontend на порту 3646..."
+# Start frontend on port 3646
+echo "🌐 Starting Frontend on port 3646..."
 cd frontend
 npx next dev -p 3646 &
 FRONTEND_PID=$!
 cd ..
 
-# Ожидание запуска сервера
+# Wait for servers to start
 sleep 5
 
-echo "✅ Серверы запущены:"
+echo "✅ Servers started:"
 echo "   🔧 Backend: http://localhost:3645"
 echo "   🌐 Frontend: http://localhost:3646"
-echo "   🧪 Xero тест: http://localhost:3003"
+echo "   🧪 Xero test: http://localhost:3003"
 echo ""
-echo "💡 Для остановки нажмите Ctrl+C"
+echo "💡 Press Ctrl+C to stop"
 
-# Ожидание завершения процессов
+# Wait for processes to finish
 wait

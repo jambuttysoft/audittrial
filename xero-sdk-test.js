@@ -18,9 +18,9 @@ const xero = new XeroClient({
 app.get('/', (req, res) => {
   res.send(`
     <h1>Xero SDK Test Server</h1>
-    <p>Сервер запущен на порту ${port}</p>
-    <p><a href="/connect">Подключиться к Xero</a></p>
-    <p><a href="/status">Проверить статус подключения</a></p>
+    <p>Server is running on port ${port}</p>
+    <p><a href="/connect">Connect to Xero</a></p>
+    <p><a href="/status">Check connection status</a></p>
   `);
 });
 
@@ -30,33 +30,33 @@ app.get('/connect', async (req, res) => {
     console.log('Consent URL:', consentUrl);
     res.redirect(consentUrl);
   } catch (error) {
-    console.error('Ошибка при создании consent URL:', error);
-    res.status(500).send('Ошибка при создании ссылки для авторизации');
+    console.error('Error creating consent URL:', error);
+    res.status(500).send('Error creating authorization link');
   }
 });
 
 app.get('/callback', async (req, res) => {
   try {
     const tokenSet = await xero.apiCallback(req.url);
-    console.log('Token set получен:', tokenSet);
+    console.log('Token set received:', tokenSet);
     
     res.send(`
-      <h1>Авторизация успешна!</h1>
-      <p>Токены получены и сохранены.</p>
-      <p><a href="/accounts">Получить список счетов</a></p>
-      <p><a href="/">Вернуться на главную</a></p>
+      <h1>Authorization successful!</h1>
+      <p>Tokens received and saved.</p>
+      <p><a href="/accounts">Get list of accounts</a></p>
+      <p><a href="/">Return to home</a></p>
     `);
   } catch (error) {
-    console.error('Ошибка при обработке callback:', error);
-    res.status(500).send('Ошибка при получении токенов');
+    console.error('Error processing callback:', error);
+    res.status(500).send('Error retrieving tokens');
   }
 });
 
 app.get('/accounts', async (req, res) => {
   try {
-    // Проверяем, есть ли активные токены
+    // Check if there are active tokens
     if (!xero.tenants || xero.tenants.length === 0) {
-      return res.status(401).send('Сначала авторизуйтесь через /connect');
+      return res.status(401).send('Please authorize via /connect first');
     }
 
     const response = await xero.accountingApi.getAccounts(xero.tenants[0].tenantId);
@@ -65,8 +65,8 @@ app.get('/accounts', async (req, res) => {
       accounts: response.body.accounts
     });
   } catch (error) {
-    console.error('Ошибка при получении счетов:', error);
-    res.status(500).send('Ошибка при получении счетов из Xero API');
+    console.error('Error retrieving accounts:', error);
+    res.status(500).send('Error retrieving accounts from Xero API');
   }
 });
 
@@ -81,9 +81,9 @@ app.get('/status', (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`🚀 Xero SDK Test Server запущен на http://localhost:${port}`);
-  console.log(`🔗 Перейди на http://localhost:${port}/connect для авторизации`);
-  console.log('Конфигурация Xero Client:');
+  console.log(`🚀 Xero SDK Test Server started at http://localhost:${port}`);
+  console.log(`🔗 Go to http://localhost:${port}/connect to authorize`);
+  console.log('Xero Client configuration:');
   console.log('- Client ID:', process.env.CLIENT_ID);
   console.log('- Redirect URI:', `http://localhost:${port}/callback`);
   console.log('- Scopes:', 'openid profile email accounting.settings accounting.transactions offline_access');
