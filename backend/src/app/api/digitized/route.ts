@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { headers } from 'next/headers';
 import { getCorsHeaders, handleCorsOptions } from '@/lib/cors';
 
-const prisma = new PrismaClient();
+// Replace local PrismaClient with shared client
+import { prisma } from '@/lib/prisma';
 
 export async function OPTIONS(request: NextRequest) {
   return handleCorsOptions(request.headers.get('origin') || '');
