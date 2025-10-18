@@ -68,7 +68,7 @@ export async function POST(
       const base64Data = fileBuffer.toString('base64')
 
   // Process with Gemini AI (mock implementation)
-      const modelName = process.env.GEMINI_MODEL || 'gemini-1.5-flash-latest'
+      const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite'
       console.log('Using Gemini model:', modelName)
       const model = genAI.getGenerativeModel({ model: modelName })
       

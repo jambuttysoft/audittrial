@@ -15,7 +15,7 @@ module.exports = {
       cwd: './backend',
       script: 'npm',
       args: 'start',
-      env: { NODE_ENV: 'production', PORT: 3645, NEXT_TELEMETRY_DISABLED: '1', GEMINI_MODEL: 'gemini-1.5-flash' },
+      env: { NODE_ENV: 'production', PORT: 3645, NEXT_TELEMETRY_DISABLED: '1', GEMINI_MODEL: 'gemini-2.5-flash-lite' },
       instances: 1,
       exec_mode: 'fork',
       watch: false
