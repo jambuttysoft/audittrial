@@ -67,8 +67,10 @@ export async function POST(
       const fileBuffer = await readFile(fullPath)
       const base64Data = fileBuffer.toString('base64')
 
-      // Process with Gemini AI (mock implementation)
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+  // Process with Gemini AI (mock implementation)
+      const modelName = process.env.GEMINI_MODEL || 'gemini-1.5-flash-latest'
+      console.log('Using Gemini model:', modelName)
+      const model = genAI.getGenerativeModel({ model: modelName })
       
       const prompt = `
         Analyze this receipt/invoice image and extract ALL the following information in JSON format:
