@@ -72,31 +72,52 @@ export async function POST(
       console.log('Using Gemini model:', modelName)
       const model = genAI.getGenerativeModel({ model: modelName })
       
-      const prompt = `
-        Analyze this receipt/invoice image and extract ALL the following information in JSON format:
-        {
-          "purchaseDate": "YYYY-MM-DD format (Purchase Date)",
-          "vendorName": "vendor/business name",
-          "vendorAbn": "Australian Business Number if present",
-          "vendorAddress": "complete vendor address",
-          "documentType": "receipt or invoice",
-          "receiptNumber": "receipt or invoice number",
-          "paymentType": "cash, card, eftpos, credit, etc",
-          "amountExclTax": "amount excluding tax as number",
-          "taxAmount": "GST/tax amount as number",
-          "totalAmount": "total amount including tax as number",
-          "expenseCategory": "category like office supplies, meals, transport, etc",
-          "taxStatus": "taxable, tax-free, or mixed"
-        }
-        
-        IMPORTANT: 
-        - Return only valid JSON without any additional text
-        - If a field cannot be determined, use null
-        - Ensure all amounts are numbers, not strings
-        - Use Australian date format YYYY-MM-DD
-        - Be precise with expense categorization
-        - For vendorAbn: Extract ONLY DIGITS, remove all spaces, hyphens, and special characters. ABN should be 11 consecutive digits only (e.g., "12345678901" not "12 345 678 901" or "12-345-678-901")
-      `
+const prompt = `
+Analyze this receipt/invoice image and extract ALL the following information in JSON format:
+{
+  "purchaseDate": "YYYY-MM-DD format (Purchase Date)",
+  "vendorName": "vendor/business name",
+  "vendorAbn": "Australian Business Number if present",
+  "vendorAddress": "complete vendor address",
+  "documentType": "receipt or invoice",
+  "receiptNumber": "receipt or invoice number",
+  "paymentType": "cash, card, eftpos, credit, etc",
+  "amountExclTax": "amount excluding tax as number",
+  "taxAmount": "GST/tax amount as number",
+  "cashOutAmount": "cash out amount as number or null",
+  "discountAmount": "discount amount as number or null",
+  "totalAmount": "total amount including tax as number",
+  "expenseCategory": "category like office supplies, meals, transport, etc",
+  "taxStatus": "taxable, tax-free, or mixed"
+}
+
+IMPORTANT:
+- Return only valid JSON without any additional text.
+- If a TEXT field cannot be determined, use '-' (single dash), NOT null.
+- If a NUMERIC field cannot be determined, use 0.00 (number), NOT null.
+- Ensure all amounts are numbers, not strings.
+- Use Australian date format YYYY-MM-DD.
+- Be precise with expense categorization.
+- For vendorAbn: Extract ONLY DIGITS, remove all spaces, hyphens, and special characters. ABN must be 11 consecutive digits (e.g. "12345678901").
+- For expenseCategory: Use only common categories like "office supplies", "meals", "transport", "utilities", etc.
+
+CASH OUT RULES:
+- CashOutAmount is derived from a dedicated line OR calculated if payment exceeds total.
+- Explicit Line: If the receipt contains a dedicated cash-out line (e.g., "CASH OUT", "CASHOUT", "LESS CASH OUT", "CASH WITHDRAWAL"), use that amount.
+- Implicit Calculation (for your specific case): If an 'Amount Paid' (or similar total payment line, e.g., $27.13 next to GST) is greater than 'Total Amount' (e.g., $7.13), AND the difference is labelled 'Change', assume this 'Change' is Cash Out, PROVIDED the payment is NOT clearly "Cash Paid". In this specific Bunnings format, the amount $27.13 is the card payment, and the $20.00 'Change' is the Cash Out.
+- Final Rule: If a Cash Out amount is found through either method, use it. Otherwise, return CashOutAmount as 0.00.
+- PRIORITY 1: Explicit Cash Out Line. If the receipt contains a dedicated line with "CASH OUT", "CASHOUT", "LESS CASH OUT", "CASH WITHDRAWAL", "AUD$ CASH OUT", etc., extract that amount. This is the preferred method.
+- PRIORITY 2: Implicit Calculation (Change as Cash Out). If an 'Amount Paid' (or similar payment line like EFT, VISA) is greater than 'Total Amount', AND the difference is labelled 'Change', and no 'Cash Paid' line is present, then calculate CashOutAmount as (Amount Paid - Total). **However, if a line from PRIORITY 1 is found, use that value.**
+- If no Cash Out amount is found through either method, return CashOutAmount as 0.00.
+
+DISCOUNT RULES:
+- DiscountAmount must be extracted if the receipt contains ANY discount-indicating line, including:
+  "DISCOUNT", "LESS", "PROMO", "COUPON",
+  "FLYBUYS REDEEMED", "POINTS REDEEMED".
+- If such a line exists, extract the amount of the deduction (even if loyalty points were used as monetary value).
+- If no discount-indicating lines appear, return DiscountAmount as 0.00.
+`;
+
 
       console.log(`Starting AI digitization for document ${id}...`)
       console.log(`Document type: ${document.mimeType}, size: ${document.fileSize} bytes`)
@@ -229,16 +250,67 @@ export async function POST(
           vendorName: receiptData.vendorName || null,
           vendorAbn: receiptData.vendorAbn || null,
           vendorAddress: receiptData.vendorAddress || null,
-          documentType: receiptData.documentType || 'receipt',
+          documentType: typeof receiptData.documentType === 'string' ? receiptData.documentType : null,
           receiptNumber: receiptData.receiptNumber || null,
           paymentType: receiptData.paymentType || null,
-          amountExclTax: receiptData.amountExclTax ? parseFloat(receiptData.amountExclTax.toString()) : null,
-          taxAmount: receiptData.taxAmount ? parseFloat(receiptData.taxAmount.toString()) : null,
-          totalAmount: receiptData.totalAmount ? parseFloat(receiptData.totalAmount.toString()) : null,
+          cashOutAmount: receiptData.cashOutAmount !== undefined && receiptData.cashOutAmount !== null ? parseFloat(receiptData.cashOutAmount.toString()) : null,
+          discountAmount: receiptData.discountAmount !== undefined && receiptData.discountAmount !== null ? parseFloat(receiptData.discountAmount.toString()) : null,
+          amountExclTax: receiptData.amountExclTax !== undefined && receiptData.amountExclTax !== null ? parseFloat(receiptData.amountExclTax.toString()) : null,
+          taxAmount: receiptData.taxAmount !== undefined && receiptData.taxAmount !== null ? parseFloat(receiptData.taxAmount.toString()) : null,
+          totalAmount: receiptData.totalAmount !== undefined && receiptData.totalAmount !== null ? parseFloat(receiptData.totalAmount.toString()) : null,
           expenseCategory: receiptData.expenseCategory || null,
-          taxStatus: receiptData.taxStatus || 'taxable',
+          taxStatus: typeof receiptData.taxStatus === 'string' ? receiptData.taxStatus : null,
         },
       })
+
+      try {
+        const abn = digitizedDocument.vendorAbn?.toString() || ''
+        if (/^\d{11}$/.test(abn)) {
+          const existing = await prisma.vendor.findUnique({ where: { abn } })
+          const needsUpdate = !existing || (existing.requestUpdateDate && ((Date.now() - new Date(existing.requestUpdateDate).getTime()) > 1000 * 60 * 60 * 24 * 180))
+          if (needsUpdate) {
+            const url = `http://localhost:3645/api/abn-lookup?abn=${abn}`
+            const resp = await fetch(url, { method: 'GET' })
+            if (resp.ok) {
+              const v = await resp.json()
+              await prisma.vendor.upsert({
+                where: { abn },
+                update: {
+                  abnStatus: v.AbnStatus || null,
+                  abnStatusEffectiveFrom: v.AbnStatusEffectiveFrom ? new Date(v.AbnStatusEffectiveFrom) : null,
+                  acn: v.Acn || null,
+                  addressDate: v.AddressDate ? new Date(v.AddressDate) : null,
+                  addressPostcode: v.AddressPostcode || null,
+                  addressState: v.AddressState || null,
+                  businessName: Array.isArray(v.BusinessName) ? v.BusinessName : null,
+                  entityName: v.EntityName || null,
+                  entityTypeCode: v.EntityTypeCode || null,
+                  entityTypeName: v.EntityTypeName || null,
+                  gst: v.Gst ? new Date(v.Gst) : null,
+                  message: v.Message || null,
+                  requestUpdateDate: new Date(),
+                },
+                create: {
+                  abn,
+                  abnStatus: v.AbnStatus || null,
+                  abnStatusEffectiveFrom: v.AbnStatusEffectiveFrom ? new Date(v.AbnStatusEffectiveFrom) : null,
+                  acn: v.Acn || null,
+                  addressDate: v.AddressDate ? new Date(v.AddressDate) : null,
+                  addressPostcode: v.AddressPostcode || null,
+                  addressState: v.AddressState || null,
+                  businessName: Array.isArray(v.BusinessName) ? v.BusinessName : null,
+                  entityName: v.EntityName || null,
+                  entityTypeCode: v.EntityTypeCode || null,
+                  entityTypeName: v.EntityTypeName || null,
+                  gst: v.Gst ? new Date(v.Gst) : null,
+                  message: v.Message || null,
+                  requestUpdateDate: new Date(),
+                },
+              })
+            }
+          }
+        }
+      } catch {}
 
       console.log(`Document ${id} transferred to Digitized table with ID: ${digitizedDocument.id}`)
 
@@ -259,54 +331,106 @@ export async function POST(
       })
     } catch (processingError) {
       console.error(`Processing error for document ${id}:`, processingError)
-      console.error('Error details:', {
-        message: processingError.message,
-        status: processingError.status,
-        statusText: processingError.statusText,
-        stack: processingError.stack
-      })
-      
-      // Determine error type and appropriate response
-      let errorMessage = 'Failed to process document'
-      let shouldRetryLater = false
-      
-      if (processingError.message.includes('503') || processingError.message.includes('overloaded')) {
-        errorMessage = 'AI service is temporarily overloaded. Please try again in a few minutes.'
-        shouldRetryLater = true
-        console.log('💡 Recommendation: Gemini API is overloaded, user should retry later')
-      } else if (processingError.message.includes('403') || processingError.message.includes('PERMISSION_DENIED')) {
-        errorMessage = 'AI service authentication failed. Please contact support.'
-        console.log('💡 Recommendation: Check Gemini API key configuration')
-      } else if (processingError.message.includes('400')) {
-        errorMessage = 'Document format not supported or corrupted.'
-        console.log('💡 Recommendation: Check document format and size')
-      } else {
-        console.log('💡 Recommendation: Unknown error, check logs for details')
-      }
-      
-      // Update status to error
-      await prisma.document.update({
+      console.log('Proceeding with fallback digitization without AI data')
+
+      // Fallback: create a minimal digitized record from existing document metadata
+      const documentWithRelations = await prisma.document.findUnique({
         where: { id },
-        data: { 
-          status: 'ERROR',
-          processedDate: new Date()
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+          company: { select: { id: true, name: true } },
         },
       })
-      
-      console.log(`Document ${id} status updated to ERROR`)
+
+      if (!documentWithRelations) {
+        const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
+        return NextResponse.json(
+          { error: 'Document not found for fallback processing' },
+          { status: 404, headers: corsHeaders }
+        )
+      }
+
+      const updatedDocument = await prisma.document.update({
+        where: { id },
+        data: {
+          status: 'DIGITIZED',
+          processedDate: new Date(),
+          receiptData: { error: 'AI processing failed; fallback applied' },
+        },
+      })
+
+      const digitizedDocument = await prisma.digitized.create({
+        data: {
+          company: { connect: { id: documentWithRelations.companyId } },
+          user: { connect: { id: documentWithRelations.userId } },
+          originalDocumentId: documentWithRelations.id,
+          fileName: documentWithRelations.fileName,
+          originalName: documentWithRelations.originalName,
+          filePath: documentWithRelations.filePath,
+          fileSize: documentWithRelations.fileSize,
+          mimeType: documentWithRelations.mimeType,
+          documentType: 'receipt',
+          taxStatus: 'taxable',
+        },
+      })
+
+      try {
+        const abn = digitizedDocument.vendorAbn?.toString() || ''
+        if (/^\d{11}$/.test(abn)) {
+          const existing = await prisma.vendor.findUnique({ where: { abn } })
+          const needsUpdate = !existing || (existing.requestUpdateDate && ((Date.now() - new Date(existing.requestUpdateDate).getTime()) > 1000 * 60 * 60 * 24 * 180))
+          if (needsUpdate) {
+            const url = `http://localhost:3645/api/abn-lookup?abn=${abn}`
+            const resp = await fetch(url, { method: 'GET' })
+            if (resp.ok) {
+              const v = await resp.json()
+              await prisma.vendor.upsert({
+                where: { abn },
+                update: {
+                  abnStatus: v.AbnStatus || null,
+                  abnStatusEffectiveFrom: v.AbnStatusEffectiveFrom ? new Date(v.AbnStatusEffectiveFrom) : null,
+                  acn: v.Acn || null,
+                  addressDate: v.AddressDate ? new Date(v.AddressDate) : null,
+                  addressPostcode: v.AddressPostcode || null,
+                  addressState: v.AddressState || null,
+                  businessName: Array.isArray(v.BusinessName) ? v.BusinessName : null,
+                  entityName: v.EntityName || null,
+                  entityTypeCode: v.EntityTypeCode || null,
+                  entityTypeName: v.EntityTypeName || null,
+                  gst: v.Gst ? new Date(v.Gst) : null,
+                  message: v.Message || null,
+                  requestUpdateDate: new Date(),
+                },
+                create: {
+                  abn,
+                  abnStatus: v.AbnStatus || null,
+                  abnStatusEffectiveFrom: v.AbnStatusEffectiveFrom ? new Date(v.AbnStatusEffectiveFrom) : null,
+                  acn: v.Acn || null,
+                  addressDate: v.AddressDate ? new Date(v.AddressDate) : null,
+                  addressPostcode: v.AddressPostcode || null,
+                  addressState: v.AddressState || null,
+                  businessName: Array.isArray(v.BusinessName) ? v.BusinessName : null,
+                  entityName: v.EntityName || null,
+                  entityTypeCode: v.EntityTypeCode || null,
+                  entityTypeName: v.EntityTypeName || null,
+                  gst: v.Gst ? new Date(v.Gst) : null,
+                  message: v.Message || null,
+                  requestUpdateDate: new Date(),
+                },
+              })
+            }
+          }
+        }
+      } catch {}
+
+      await prisma.document.delete({ where: { id } })
 
       const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
-      return NextResponse.json(
-        { 
-          error: errorMessage,
-          retryable: shouldRetryLater,
-          details: processingError.message
-        },
-        { 
-          status: shouldRetryLater ? 503 : 500,
-          headers: corsHeaders,
-        }
-      )
+      return NextResponse.json({
+        success: true,
+        digitizedDocument,
+        message: 'Digitization completed with fallback (AI unavailable)',
+      }, { headers: corsHeaders })
     }
   } catch (error) {
     console.error('Digitize error:', error)

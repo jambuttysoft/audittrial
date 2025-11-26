@@ -35,7 +35,10 @@ import {
   User,
   Loader2
 } from 'lucide-react'
+import { MoreHorizontal } from 'lucide-react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { DataTable } from '@/components/ui/data-table'
+import { ColumnDef } from '@tanstack/react-table'
 import { Toaster } from '@/components/ui/toaster'
 import { useToast } from '@/hooks/use-toast'
 import { Input } from '@/components/ui/input'
@@ -145,6 +148,9 @@ interface DigitizedData {
   documentType?: string
   receiptNumber?: string
   paymentType?: string
+  cashOutAmount?: number
+  discountAmount?: number
+  amountExclTax?: number
   totalAmount?: number
   taxAmount?: number
   expenseCategory?: string
@@ -171,6 +177,7 @@ function DashboardContent() {
   const [isLoading, setIsLoading] = useState(true)
   const [documents, setDocuments] = useState<DocumentData[]>([])
   const [digitizedDocuments, setDigitizedDocuments] = useState<DigitizedData[]>([])
+  const [reviewDocuments, setReviewDocuments] = useState<DigitizedData[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
   const [isEditingCompany, setIsEditingCompany] = useState(false)
@@ -314,7 +321,8 @@ function DashboardContent() {
       // Load documents and digitized documents for the selected company
       await Promise.all([
         loadCompanyDocuments(company.id),
-        loadDigitizedDocuments(company.id)
+        loadDigitizedDocuments(company.id),
+        loadReviewDocuments(company.id)
       ])
       // Refresh companies data to get updated document counts
       if (user) {
@@ -424,6 +432,26 @@ function DashboardContent() {
     } catch (error) {
       console.error('Error loading digitized documents:', error)
       setDigitizedDocuments([])
+    }
+  }
+
+  const loadReviewDocuments = async (companyId: string) => {
+    if (!user?.id || !companyId) {
+      return
+    }
+    try {
+      const response = await fetch(`/api/review?userId=${user.id}&companyId=${companyId}`, {
+        credentials: 'include'
+      })
+      if (response.ok) {
+        const reviewResponse = await response.json()
+        const reviewData = reviewResponse.success && reviewResponse.review ? reviewResponse.review : []
+        setReviewDocuments(reviewData)
+      } else {
+        setReviewDocuments([])
+      }
+    } catch {
+      setReviewDocuments([])
     }
   }
 
@@ -558,6 +586,18 @@ function DashboardContent() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     handleFileUpload(files)
+  }
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    const files = Array.from(e.dataTransfer.files || [])
+    if (files.length > 0) {
+      handleFileUpload(files)
+    }
   }
 
   const validateFile = (file: File): string | null => {
@@ -750,6 +790,7 @@ function DashboardContent() {
       // Refresh digitized documents
       if (selectedCompany && user) {
         await loadDigitizedDocuments(selectedCompany.id)
+        await loadReviewDocuments(selectedCompany.id)
       }
     } catch (error) {
       console.error('Error deleting digitized document:', error)
@@ -793,38 +834,32 @@ function DashboardContent() {
     }
 
     setIsUploading(true)
-    
     try {
-      for (const file of files) {
+      const uploadOne = async (file: File, index: number) => {
         const formData = new FormData()
         formData.append('file', file)
         formData.append('companyId', selectedCompany.id)
         formData.append('userId', user.id)
-
         const response = await fetch('/api/documents/upload', {
           method: 'POST',
           credentials: 'include',
           body: formData,
         })
-
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
           throw new Error(errorData.error || `Failed to upload ${file.name}`)
         }
-
-        const result = await response.json()
-        console.log('Upload result:', result)
+        await response.json()
       }
-
-      toast({
-        title: 'Success',
-        description: `${files.length} file(s) uploaded successfully`,
-      })
-
-      // Refresh documents list
+      await Promise.all(files.map((file, idx) => uploadOne(file, idx)))
+      {
+        const t = toast({
+          title: 'Success',
+          description: `${files.length} file(s) uploaded successfully`,
+        })
+        setTimeout(() => t.dismiss(), 2000)
+      }
       loadCompanyDocuments(selectedCompany.id)
-      
-      // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
@@ -1260,6 +1295,7 @@ function DashboardContent() {
         <TabsList>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="digitized">Digitized</TabsTrigger>
+          <TabsTrigger value="review">For Review</TabsTrigger>
           <TabsTrigger value="profile">Profile</TabsTrigger>
         </TabsList>
         
@@ -1296,6 +1332,13 @@ function DashboardContent() {
               </div>
             </CardHeader>
             <CardContent>
+              <div
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                className="mb-4 border-2 border-dashed rounded-md p-4 text-center text-sm text-muted-foreground"
+              >
+                Drag & drop files here or click Choose Files
+              </div>
               <TooltipProvider>
                 <Table>
                 <TableHeader>
@@ -1457,6 +1500,105 @@ function DashboardContent() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="review" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>For Review</CardTitle>
+              <CardDescription>
+                Items moved from Digitized for manual review
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const columns: ColumnDef<DigitizedData>[] = [
+                  { accessorKey: 'purchaseDate', header: 'Purchase Date', cell: ({ row }) => <TruncatedCell text={row.original.purchaseDate ? formatDate(row.original.purchaseDate) : '-'} /> },
+                  { accessorKey: 'vendorName', header: 'Vendor Name', cell: ({ row }) => <TruncatedCell text={row.original.vendorName || '-'} /> },
+                  { accessorKey: 'vendorAbn', header: 'Vendor ABN', cell: ({ row }) => <TruncatedCell text={row.original.vendorAbn || '-'} /> },
+                  { accessorKey: 'cashOutAmount', header: 'Cash Out', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.cashOutAmount === 'number' ? row.original.cashOutAmount : 0).toFixed(2)} /> },
+                  { accessorKey: 'discountAmount', header: 'Discount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.discountAmount === 'number' ? row.original.discountAmount : 0).toFixed(2)} /> },
+                  { accessorKey: 'amountExclTax', header: 'Amount Excl. Tax', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.amountExclTax === 'number' ? row.original.amountExclTax : 0).toFixed(2)} /> },
+                  { accessorKey: 'taxAmount', header: 'Tax Amount (GST)', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.taxAmount === 'number' ? row.original.taxAmount : 0).toFixed(2)} /> },
+                  { accessorKey: 'totalAmount', header: 'Total Amount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalAmount === 'number' ? row.original.totalAmount : 0).toFixed(2)} /> },
+                  { accessorKey: 'taxStatus', header: 'Status', cell: ({ row }) => <Badge variant="secondary">{row.original.taxStatus || '-'}</Badge> },
+                  {
+                    id: 'actions',
+                    header: 'Actions',
+                    cell: ({ row }) => {
+                      const doc = row.original
+                      return (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" aria-label="Actions">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                if (!user?.id) {
+                                  toast({ title: 'Not signed in', description: 'Please sign in to view images.', variant: 'destructive' })
+                                  return
+                                }
+                                const imageId = doc.originalDocumentId || (doc as any).id
+                                const docForModal = { ...doc, id: imageId, status: 'DIGITIZED' as const, uploadDate: doc.createdAt, transactionDate: doc.purchaseDate, vendor: doc.vendorName, abn: doc.vendorAbn, gstAmount: doc.taxAmount, paymentMethod: doc.paymentType, receiptData: (doc as any).extractedData }
+                                setSelectedDocumentForImage(docForModal)
+                                setIsImageModalOpen(true)
+                              }}
+                            >
+                              View Image
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )
+                    }
+                  },
+                ]
+
+                const defaultVisible = [
+                  'purchaseDate', 'vendorName', 'vendorAbn',
+                  'cashOutAmount', 'discountAmount', 'amountExclTax',
+                  'taxAmount', 'totalAmount', 'taxStatus', 'actions'
+                ]
+                const key = user?.id ? `review_columns_visibility:${user.id}` : undefined
+                return (
+                  <DataTable 
+                    columns={columns} 
+                    data={reviewDocuments} 
+                    defaultVisibleColumnIds={defaultVisible} 
+                    storageKey={key}
+                    onRowClick={(row) => {
+                      const doc = row.original
+                      if (!user?.id) {
+                        toast({ title: 'Not signed in', description: 'Please sign in to view images.', variant: 'destructive' })
+                        return
+                      }
+                      const imageId = doc.originalDocumentId || (doc as any).id
+                      const docForModal = { 
+                        ...doc, 
+                        id: imageId, 
+                        status: 'DIGITIZED' as const, 
+                        uploadDate: doc.createdAt, 
+                        transactionDate: doc.purchaseDate, 
+                        vendor: doc.vendorName, 
+                        abn: doc.vendorAbn, 
+                        gstAmount: doc.taxAmount, 
+                        paymentMethod: doc.paymentType, 
+                        receiptData: (doc as any).extractedData 
+                      }
+                      setSelectedDocumentForImage(docForModal)
+                      setIsImageModalOpen(true)
+                    }}
+                  />
+                )
+              })()}
+            </CardContent>
+          </Card>
+        </TabsContent>
         
         <TabsContent value="digitized" className="space-y-4">
           <Card>
@@ -1467,256 +1609,133 @@ function DashboardContent() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[120px]">Purchase Date</TableHead>
-                    <TableHead className="w-[150px]">Vendor Name</TableHead>
-                    <TableHead className="w-[120px]">Vendor ABN</TableHead>
-                    <TableHead className="w-[200px]">Vendor Address</TableHead>
-                    <TableHead className="w-[100px]">Document Type</TableHead>
-                    <TableHead className="w-[140px]">Receipt/Invoice Number</TableHead>
-                    <TableHead className="w-[100px]">Payment Type</TableHead>
-                    <TableHead className="text-right w-[130px]">Amount Excl. Tax</TableHead>
-                    <TableHead className="text-right w-[130px]">Tax Amount (GST)</TableHead>
-                    <TableHead className="text-right w-[120px]">Total Amount</TableHead>
-                    <TableHead className="w-[140px]">Expense Category</TableHead>
-                    <TableHead className="w-[80px]">Status</TableHead>
-                    <TableHead className="w-[100px]">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {digitizedDocuments.map((doc) => {
-                    const totalAmount = typeof doc.totalAmount === 'number' ? doc.totalAmount : typeof doc.totalAmount === 'string' ? parseFloat(doc.totalAmount) : 0
-                    const taxAmount = typeof doc.taxAmount === 'number' ? doc.taxAmount : typeof doc.taxAmount === 'string' ? parseFloat(doc.taxAmount) : 0
-                    const subtotal = doc.totalAmount && doc.taxAmount ? (totalAmount - taxAmount) : null
-                    
-                    return (
-                      <TableRow 
-                        key={doc.id} 
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => {
-                          // Convert DigitizedData to DocumentData format for modal compatibility
-                          const docForModal = {
-                            ...doc,
-                            status: 'DIGITIZED' as const,
-                            uploadDate: doc.createdAt,
-                            transactionDate: doc.purchaseDate,
-                            vendor: doc.vendorName,
-                            abn: doc.vendorAbn,
-                            gstAmount: doc.taxAmount,
-                            paymentMethod: doc.paymentType,
-                            receiptData: doc.extractedData
-                          }
-                          setSelectedDocumentForJson(docForModal)
-                          setIsJsonModalOpen(true)
-                        }}
-                      >
-                        <TableCell>
-                          <TruncatedCell text={doc.purchaseDate ? formatDate(doc.purchaseDate) : '-'} />
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          <TruncatedCell text={doc.vendorName || '-'} />
-                        </TableCell>
-                        <TableCell>
-                          <TruncatedCell text={doc.vendorAbn || '-'} />
-                        </TableCell>
-                        <TableCell>
-                          <TruncatedCell text={doc.vendorAddress || '-'} maxWidth="200px" />
-                        </TableCell>
-                        <TableCell>
-                          <TruncatedCell text={doc.documentType || 'Receipt'} />
-                        </TableCell>
-                        <TableCell>
-                          <TruncatedCell text={doc.receiptNumber || '-'} />
-                        </TableCell>
-                        <TableCell>
-                          <TruncatedCell text={doc.paymentType || '-'} />
-                        </TableCell>
-                        <TableCell className="text-right font-bold">
-                          <TruncatedCell text={subtotal ? subtotal.toFixed(2) : '-'} />
-                        </TableCell>
-                        <TableCell className="text-right font-bold">
-                          <TruncatedCell text={doc.taxAmount && typeof doc.taxAmount === 'number' ? doc.taxAmount.toFixed(2) : doc.taxAmount && typeof doc.taxAmount === 'string' ? parseFloat(doc.taxAmount).toFixed(2) : '-'} />
-                        </TableCell>
-                        <TableCell className="text-right font-bold">
-                          <TruncatedCell text={doc.totalAmount && typeof doc.totalAmount === 'number' ? doc.totalAmount.toFixed(2) : doc.totalAmount && typeof doc.totalAmount === 'string' ? parseFloat(doc.totalAmount).toFixed(2) : '-'} />
-                        </TableCell>
-                        <TableCell>
-                          <TruncatedCell text={doc.expenseCategory || '-'} />
-                        </TableCell>
-                        <TableCell>
-                          {(() => {
-                             // Determine tax status based on data validation
-                             const hasValidTax = doc.taxAmount && doc.taxAmount > 0
-                             const hasValidTotal = doc.totalAmount && doc.totalAmount > 0
-                             const taxCalculationCorrect = hasValidTax && hasValidTotal && doc.taxAmount && doc.totalAmount && (doc.taxAmount <= doc.totalAmount)
-                            
-                            if (doc.taxStatus === 'taxable' && taxCalculationCorrect) {
-                              return (
-                                <Badge className="bg-green-100 text-green-800 border-green-200">
-                                  Verified
-                                </Badge>
-                              )
-                            } else if (doc.taxStatus === 'tax-free' && !hasValidTax) {
-                              return (
-                                <Badge className="bg-green-100 text-green-800 border-green-200">
-                                  Tax-Free
-                                </Badge>
-                              )
-                            } else if (hasValidTax && !taxCalculationCorrect) {
-                              return (
-                                <Badge className="bg-red-100 text-red-800 border-red-200">
-                                  Invalid
-                                </Badge>
-                              )
-                            } else {
-                              return (
-                                <Badge variant="secondary">
-                                  {hasValidTax ? 'GST Included' : 'No GST'}
-                                </Badge>
-                              )
-                            }
-                          })()
-                          }
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
+              {(() => {
+                const columns: ColumnDef<DigitizedData>[] = [
+                  { accessorKey: 'purchaseDate', header: 'Purchase Date', cell: ({ row }) => <TruncatedCell text={row.original.purchaseDate ? formatDate(row.original.purchaseDate) : '-'} /> },
+                  { accessorKey: 'vendorName', header: 'Vendor Name', cell: ({ row }) => <TruncatedCell text={row.original.vendorName || '-'} /> },
+                  { accessorKey: 'vendorAbn', header: 'Vendor ABN', cell: ({ row }) => <TruncatedCell text={row.original.vendorAbn || '-'} /> },
+                  { accessorKey: 'documentType', header: 'Document Type', cell: ({ row }) => <TruncatedCell text={row.original.documentType || 'Receipt'} /> },
+                  { accessorKey: 'receiptNumber', header: 'Receipt/Invoice Number', cell: ({ row }) => <TruncatedCell text={row.original.receiptNumber || '-'} /> },
+                  { accessorKey: 'paymentType', header: 'Payment Type', cell: ({ row }) => <TruncatedCell text={row.original.paymentType || '-'} /> },
+                  { accessorKey: 'cashOutAmount', header: 'Cash Out', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.cashOutAmount === 'number' ? row.original.cashOutAmount : 0).toFixed(2)} /> },
+                  { accessorKey: 'discountAmount', header: 'Discount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.discountAmount === 'number' ? row.original.discountAmount : 0).toFixed(2)} /> },
+                  { accessorKey: 'amountExclTax', header: 'Amount Excl. Tax', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.amountExclTax === 'number' ? row.original.amountExclTax : 0).toFixed(2)} /> },
+                  { accessorKey: 'taxAmount', header: 'Tax Amount (GST)', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.taxAmount === 'number' ? row.original.taxAmount : 0).toFixed(2)} /> },
+                  { accessorKey: 'totalAmount', header: 'Total Amount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalAmount === 'number' ? row.original.totalAmount : 0).toFixed(2)} /> },
+                  { accessorKey: 'expenseCategory', header: 'Expense Category', cell: ({ row }) => <TruncatedCell text={row.original.expenseCategory || '-'} /> },
+                  { accessorKey: 'taxStatus', header: 'Status', cell: ({ row }) => <Badge variant="secondary">{row.original.taxStatus || '-'}</Badge> },
+                  {
+                    id: 'actions',
+                    header: 'Actions',
+                    cell: ({ row }) => {
+                      const doc = row.original
+                      return (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" aria-label="Actions">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
                               onClick={(e) => {
+                                e.preventDefault()
                                 e.stopPropagation()
                                 if (!user?.id) {
-                                  toast({
-                                    title: 'Not signed in',
-                                    description: 'Please sign in to view images.',
-                                    variant: 'destructive',
-                                  })
+                                  toast({ title: 'Not signed in', description: 'Please sign in to view images.', variant: 'destructive' })
                                   return
                                 }
-                                // Convert DigitizedData to DocumentData format for modal compatibility
-                                // Try to use originalDocumentId first, then fallback to digitized document's own ID
                                 const imageId = doc.originalDocumentId || doc.id
-                                console.log('Opening image modal for digitized document:', {
-                                  digitizedId: doc.id,
-                                  originalDocumentId: doc.originalDocumentId,
-                                  usingId: imageId,
-                                  fileName: doc.originalName
-                                })
-                                const docForModal = {
-                                  ...doc,
-                                  id: imageId, // Use original document ID for image viewing
-                                  status: 'DIGITIZED' as const,
-                                  uploadDate: doc.createdAt,
-                                  transactionDate: doc.purchaseDate,
-                                  vendor: doc.vendorName,
-                                  abn: doc.vendorAbn,
-                                  gstAmount: doc.taxAmount,
-                                  paymentMethod: doc.paymentType,
-                                  receiptData: doc.extractedData
-                                }
+                                const docForModal = { ...doc, id: imageId, status: 'DIGITIZED' as const, uploadDate: doc.createdAt, transactionDate: doc.purchaseDate, vendor: doc.vendorName, abn: doc.vendorAbn, gstAmount: doc.taxAmount, paymentMethod: doc.paymentType, receiptData: doc.extractedData }
                                 setSelectedDocumentForImage(docForModal)
                                 setIsImageModalOpen(true)
                               }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    const abn = doc.vendorAbn
-                                    if (abn) {
-                                      // Convert DigitizedData to DocumentData format for modal compatibility
-                                      // Use original document ID for image viewing
-                                      const imageId = doc.originalDocumentId || doc.id
-                                      const docForModal = {
-                                        ...doc,
-                                        id: imageId, // Use original document ID for image viewing
-                                        status: 'DIGITIZED' as const,
-                                        uploadDate: doc.createdAt,
-                                        transactionDate: doc.purchaseDate,
-                                        vendor: doc.vendorName,
-                                        abn: doc.vendorAbn,
-                                        gstAmount: doc.taxAmount,
-                                        paymentMethod: doc.paymentType,
-                                        receiptData: doc.extractedData
-                                      }
-                                      setSelectedDocumentForAbn(docForModal)
-                                      setIsAbnModalOpen(true)
-                                      checkAbnDetails(abn)
-                                    } else {
-                                      toast({
-                                        title: 'ABN not found',
-                                        description: 'The document does not contain an ABN for verification',
-                                        variant: 'destructive'
-                                      })
-                                    }
-                                  }}
-                                >
-                                  <Search className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Check Vendor</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    // Here will be the logic for creating Xero Journal Record
-                                    toast({
-                                      title: 'Xero Journal Record',
-                                      description: 'Xero Journal Record creation feature will be implemented',
-                                    })
-                                  }}
-                                >
-                                  <ArrowUp className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Create Xero Journal Record</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleDeleteDigitizedClick(doc.id)
-                                  }}
-                                  className="text-destructive hover:text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Delete Document</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                  })}
-                </TableBody>
-              </Table>
+                            >
+                              View Image
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                const abn = doc.vendorAbn
+                                if (abn) {
+                                  const imageId = doc.originalDocumentId || doc.id
+                                  const docForModal = { ...doc, id: imageId, status: 'DIGITIZED' as const, uploadDate: doc.createdAt, transactionDate: doc.purchaseDate, vendor: doc.vendorName, abn: doc.vendorAbn, gstAmount: doc.taxAmount, paymentMethod: doc.paymentType, receiptData: doc.extractedData }
+                                  setSelectedDocumentForAbn(docForModal)
+                                  setIsAbnModalOpen(true)
+                                  checkAbnDetails(abn)
+                                } else {
+                                  toast({ title: 'ABN not found', description: 'The document does not contain an ABN for verification', variant: 'destructive' })
+                                }
+                              }}
+                            >
+                              Check Vendor
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                toast({ title: 'Xero Journal Record', description: 'Xero Journal Record creation feature will be implemented' })
+                              }}
+                            >
+                              Create Xero Journal Record
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                handleDeleteDigitizedClick(doc.id)
+                              }}
+                              className="text-destructive"
+                            >
+                              Delete Document
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )
+                    }
+                  },
+                ]
+
+                const defaultVisible = [
+                  'purchaseDate', 'vendorName', 'vendorAbn',
+                  'cashOutAmount', 'discountAmount', 'amountExclTax',
+                  'taxAmount', 'totalAmount', 'taxStatus', 'actions'
+                ]
+                const key = user?.id ? `digitized_columns_visibility:${user.id}` : undefined
+                return (
+                  <DataTable 
+                    columns={columns} 
+                    data={digitizedDocuments} 
+                    defaultVisibleColumnIds={defaultVisible} 
+                    storageKey={key}
+                    onRowClick={(row) => {
+                      const doc = row.original
+                      if (!user?.id) {
+                        toast({ title: 'Not signed in', description: 'Please sign in to view images.', variant: 'destructive' })
+                        return
+                      }
+                      const imageId = doc.originalDocumentId || doc.id
+                      const docForModal = { 
+                        ...doc, 
+                        id: imageId, 
+                        status: 'DIGITIZED' as const, 
+                        uploadDate: doc.createdAt, 
+                        transactionDate: doc.purchaseDate, 
+                        vendor: doc.vendorName, 
+                        abn: doc.vendorAbn, 
+                        gstAmount: doc.taxAmount, 
+                        paymentMethod: doc.paymentType, 
+                        receiptData: doc.extractedData 
+                      }
+                      setSelectedDocumentForImage(docForModal)
+                      setIsImageModalOpen(true)
+                    }}
+                  />
+                )
+              })()}
             </CardContent>
           </Card>
           

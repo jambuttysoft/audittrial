@@ -137,12 +137,12 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Проверяем, что документ принадлежит пользователю
-    const digitizedDocument = await prisma.digitized.findFirst({
-      where: {
-        id,
-        userId,
-      },
-    });
+  const digitizedDocument = await prisma.digitized.findFirst({
+    where: {
+      id,
+      userId,
+    },
+  });
 
     if (!digitizedDocument) {
       return NextResponse.json(
@@ -151,14 +151,40 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await prisma.digitized.delete({
-      where: { id },
-    });
+  await prisma.digitizedReview.create({
+    data: {
+      originalDigitizedId: digitizedDocument.id,
+      companyId: digitizedDocument.companyId,
+      userId: digitizedDocument.userId,
+      originalDocumentId: digitizedDocument.originalDocumentId,
+      fileName: digitizedDocument.fileName,
+      originalName: digitizedDocument.originalName,
+      filePath: digitizedDocument.filePath,
+      fileSize: digitizedDocument.fileSize,
+      mimeType: digitizedDocument.mimeType,
+      purchaseDate: digitizedDocument.purchaseDate,
+      vendorName: digitizedDocument.vendorName,
+      vendorAbn: digitizedDocument.vendorAbn,
+      vendorAddress: digitizedDocument.vendorAddress,
+      documentType: digitizedDocument.documentType,
+      receiptNumber: digitizedDocument.receiptNumber,
+      paymentType: digitizedDocument.paymentType,
+      cashOutAmount: digitizedDocument.cashOutAmount,
+      discountAmount: digitizedDocument.discountAmount,
+      amountExclTax: digitizedDocument.amountExclTax,
+      taxAmount: digitizedDocument.taxAmount,
+      totalAmount: digitizedDocument.totalAmount,
+      expenseCategory: digitizedDocument.expenseCategory,
+      taxStatus: digitizedDocument.taxStatus,
+    },
+  });
 
-    return NextResponse.json(
-      { message: 'Document deleted successfully' },
-      { headers: getCorsHeaders(request.headers.get('origin') || '') }
-    );
+  await prisma.digitized.delete({ where: { id } });
+
+  return NextResponse.json(
+    { message: 'Document moved to review' },
+    { headers: getCorsHeaders(request.headers.get('origin') || '') }
+  );
   } catch (error) {
     console.error('Error deleting digitized document:', error);
     return NextResponse.json(

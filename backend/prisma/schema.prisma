@@ -173,6 +173,8 @@ model Digitized {
   documentType      String?
   receiptNumber     String?
   paymentType       String?
+  cashOutAmount     Float?
+  discountAmount    Float?
   amountExclTax     Float?
   taxAmount         Float?
   totalAmount       Float?
@@ -189,4 +191,58 @@ model Digitized {
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@map("digitized")
+}
+
+model Vendor {
+  id                     String   @id @default(cuid())
+  abn                    String   @unique
+  abnStatus              String?
+  abnStatusEffectiveFrom DateTime?
+  acn                    String?
+  addressDate            DateTime?
+  addressPostcode        String?
+  addressState           String?
+  businessName           Json?
+  entityName             String?
+  entityTypeCode         String?
+  entityTypeName         String?
+  gst                    DateTime?
+  message                String?
+  requestUpdateDate      DateTime
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@map("vendors")
+}
+
+model DigitizedReview {
+  id                String    @id @default(cuid())
+  originalDigitizedId String  @unique
+  companyId         String
+  userId            String
+  originalDocumentId String
+  fileName          String
+  originalName      String
+  filePath          String
+  fileSize          Int
+  mimeType          String
+  purchaseDate      DateTime?
+  vendorName        String?
+  vendorAbn         String?
+  vendorAddress     String?
+  documentType      String?
+  receiptNumber     String?
+  paymentType       String?
+  cashOutAmount     Float?
+  discountAmount    Float?
+  amountExclTax     Float?
+  taxAmount         Float?
+  totalAmount       Float?
+  expenseCategory   String?
+  taxStatus         String?
+  movedAt           DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("digitized_review")
 }
