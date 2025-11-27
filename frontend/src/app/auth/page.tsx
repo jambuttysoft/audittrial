@@ -168,12 +168,8 @@ export default function AuthPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Document Digitization
-          </h1>
-          <p className="text-gray-600">
-            Document Digitization System
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">TRAKYTT Validation Portal</h1>
+          <p className="text-gray-600">Automated Source Document Processing & Compliance Verification</p>
         </div>
           
         {error && (
@@ -197,10 +193,8 @@ export default function AuthPage() {
           <TabsContent value="login">
             <Card>
               <CardHeader>
-                <CardTitle>Login to System</CardTitle>
-                <CardDescription>
-                  Enter your login credentials
-                </CardDescription>
+                <CardTitle>Sign in to TRAKYTT</CardTitle>
+                <CardDescription>Access your document workspace and continue processing.</CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleLogin} className="space-y-4">
@@ -247,7 +241,7 @@ export default function AuthPage() {
                   </div>
                   
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Logging in...' : 'Sign In'}
+                    {isLoading ? 'Logging in...' : 'Sign In Securely'}
                   </Button>
                 </form>
               </CardContent>
@@ -413,6 +407,9 @@ export default function AuthPage() {
             </Card>
           </TabsContent>
         </Tabs>
+        <div className="mt-6 text-center">
+          <p className="text-xs text-gray-500">Early Access Version — Developed by 3030 Technologie</p>
+        </div>
       </div>
     </div>
   )
