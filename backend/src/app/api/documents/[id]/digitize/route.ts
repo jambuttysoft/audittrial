@@ -296,7 +296,6 @@ SURCHARGE RULES:
           throw e
         }
       }
-
       try {
         const abn = digitizedDocument.vendorAbn?.toString() || ''
         if (/^\d{11}$/.test(abn)) {
