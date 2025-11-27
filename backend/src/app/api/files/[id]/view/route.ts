@@ -35,7 +35,7 @@ export async function GET(
       },
     })
 
-    // If not found in Document table, check if it's a digitized document
+    // If not found in Document table, check digitized variants
     if (!document) {
       // Prefer ORM over raw SQL for MySQL compatibility
       const digitized =
@@ -44,6 +44,22 @@ export async function GET(
           select: { filePath: true, mimeType: true, originalName: true },
         })) ??
         (await prisma.digitized.findFirst({
+          where: { id, userId },
+          select: { filePath: true, mimeType: true, originalName: true },
+        })) ??
+        (await (prisma as any).digitizedReview.findFirst({
+          where: { originalDocumentId: id, userId },
+          select: { filePath: true, mimeType: true, originalName: true },
+        })) ??
+        (await (prisma as any).digitizedReview.findFirst({
+          where: { id, userId },
+          select: { filePath: true, mimeType: true, originalName: true },
+        })) ??
+        (await (prisma as any).digitizedReady.findFirst({
+          where: { originalDocumentId: id, userId },
+          select: { filePath: true, mimeType: true, originalName: true },
+        })) ??
+        (await (prisma as any).digitizedReady.findFirst({
           where: { id, userId },
           select: { filePath: true, mimeType: true, originalName: true },
         }))

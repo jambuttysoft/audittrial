@@ -209,11 +209,10 @@ export async function DELETE(request: NextRequest) {
     },
   });
 
-  // Keep original digitized record to allow later investigation
-  // await prisma.digitized.delete({ where: { id } });
+  await prisma.digitized.delete({ where: { id } });
 
   return NextResponse.json(
-    { message: 'Document copied to review (original retained)' },
+    { message: 'Document moved to Deleted' },
     { headers: getCorsHeaders(request.headers.get('origin') || '') }
   );
   } catch (error) {

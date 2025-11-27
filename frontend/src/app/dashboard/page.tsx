@@ -1671,15 +1671,38 @@ function DashboardContent() {
                 const columns: ColumnDef<DigitizedData>[] = [
                   { accessorKey: 'purchaseDate', header: 'Purchase Date', cell: ({ row }) => <TruncatedCell text={row.original.purchaseDate ? formatDate(row.original.purchaseDate) : '-'} /> },
                   { accessorKey: 'vendorName', header: 'Vendor Name', cell: ({ row }) => {
-                    const abn = row.original.vendorAbn || ''
-                    const name = vendorInfo[abn]?.name || row.original.vendorName || '-'
-                    return <TruncatedCell text={name} />
+                    const doc = row.original
+                    const abn = doc.vendorAbn || ''
+                    const name = vendorInfo[abn]?.name || doc.vendorName || '-'
+                    const onClick = () => {
+                      if (!user?.id) {
+                        toast({ title: 'Not signed in', description: 'Please sign in to view images.', variant: 'destructive' })
+                        return
+                      }
+                      const imageId = doc.originalDocumentId || (doc as any).id
+                      const docForModal = { ...doc, id: imageId, status: 'DIGITIZED' as const, uploadDate: doc.createdAt, transactionDate: doc.purchaseDate, vendor: doc.vendorName, abn: doc.vendorAbn, gstAmount: doc.taxAmount, paymentMethod: doc.paymentType, receiptData: (doc as any).extractedData }
+                      setSelectedDocumentForImage(docForModal)
+                      setIsImageModalOpen(true)
+                    }
+                    return <span className="cursor-pointer" onClick={onClick}>{name}</span>
                   } },
                   { accessorKey: 'vendorAbn', header: 'Vendor ABN', size: 220, meta: { headerClassName: 'whitespace-nowrap', cellClassName: 'whitespace-nowrap' }, cell: ({ row }) => {
-                    const abn = row.original.vendorAbn || ''
+                    const doc = row.original
+                    const abn = doc.vendorAbn || ''
                     const status = vendorInfo[abn]?.status
                     const cls = status === 'Active' ? 'text-green-600 font-medium' : status ? 'text-red-600 font-medium' : ''
-                    return <span className={cls}>{formatAbn(abn) || '-'}</span>
+                    const onClick = () => {
+                      if (abn) {
+                        const imageId = doc.originalDocumentId || (doc as any).id
+                        const docForModal = { ...doc, id: imageId, status: 'DIGITIZED' as const, uploadDate: doc.createdAt, transactionDate: doc.purchaseDate, vendor: doc.vendorName, abn: doc.vendorAbn, gstAmount: doc.taxAmount, paymentMethod: doc.paymentType, receiptData: (doc as any).extractedData }
+                        setSelectedDocumentForAbn(docForModal)
+                        setIsAbnModalOpen(true)
+                        checkAbnDetails(abn)
+                      } else {
+                        toast({ title: 'ABN not found', description: 'The document does not contain an ABN for verification', variant: 'destructive' })
+                      }
+                    }
+                    return <span className={cls + ' cursor-pointer underline'} onClick={onClick}>{formatAbn(abn) || '-'}</span>
                   } },
                   { accessorKey: 'cashOutAmount', header: 'Cash Out', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.cashOutAmount === 'number' ? row.original.cashOutAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'discountAmount', header: 'Discount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.discountAmount === 'number' ? row.original.discountAmount : 0).toFixed(2)} /> },
@@ -1688,17 +1711,29 @@ function DashboardContent() {
                   { accessorKey: 'totalAmount', header: 'Total Amount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalAmount === 'number' ? row.original.totalAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'totalPaidAmount', header: 'Total Paid Amount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalPaidAmount === 'number' ? row.original.totalPaidAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'gstStatus', header: 'GST Status', cell: ({ row }) => {
-                    const abn = row.original.vendorAbn || ''
+                    const doc = row.original
+                    const abn = doc.vendorAbn || ''
                     const gst = vendorInfo[abn]?.gst
                     const isRegistered = !!gst
                     const text = isRegistered ? 'Registered' : 'Not Registered'
                     const cls = isRegistered ? 'text-green-600 font-medium' : 'text-red-600 font-medium'
                     const tip = isRegistered ? `Registered from ${formatGstPretty(gst)}` : ''
+                    const onClick = () => {
+                      if (abn) {
+                        const imageId = doc.originalDocumentId || (doc as any).id
+                        const docForModal = { ...doc, id: imageId, status: 'DIGITIZED' as const, uploadDate: doc.createdAt, transactionDate: doc.purchaseDate, vendor: doc.vendorName, abn: doc.vendorAbn, gstAmount: doc.taxAmount, paymentMethod: doc.paymentType, receiptData: (doc as any).extractedData }
+                        setSelectedDocumentForAbn(docForModal)
+                        setIsAbnModalOpen(true)
+                        checkAbnDetails(abn)
+                      } else {
+                        toast({ title: 'ABN not found', description: 'The document does not contain an ABN for verification', variant: 'destructive' })
+                      }
+                    }
                     return (
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span className={cls}>{text}</span>
+                            <span className={cls + ' cursor-pointer underline'} onClick={onClick}>{text}</span>
                           </TooltipTrigger>
                           {isRegistered && (
                             <TooltipContent>
@@ -1737,9 +1772,20 @@ function DashboardContent() {
                 const columns: ColumnDef<DigitizedData>[] = [
                   { accessorKey: 'purchaseDate', header: 'Purchase Date', cell: ({ row }) => <TruncatedCell text={row.original.purchaseDate ? formatDate(row.original.purchaseDate) : '-'} /> },
                   { accessorKey: 'vendorName', header: 'Vendor Name', cell: ({ row }) => {
-                    const abn = row.original.vendorAbn || ''
-                    const name = vendorInfo[abn]?.name || row.original.vendorName || '-'
-                    return <TruncatedCell text={name} />
+                    const doc = row.original
+                    const abn = doc.vendorAbn || ''
+                    const name = vendorInfo[abn]?.name || doc.vendorName || '-'
+                    const onClick = () => {
+                      if (!user?.id) {
+                        toast({ title: 'Not signed in', description: 'Please sign in to view images.', variant: 'destructive' })
+                        return
+                      }
+                      const imageId = doc.originalDocumentId || (doc as any).id
+                      const docForModal = { ...doc, id: imageId, status: 'DIGITIZED' as const, uploadDate: doc.createdAt, transactionDate: doc.purchaseDate, vendor: doc.vendorName, abn: doc.vendorAbn, gstAmount: doc.taxAmount, paymentMethod: doc.paymentType, receiptData: (doc as any).extractedData }
+                      setSelectedDocumentForImage(docForModal)
+                      setIsImageModalOpen(true)
+                    }
+                    return <span className="cursor-pointer" onClick={onClick}>{name}</span>
                   } },
                   { accessorKey: 'documentType', header: 'Document Type', cell: ({ row }) => <TruncatedCell text={row.original.documentType || 'Receipt'} /> },
                   { accessorKey: 'receiptNumber', header: 'Receipt/Invoice Number', cell: ({ row }) => <TruncatedCell text={row.original.receiptNumber || '-'} /> },
