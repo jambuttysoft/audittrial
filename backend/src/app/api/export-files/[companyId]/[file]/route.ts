@@ -1,19 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
 import { join } from 'path'
 import { existsSync } from 'fs'
 import { readFile } from 'fs/promises'
 
-export async function OPTIONS(request: NextRequest) {
+export async function OPTIONS(request: Request) {
   return handleCorsOptions(request.headers.get('origin') || '')
 }
 
-export async function GET(request: NextRequest, { params }: { params: { companyId: string, file: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ companyId: string, file: string }> }) {
   const origin = request.headers.get('origin') || ''
   const corsHeaders = getCorsHeaders(origin)
   try {
-    const companyId = params.companyId
-    const file = params.file
+    const { companyId, file } = await params
     if (!companyId || !file) {
       return NextResponse.json({ error: 'companyId and file are required' }, { status: 400, headers: corsHeaders })
     }
