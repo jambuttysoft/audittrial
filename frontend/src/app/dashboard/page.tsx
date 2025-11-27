@@ -152,6 +152,8 @@ interface DigitizedData {
   discountAmount?: number
   amountExclTax?: number
   totalAmount?: number
+  totalPaidAmount?: number
+  surchargeAmount?: number
   taxAmount?: number
   expenseCategory?: string
   taxStatus?: string
@@ -178,6 +180,9 @@ function DashboardContent() {
   const [documents, setDocuments] = useState<DocumentData[]>([])
   const [digitizedDocuments, setDigitizedDocuments] = useState<DigitizedData[]>([])
   const [reviewDocuments, setReviewDocuments] = useState<DigitizedData[]>([])
+  const [readyDocuments, setReadyDocuments] = useState<DigitizedData[]>([])
+  const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({})
+  const [vendorInfo, setVendorInfo] = useState<Record<string, { status: string; name: string; gst?: string }>>({})
   const [companies, setCompanies] = useState<Company[]>([])
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
   const [isEditingCompany, setIsEditingCompany] = useState(false)
@@ -323,6 +328,7 @@ function DashboardContent() {
         loadCompanyDocuments(company.id),
         loadDigitizedDocuments(company.id),
         loadReviewDocuments(company.id)
+        , loadReadyDocuments(company.id)
       ])
       // Refresh companies data to get updated document counts
       if (user) {
@@ -454,6 +460,129 @@ function DashboardContent() {
       setReviewDocuments([])
     }
   }
+
+  const loadReadyDocuments = async (companyId: string) => {
+    if (!user?.id || !companyId) return
+    try {
+      const response = await fetch(`/api/ready?userId=${user.id}&companyId=${companyId}`, { credentials: 'include' })
+      if (response.ok) {
+        const res = await response.json()
+        setReadyDocuments(res.success ? res.ready ?? [] : [])
+      } else setReadyDocuments([])
+    } catch { setReadyDocuments([]) }
+  }
+
+  const handleBulkDeleteSelected = async (rows: any[]) => {
+    if (!selectedCompany?.id || !user?.id) {
+      toast({ title: 'Error', description: 'Please select a company and sign in', variant: 'destructive' })
+      return
+    }
+    try {
+      const ids = rows.map((r) => r.original.id).filter(Boolean)
+      const results = await Promise.all(ids.map(async (id) => {
+        const resp = await fetch(`/api/digitized?id=${id}&userId=${user.id}` , { method: 'DELETE', credentials: 'include', headers: { 'Content-Type': 'application/json' } })
+        return resp.ok
+      }))
+      const successCount = results.filter(Boolean).length
+      await loadDigitizedDocuments(selectedCompany.id)
+      await loadReviewDocuments(selectedCompany.id)
+      toast({ title: 'Completed', description: `${successCount}/${ids.length} document(s) moved to review` })
+    } catch (e) {
+      console.error('Bulk delete failed', e)
+      toast({ title: 'Delete failed', description: 'Failed to move selected documents', variant: 'destructive' })
+    }
+  }
+
+  const validateReceipt = (data: any) => {
+    const errors: string[] = []
+    const TOLERANCE = 0.02
+
+    const totalPaid = typeof data.totalPaidAmount === 'number' ? data.totalPaidAmount : 0
+    const cashOut = typeof data.cashOutAmount === 'number' ? data.cashOutAmount : 0
+    const surcharge = typeof data.surchargeAmount === 'number' ? data.surchargeAmount : 0
+    const totalAmt = typeof data.totalAmount === 'number' ? data.totalAmount : 0
+    const tax = typeof data.taxAmount === 'number' ? data.taxAmount : 0
+
+    // 1. Payment Check
+    const calculatedTotal = totalPaid - cashOut
+    if (Math.abs(calculatedTotal - totalAmt) > TOLERANCE) {
+      errors.push('Ошибка 1: Сумма оплаты не сходится с итогом чека (Paid - CashOut ≠ Total)')
+    }
+
+    // 2. GST Plausibility
+    const maxPossibleTax = totalAmt / 11
+    if (tax > (maxPossibleTax + TOLERANCE)) {
+      errors.push('Ошибка 2: GST слишком большой для данной суммы (Tax > Total / 11)')
+    }
+
+    // 3. Net Amount Consistency
+    const calculatedNetAmount = totalAmt - tax
+    if (calculatedNetAmount < 0) {
+      errors.push('Ошибка 3: Налог превышает общую сумму (Total - Tax < 0)')
+    }
+
+    return errors
+  }
+
+  const validateSelected = async (rows: any[]) => {
+    const toNumber = (v: any) => typeof v === 'number' ? v : typeof v === 'string' ? parseFloat(v) : 0
+    const errs: Record<string, string[]> = {}
+    const validIds: string[] = []
+    rows.forEach((row: any) => {
+      const payload = {
+        id: row.original.id,
+        taxAmount: toNumber(row.getValue('taxAmount')),
+        totalAmount: toNumber(row.getValue('totalAmount')),
+        totalPaidAmount: toNumber(row.getValue('totalPaidAmount')),
+        cashOutAmount: toNumber(row.getValue('cashOutAmount')),
+        surchargeAmount: toNumber(row.getValue('surchargeAmount')),
+      }
+      console.log('Validate payload:', payload)
+      const e = validateReceipt(payload)
+      if (e.length > 0) errs[payload.id] = e
+      else validIds.push(payload.id)
+    })
+    if (Object.keys(errs).length > 0) {
+      console.group('Validation errors')
+      Object.entries(errs).forEach(([id, messages]) => {
+        console.log(`Row ${id}:`) 
+        messages.forEach((m) => console.log(' -', m))
+      })
+      console.groupEnd()
+    }
+    setValidationErrors(errs)
+    if (Object.keys(errs).length > 0) {
+      toast({ title: 'Validate', description: `Найдены ошибки в ${Object.keys(errs).length} строках`, variant: 'destructive' })
+    }
+    if (validIds.length > 0 && selectedCompany && user) {
+      await Promise.all(validIds.map(async (id) => {
+        await fetch('/api/ready', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, userId: user.id }) })
+      }))
+      await Promise.all([
+        loadReadyDocuments(selectedCompany.id),
+        loadDigitizedDocuments(selectedCompany.id),
+      ])
+      toast({ title: 'Validate', description: `${validIds.length} строк перенесены в Ready for Report` })
+    }
+  }
+
+  useEffect(() => {
+    const abns = new Set<string>()
+    digitizedDocuments.forEach(d => { if (d.vendorAbn) abns.add(d.vendorAbn) })
+    reviewDocuments.forEach(d => { if (d.vendorAbn) abns.add(d.vendorAbn) })
+    readyDocuments.forEach(d => { if (d.vendorAbn) abns.add(d.vendorAbn) })
+    const toFetch = Array.from(abns).filter(a => /^\d{11}$/.test(a) && !vendorInfo[a])
+    if (toFetch.length === 0) return
+    Promise.all(toFetch.map(async (abn) => {
+      try {
+        const r = await fetch(`/api/vendors?abn=${abn}`, { credentials: 'include' })
+        if (!r.ok) return
+        const data = await r.json()
+        const name = data.EntityName || (Array.isArray(data.BusinessName) ? (data.BusinessName[0] || '') : '')
+        setVendorInfo(prev => ({ ...prev, [abn]: { status: data.AbnStatus || '', name, gst: data.Gst || '' } }))
+      } catch {}
+    }))
+  }, [digitizedDocuments, reviewDocuments, readyDocuments])
 
   const handleCompanyUpdate = async () => {
     if (!editedCompany || !user?.id) return
@@ -784,7 +913,7 @@ function DashboardContent() {
 
       toast({
         title: 'Success',
-        description: 'Digitized document deleted successfully',
+        description: 'Digitized document moved to review (original retained)',
       })
 
       // Refresh digitized documents
@@ -880,7 +1009,7 @@ function DashboardContent() {
     setAbnData(null)
     
     try {
-      const response = await fetch(`/api/abn-lookup?abn=${abn}`, {
+      const response = await fetch(`/api/vendors?abn=${abn}`, {
         credentials: 'include'
       })
       
@@ -934,6 +1063,24 @@ function DashboardContent() {
       month: 'short',
       year: 'numeric'
     })
+  }
+
+  const formatAbn = (abn?: string) => {
+    if (!abn) return '-'
+    const digits = abn.replace(/\D/g, '')
+    if (digits.length !== 11) return abn
+    return `${digits.slice(0,2)} ${digits.slice(2,5)} ${digits.slice(5,8)} ${digits.slice(8,11)}`
+  }
+
+  const formatGstPretty = (dateString?: string) => {
+    if (!dateString) return ''
+    const d = new Date(dateString)
+    if (isNaN(d.getTime())) return ''
+    const day = String(d.getDate()).padStart(2, '0')
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+    const month = months[d.getMonth()]
+    const year = d.getFullYear()
+    return `${day} ${month} ${year}`
   }
 
   // Xero integration functions
@@ -1295,7 +1442,8 @@ function DashboardContent() {
         <TabsList>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="digitized">Digitized</TabsTrigger>
-          <TabsTrigger value="review">For Review</TabsTrigger>
+          <TabsTrigger value="ready">Ready for Report</TabsTrigger>
+          <TabsTrigger value="review">Deleted</TabsTrigger>
           <TabsTrigger value="profile">Profile</TabsTrigger>
         </TabsList>
         
@@ -1501,26 +1649,135 @@ function DashboardContent() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="ready" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Ready for Report</CardTitle>
+              <CardDescription>
+                Validated items ready for reporting
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {Object.keys(validationErrors).length > 0 && (
+                <div role="alert" className="mb-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  {Object.entries(validationErrors).map(([id, errs]) => (
+                    <div key={id}>
+                      <span className="font-medium">Row {id}:</span> {errs.join('; ')}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {(() => {
+                const columns: ColumnDef<DigitizedData>[] = [
+                  { accessorKey: 'purchaseDate', header: 'Purchase Date', cell: ({ row }) => <TruncatedCell text={row.original.purchaseDate ? formatDate(row.original.purchaseDate) : '-'} /> },
+                  { accessorKey: 'vendorName', header: 'Vendor Name', cell: ({ row }) => {
+                    const abn = row.original.vendorAbn || ''
+                    const name = vendorInfo[abn]?.name || row.original.vendorName || '-'
+                    return <TruncatedCell text={name} />
+                  } },
+                  { accessorKey: 'vendorAbn', header: 'Vendor ABN', size: 220, meta: { headerClassName: 'whitespace-nowrap', cellClassName: 'whitespace-nowrap' }, cell: ({ row }) => {
+                    const abn = row.original.vendorAbn || ''
+                    const status = vendorInfo[abn]?.status
+                    const cls = status === 'Active' ? 'text-green-600 font-medium' : status ? 'text-red-600 font-medium' : ''
+                    return <span className={cls}>{formatAbn(abn) || '-'}</span>
+                  } },
+                  { accessorKey: 'cashOutAmount', header: 'Cash Out', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.cashOutAmount === 'number' ? row.original.cashOutAmount : 0).toFixed(2)} /> },
+                  { accessorKey: 'discountAmount', header: 'Discount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.discountAmount === 'number' ? row.original.discountAmount : 0).toFixed(2)} /> },
+                  { accessorKey: 'surchargeAmount', header: 'Card Surcharge', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.surchargeAmount === 'number' ? row.original.surchargeAmount : 0).toFixed(2)} /> },
+                  { accessorKey: 'taxAmount', header: 'Tax Amount (GST)', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.taxAmount === 'number' ? row.original.taxAmount : 0).toFixed(2)} /> },
+                  { accessorKey: 'totalAmount', header: 'Total Amount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalAmount === 'number' ? row.original.totalAmount : 0).toFixed(2)} /> },
+                  { accessorKey: 'totalPaidAmount', header: 'Total Paid Amount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalPaidAmount === 'number' ? row.original.totalPaidAmount : 0).toFixed(2)} /> },
+                  { accessorKey: 'gstStatus', header: 'GST Status', cell: ({ row }) => {
+                    const abn = row.original.vendorAbn || ''
+                    const gst = vendorInfo[abn]?.gst
+                    const isRegistered = !!gst
+                    const text = isRegistered ? 'Registered' : 'Not Registered'
+                    const cls = isRegistered ? 'text-green-600 font-medium' : 'text-red-600 font-medium'
+                    const tip = isRegistered ? `Registered from ${formatGstPretty(gst)}` : ''
+                    return (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className={cls}>{text}</span>
+                          </TooltipTrigger>
+                          {isRegistered && (
+                            <TooltipContent>
+                              <p>{tip}</p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
+                    )
+                  } },
+                ]
+                const defaultVisible = [
+                  'purchaseDate', 'vendorName', 'vendorAbn',
+                  'cashOutAmount', 'discountAmount', 'surchargeAmount',
+                  'taxAmount', 'totalAmount', 'totalPaidAmount', 'gstStatus'
+                ]
+                const key = user?.id ? `ready_columns_visibility:${user.id}` : undefined
+                return (
+                  <DataTable columns={columns} data={readyDocuments} defaultVisibleColumnIds={defaultVisible} storageKey={key} />
+                )
+              })()}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="review" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>For Review</CardTitle>
+              <CardTitle>Deleted</CardTitle>
               <CardDescription>
-                Items moved from Digitized for manual review
+                Items copied from Digitized upon deletion
               </CardDescription>
             </CardHeader>
             <CardContent>
               {(() => {
                 const columns: ColumnDef<DigitizedData>[] = [
                   { accessorKey: 'purchaseDate', header: 'Purchase Date', cell: ({ row }) => <TruncatedCell text={row.original.purchaseDate ? formatDate(row.original.purchaseDate) : '-'} /> },
-                  { accessorKey: 'vendorName', header: 'Vendor Name', cell: ({ row }) => <TruncatedCell text={row.original.vendorName || '-'} /> },
-                  { accessorKey: 'vendorAbn', header: 'Vendor ABN', cell: ({ row }) => <TruncatedCell text={row.original.vendorAbn || '-'} /> },
+                  { accessorKey: 'vendorName', header: 'Vendor Name', cell: ({ row }) => {
+                    const abn = row.original.vendorAbn || ''
+                    const name = vendorInfo[abn]?.name || row.original.vendorName || '-'
+                    return <TruncatedCell text={name} />
+                  } },
+                  { accessorKey: 'documentType', header: 'Document Type', cell: ({ row }) => <TruncatedCell text={row.original.documentType || 'Receipt'} /> },
+                  { accessorKey: 'receiptNumber', header: 'Receipt/Invoice Number', cell: ({ row }) => <TruncatedCell text={row.original.receiptNumber || '-'} /> },
+                  { accessorKey: 'paymentType', header: 'Payment Type', cell: ({ row }) => <TruncatedCell text={row.original.paymentType || '-'} /> },
+                  { accessorKey: 'vendorAbn', header: 'Vendor ABN', size: 180, meta: { headerClassName: 'whitespace-nowrap', cellClassName: 'whitespace-nowrap' }, cell: ({ row }) => {
+                    const abn = row.original.vendorAbn || ''
+                    const status = vendorInfo[abn]?.status
+                    const cls = status === 'Active' ? 'text-green-600 font-medium' : status ? 'text-red-600 font-medium' : ''
+                    return <span className={cls}>{formatAbn(abn) || '-'}</span>
+                  } },
                   { accessorKey: 'cashOutAmount', header: 'Cash Out', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.cashOutAmount === 'number' ? row.original.cashOutAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'discountAmount', header: 'Discount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.discountAmount === 'number' ? row.original.discountAmount : 0).toFixed(2)} /> },
-                  { accessorKey: 'amountExclTax', header: 'Amount Excl. Tax', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.amountExclTax === 'number' ? row.original.amountExclTax : 0).toFixed(2)} /> },
+                  { accessorKey: 'surchargeAmount', header: 'Card Surcharge', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.surchargeAmount === 'number' ? row.original.surchargeAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'taxAmount', header: 'Tax Amount (GST)', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.taxAmount === 'number' ? row.original.taxAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'totalAmount', header: 'Total Amount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalAmount === 'number' ? row.original.totalAmount : 0).toFixed(2)} /> },
-                  { accessorKey: 'taxStatus', header: 'Status', cell: ({ row }) => <Badge variant="secondary">{row.original.taxStatus || '-'}</Badge> },
+                  { accessorKey: 'totalPaidAmount', header: 'Total Paid Amount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalPaidAmount === 'number' ? row.original.totalPaidAmount : 0).toFixed(2)} /> },
+                  { accessorKey: 'gstStatus', header: 'GST Status', cell: ({ row }) => {
+                    const abn = row.original.vendorAbn || ''
+                    const gst = vendorInfo[abn]?.gst
+                    const isRegistered = !!gst
+                    const text = isRegistered ? 'Registered' : 'Not Registered'
+                    const cls = isRegistered ? 'text-green-600 font-medium' : 'text-red-600 font-medium'
+                    const tip = isRegistered ? `Registered from ${formatGstPretty(gst)}` : ''
+                    return (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className={cls}>{text}</span>
+                          </TooltipTrigger>
+                          {isRegistered && (
+                            <TooltipContent>
+                              <p>{tip}</p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
+                    )
+                  } },
                   {
                     id: 'actions',
                     header: 'Actions',
@@ -1561,8 +1818,8 @@ function DashboardContent() {
 
                 const defaultVisible = [
                   'purchaseDate', 'vendorName', 'vendorAbn',
-                  'cashOutAmount', 'discountAmount', 'amountExclTax',
-                  'taxAmount', 'totalAmount', 'taxStatus', 'actions'
+                  'cashOutAmount', 'discountAmount', 'surchargeAmount',
+                  'taxAmount', 'totalAmount', 'totalPaidAmount', 'gstStatus', 'actions'
                 ]
                 const key = user?.id ? `review_columns_visibility:${user.id}` : undefined
                 return (
@@ -1571,28 +1828,6 @@ function DashboardContent() {
                     data={reviewDocuments} 
                     defaultVisibleColumnIds={defaultVisible} 
                     storageKey={key}
-                    onRowClick={(row) => {
-                      const doc = row.original
-                      if (!user?.id) {
-                        toast({ title: 'Not signed in', description: 'Please sign in to view images.', variant: 'destructive' })
-                        return
-                      }
-                      const imageId = doc.originalDocumentId || (doc as any).id
-                      const docForModal = { 
-                        ...doc, 
-                        id: imageId, 
-                        status: 'DIGITIZED' as const, 
-                        uploadDate: doc.createdAt, 
-                        transactionDate: doc.purchaseDate, 
-                        vendor: doc.vendorName, 
-                        abn: doc.vendorAbn, 
-                        gstAmount: doc.taxAmount, 
-                        paymentMethod: doc.paymentType, 
-                        receiptData: (doc as any).extractedData 
-                      }
-                      setSelectedDocumentForImage(docForModal)
-                      setIsImageModalOpen(true)
-                    }}
                   />
                 )
               })()}
@@ -1612,18 +1847,50 @@ function DashboardContent() {
               {(() => {
                 const columns: ColumnDef<DigitizedData>[] = [
                   { accessorKey: 'purchaseDate', header: 'Purchase Date', cell: ({ row }) => <TruncatedCell text={row.original.purchaseDate ? formatDate(row.original.purchaseDate) : '-'} /> },
-                  { accessorKey: 'vendorName', header: 'Vendor Name', cell: ({ row }) => <TruncatedCell text={row.original.vendorName || '-'} /> },
-                  { accessorKey: 'vendorAbn', header: 'Vendor ABN', cell: ({ row }) => <TruncatedCell text={row.original.vendorAbn || '-'} /> },
+                  { accessorKey: 'vendorName', header: 'Vendor Name', cell: ({ row }) => {
+                    const abn = row.original.vendorAbn || ''
+                    const name = vendorInfo[abn]?.name || row.original.vendorName || '-'
+                    return <TruncatedCell text={name} />
+                  } },
+                  { accessorKey: 'vendorAbn', header: 'Vendor ABN', size: 220, meta: { headerClassName: 'whitespace-nowrap', cellClassName: 'whitespace-nowrap' }, cell: ({ row }) => {
+                    const abn = row.original.vendorAbn || ''
+                    const status = vendorInfo[abn]?.status
+                    const cls = status === 'Active' ? 'text-green-600 font-medium' : status ? 'text-red-600 font-medium' : ''
+                    return <span className={cls}>{formatAbn(abn) || '-'}</span>
+                  } },
                   { accessorKey: 'documentType', header: 'Document Type', cell: ({ row }) => <TruncatedCell text={row.original.documentType || 'Receipt'} /> },
                   { accessorKey: 'receiptNumber', header: 'Receipt/Invoice Number', cell: ({ row }) => <TruncatedCell text={row.original.receiptNumber || '-'} /> },
                   { accessorKey: 'paymentType', header: 'Payment Type', cell: ({ row }) => <TruncatedCell text={row.original.paymentType || '-'} /> },
+                  
                   { accessorKey: 'cashOutAmount', header: 'Cash Out', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.cashOutAmount === 'number' ? row.original.cashOutAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'discountAmount', header: 'Discount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.discountAmount === 'number' ? row.original.discountAmount : 0).toFixed(2)} /> },
-                  { accessorKey: 'amountExclTax', header: 'Amount Excl. Tax', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.amountExclTax === 'number' ? row.original.amountExclTax : 0).toFixed(2)} /> },
+                  { accessorKey: 'surchargeAmount', header: 'Card Surcharge', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.surchargeAmount === 'number' ? row.original.surchargeAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'taxAmount', header: 'Tax Amount (GST)', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.taxAmount === 'number' ? row.original.taxAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'totalAmount', header: 'Total Amount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalAmount === 'number' ? row.original.totalAmount : 0).toFixed(2)} /> },
-                  { accessorKey: 'expenseCategory', header: 'Expense Category', cell: ({ row }) => <TruncatedCell text={row.original.expenseCategory || '-'} /> },
-                  { accessorKey: 'taxStatus', header: 'Status', cell: ({ row }) => <Badge variant="secondary">{row.original.taxStatus || '-'}</Badge> },
+                  { accessorKey: 'totalPaidAmount', header: 'Total Paid Amount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalPaidAmount === 'number' ? row.original.totalPaidAmount : 0).toFixed(2)} /> },
+                  
+                  { accessorKey: 'gstStatus', header: 'GST Status', cell: ({ row }) => {
+                    const abn = row.original.vendorAbn || ''
+                    const gst = vendorInfo[abn]?.gst
+                    const isRegistered = !!gst
+                    const text = isRegistered ? 'Registered' : 'Not Registered'
+                    const cls = isRegistered ? 'text-green-600 font-medium' : 'text-red-600 font-medium'
+                    const tip = isRegistered ? `Registered from ${formatGstPretty(gst)}` : ''
+                    return (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className={cls}>{text}</span>
+                          </TooltipTrigger>
+                          {isRegistered && (
+                            <TooltipContent>
+                              <p>{tip}</p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
+                    )
+                  } },
                   {
                     id: 'actions',
                     header: 'Actions',
@@ -1701,8 +1968,8 @@ function DashboardContent() {
 
                 const defaultVisible = [
                   'purchaseDate', 'vendorName', 'vendorAbn',
-                  'cashOutAmount', 'discountAmount', 'amountExclTax',
-                  'taxAmount', 'totalAmount', 'taxStatus', 'actions'
+                  'cashOutAmount', 'discountAmount', 'surchargeAmount',
+                  'taxAmount', 'totalAmount', 'totalPaidAmount', 'gstStatus', 'actions'
                 ]
                 const key = user?.id ? `digitized_columns_visibility:${user.id}` : undefined
                 return (
@@ -1711,28 +1978,13 @@ function DashboardContent() {
                     data={digitizedDocuments} 
                     defaultVisibleColumnIds={defaultVisible} 
                     storageKey={key}
-                    onRowClick={(row) => {
-                      const doc = row.original
-                      if (!user?.id) {
-                        toast({ title: 'Not signed in', description: 'Please sign in to view images.', variant: 'destructive' })
-                        return
-                      }
-                      const imageId = doc.originalDocumentId || doc.id
-                      const docForModal = { 
-                        ...doc, 
-                        id: imageId, 
-                        status: 'DIGITIZED' as const, 
-                        uploadDate: doc.createdAt, 
-                        transactionDate: doc.purchaseDate, 
-                        vendor: doc.vendorName, 
-                        abn: doc.vendorAbn, 
-                        gstAmount: doc.taxAmount, 
-                        paymentMethod: doc.paymentType, 
-                        receiptData: doc.extractedData 
-                      }
-                      setSelectedDocumentForImage(docForModal)
-                      setIsImageModalOpen(true)
-                    }}
+                    bulkActions={(rows, clearSelection) => (
+                      <>
+                        <Button size="sm" onClick={() => validateSelected(rows).then(() => clearSelection())}>Validate</Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleBulkDeleteSelected(rows)}>Delete</Button>
+                      </>
+                    )}
+                    getRowClassName={(row) => validationErrors[row.original.id] ? 'bg-red-50' : ''}
                   />
                 )
               })()}

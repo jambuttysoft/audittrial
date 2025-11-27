@@ -178,6 +178,8 @@ model Digitized {
   amountExclTax     Float?
   taxAmount         Float?
   totalAmount       Float?
+  totalPaidAmount   Float?
+  surchargeAmount   Float?
   expenseCategory   String?
   taxStatus         String?
   
@@ -238,6 +240,8 @@ model DigitizedReview {
   amountExclTax     Float?
   taxAmount         Float?
   totalAmount       Float?
+  totalPaidAmount   Float?
+  surchargeAmount   Float?
   expenseCategory   String?
   taxStatus         String?
   movedAt           DateTime  @default(now())
@@ -245,4 +249,38 @@ model DigitizedReview {
   updatedAt         DateTime  @updatedAt
 
   @@map("digitized_review")
+}
+
+model DigitizedReady {
+  id                 String    @id @default(cuid())
+  originalDigitizedId String   @unique
+  companyId          String
+  userId             String
+  originalDocumentId String
+  fileName           String
+  originalName       String
+  filePath           String
+  fileSize           Int
+  mimeType           String
+  purchaseDate       DateTime?
+  vendorName         String?
+  vendorAbn          String?
+  vendorAddress      String?
+  documentType       String?
+  receiptNumber      String?
+  paymentType        String?
+  cashOutAmount      Float?
+  discountAmount     Float?
+  amountExclTax      Float?
+  taxAmount          Float?
+  totalAmount        Float?
+  totalPaidAmount    Float?
+  surchargeAmount    Float?
+  expenseCategory    String?
+  taxStatus          String?
+  movedAt            DateTime  @default(now())
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@map("digitized_ready")
 }

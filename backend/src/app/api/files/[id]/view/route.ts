@@ -12,10 +12,10 @@ export async function OPTIONS(request: Request) {
 
 export async function GET(
   request: Request,
-  { params }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
 

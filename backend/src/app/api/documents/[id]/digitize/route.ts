@@ -86,7 +86,9 @@ Analyze this receipt/invoice image and extract ALL the following information in 
   "taxAmount": "GST/tax amount as number",
   "cashOutAmount": "cash out amount as number or null",
   "discountAmount": "discount amount as number or null",
+  "surchargeAmount": "card/payment surcharge amount as number or 0.00", 
   "totalAmount": "total amount including tax as number",
+  "totalPaidAmount": "final amount charged/tendered including cash out",
   "expenseCategory": "category like office supplies, meals, transport, etc",
   "taxStatus": "taxable, tax-free, or mixed"
 }
@@ -116,6 +118,20 @@ DISCOUNT RULES:
   "FLYBUYS REDEEMED", "POINTS REDEEMED".
 - If such a line exists, extract the amount of the deduction (even if loyalty points were used as monetary value).
 - If no discount-indicating lines appear, return DiscountAmount as 0.00.
+
+TOTAL PAID AMOUNT RULES:
+- This field represents the final transaction amount charged to the payment method (e.g., the amount that appears on a bank statement).
+- Formula: Generally, TotalPaidAmount = TotalAmount + CashOutAmount.
+- Look for lines labeled "EFT", "TOTAL EFT", "VISA", "MASTERCARD", "CARD TOTAL" or "AMOUNT TENDERED".
+- In the specific case where Cash Out exists: Ensure TotalPaidAmount includes BOTH the purchase total AND the cash out (e.g., Purchase $105.87 + Cash Out $50.00 = TotalPaidAmount $155.87).
+- If no cash out exists, TotalPaidAmount usually equals TotalAmount.
+
+SURCHARGE RULES:
+- SurchargeAmount must be extracted if the receipt contains any line indicating an extra fee for payment processing, such as:
+  "CARD SURCHARGE", "PAYMENT SURCHARGE", "FEE", or "% FEE".
+- If such a line exists, extract the exact amount (e.g., $0.39 in this case).
+- The SurchargeAmount must be included in the TotalAmount calculation.
+- If no surcharge-indicating lines appear, return SurchargeAmount as 0.00.
 `;
 
 
@@ -184,6 +200,7 @@ DISCOUNT RULES:
           error: 'Failed to parse receipt data'
         }
       }
+      console.log('Parsed receiptData:', receiptData)
 
       // Get document data for creating digitized record
       const documentWithRelations = await prisma.document.findUnique({
@@ -236,44 +253,61 @@ DISCOUNT RULES:
       })
 
       // Создаем запись в таблице Digitized
-      const digitizedDocument = await prisma.digitized.create({
-        data: {
-          company: { connect: { id: documentWithRelations.companyId } },
-          user: { connect: { id: documentWithRelations.userId } },
-          originalDocumentId: documentWithRelations.id,
-          fileName: documentWithRelations.fileName,
-          originalName: documentWithRelations.originalName,
-          filePath: documentWithRelations.filePath,
-          fileSize: documentWithRelations.fileSize,
-          mimeType: documentWithRelations.mimeType,
-          purchaseDate: receiptData.purchaseDate ? new Date(receiptData.purchaseDate) : null,
-          vendorName: receiptData.vendorName || null,
-          vendorAbn: receiptData.vendorAbn || null,
-          vendorAddress: receiptData.vendorAddress || null,
-          documentType: typeof receiptData.documentType === 'string' ? receiptData.documentType : null,
-          receiptNumber: receiptData.receiptNumber || null,
-          paymentType: receiptData.paymentType || null,
-          cashOutAmount: receiptData.cashOutAmount !== undefined && receiptData.cashOutAmount !== null ? parseFloat(receiptData.cashOutAmount.toString()) : null,
-          discountAmount: receiptData.discountAmount !== undefined && receiptData.discountAmount !== null ? parseFloat(receiptData.discountAmount.toString()) : null,
-          amountExclTax: receiptData.amountExclTax !== undefined && receiptData.amountExclTax !== null ? parseFloat(receiptData.amountExclTax.toString()) : null,
-          taxAmount: receiptData.taxAmount !== undefined && receiptData.taxAmount !== null ? parseFloat(receiptData.taxAmount.toString()) : null,
-          totalAmount: receiptData.totalAmount !== undefined && receiptData.totalAmount !== null ? parseFloat(receiptData.totalAmount.toString()) : null,
-          expenseCategory: receiptData.expenseCategory || null,
-          taxStatus: typeof receiptData.taxStatus === 'string' ? receiptData.taxStatus : null,
-        },
-      })
+      const digitizedData = {
+        company: { connect: { id: documentWithRelations.companyId } },
+        user: { connect: { id: documentWithRelations.userId } },
+        originalDocumentId: documentWithRelations.id,
+        fileName: documentWithRelations.fileName,
+        originalName: documentWithRelations.originalName,
+        filePath: documentWithRelations.filePath,
+        fileSize: documentWithRelations.fileSize,
+        mimeType: documentWithRelations.mimeType,
+        purchaseDate: receiptData.purchaseDate ? new Date(receiptData.purchaseDate) : null,
+        vendorName: receiptData.vendorName || null,
+        vendorAbn: receiptData.vendorAbn || null,
+        vendorAddress: receiptData.vendorAddress || null,
+        documentType: typeof receiptData.documentType === 'string' ? receiptData.documentType : null,
+        receiptNumber: receiptData.receiptNumber || null,
+        paymentType: receiptData.paymentType || null,
+        cashOutAmount: receiptData.cashOutAmount !== undefined && receiptData.cashOutAmount !== null ? parseFloat(receiptData.cashOutAmount.toString()) : null,
+        discountAmount: receiptData.discountAmount !== undefined && receiptData.discountAmount !== null ? parseFloat(receiptData.discountAmount.toString()) : null,
+        amountExclTax: receiptData.amountExclTax !== undefined && receiptData.amountExclTax !== null ? parseFloat(receiptData.amountExclTax.toString()) : null,
+        taxAmount: receiptData.taxAmount !== undefined && receiptData.taxAmount !== null ? parseFloat(receiptData.taxAmount.toString()) : null,
+        totalAmount: receiptData.totalAmount !== undefined && receiptData.totalAmount !== null ? parseFloat(receiptData.totalAmount.toString()) : null,
+        totalPaidAmount: receiptData.totalPaidAmount !== undefined && receiptData.totalPaidAmount !== null ? parseFloat(receiptData.totalPaidAmount.toString()) : null,
+        surchargeAmount: receiptData.surchargeAmount !== undefined && receiptData.surchargeAmount !== null ? parseFloat(receiptData.surchargeAmount.toString()) : null,
+        expenseCategory: receiptData.expenseCategory || null,
+        taxStatus: typeof receiptData.taxStatus === 'string' ? receiptData.taxStatus : null,
+      }
+      console.log('Digitized payload to save:', digitizedData)
+      let digitizedDocument
+      try {
+        digitizedDocument = await (prisma as any).digitized.create({ data: digitizedData })
+        console.log('Digitized created with ID:', digitizedDocument.id)
+      } catch (e: any) {
+        console.error('Error saving digitized record:', e?.message || e)
+        if (String(e?.message || '').includes('Unknown argument `surchargeAmount`')) {
+          const fallbackDataNoSurcharge = { ...digitizedData }
+          delete (fallbackDataNoSurcharge as any).surchargeAmount
+          console.log('Retrying save without surchargeAmount')
+          digitizedDocument = await (prisma as any).digitized.create({ data: fallbackDataNoSurcharge })
+          console.log('Digitized created (no surcharge) with ID:', digitizedDocument.id)
+        } else {
+          throw e
+        }
+      }
 
       try {
         const abn = digitizedDocument.vendorAbn?.toString() || ''
         if (/^\d{11}$/.test(abn)) {
-          const existing = await prisma.vendor.findUnique({ where: { abn } })
+          const existing = await (prisma as any).vendor.findUnique({ where: { abn } })
           const needsUpdate = !existing || (existing.requestUpdateDate && ((Date.now() - new Date(existing.requestUpdateDate).getTime()) > 1000 * 60 * 60 * 24 * 180))
           if (needsUpdate) {
             const url = `http://localhost:3645/api/abn-lookup?abn=${abn}`
             const resp = await fetch(url, { method: 'GET' })
             if (resp.ok) {
               const v = await resp.json()
-              await prisma.vendor.upsert({
+              await (prisma as any).vendor.upsert({
                 where: { abn },
                 update: {
                   abnStatus: v.AbnStatus || null,
@@ -359,32 +393,32 @@ DISCOUNT RULES:
         },
       })
 
-      const digitizedDocument = await prisma.digitized.create({
-        data: {
-          company: { connect: { id: documentWithRelations.companyId } },
-          user: { connect: { id: documentWithRelations.userId } },
-          originalDocumentId: documentWithRelations.id,
-          fileName: documentWithRelations.fileName,
-          originalName: documentWithRelations.originalName,
-          filePath: documentWithRelations.filePath,
-          fileSize: documentWithRelations.fileSize,
-          mimeType: documentWithRelations.mimeType,
-          documentType: 'receipt',
-          taxStatus: 'taxable',
-        },
-      })
+      const fallbackData = {
+        company: { connect: { id: documentWithRelations.companyId } },
+        user: { connect: { id: documentWithRelations.userId } },
+        originalDocumentId: documentWithRelations.id,
+        fileName: documentWithRelations.fileName,
+        originalName: documentWithRelations.originalName,
+        filePath: documentWithRelations.filePath,
+        fileSize: documentWithRelations.fileSize,
+        mimeType: documentWithRelations.mimeType,
+        documentType: 'receipt',
+        taxStatus: 'taxable',
+      }
+      console.log('Fallback digitized payload:', fallbackData)
+      const digitizedDocument = await (prisma as any).digitized.create({ data: fallbackData })
 
       try {
         const abn = digitizedDocument.vendorAbn?.toString() || ''
         if (/^\d{11}$/.test(abn)) {
-          const existing = await prisma.vendor.findUnique({ where: { abn } })
+          const existing = await (prisma as any).vendor.findUnique({ where: { abn } })
           const needsUpdate = !existing || (existing.requestUpdateDate && ((Date.now() - new Date(existing.requestUpdateDate).getTime()) > 1000 * 60 * 60 * 24 * 180))
           if (needsUpdate) {
             const url = `http://localhost:3645/api/abn-lookup?abn=${abn}`
             const resp = await fetch(url, { method: 'GET' })
             if (resp.ok) {
               const v = await resp.json()
-              await prisma.vendor.upsert({
+              await (prisma as any).vendor.upsert({
                 where: { abn },
                 update: {
                   abnStatus: v.AbnStatus || null,

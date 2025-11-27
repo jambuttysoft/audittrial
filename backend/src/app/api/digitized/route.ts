@@ -151,8 +151,36 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-  await prisma.digitizedReview.create({
-    data: {
+  await (prisma as any).digitizedReview.upsert({
+    where: { originalDigitizedId: digitizedDocument.id },
+    update: {
+      companyId: digitizedDocument.companyId,
+      userId: digitizedDocument.userId,
+      originalDocumentId: digitizedDocument.originalDocumentId,
+      fileName: digitizedDocument.fileName,
+      originalName: digitizedDocument.originalName,
+      filePath: digitizedDocument.filePath,
+      fileSize: digitizedDocument.fileSize,
+      mimeType: digitizedDocument.mimeType,
+      purchaseDate: digitizedDocument.purchaseDate,
+      vendorName: digitizedDocument.vendorName,
+      vendorAbn: digitizedDocument.vendorAbn,
+      vendorAddress: digitizedDocument.vendorAddress,
+      documentType: digitizedDocument.documentType,
+      receiptNumber: digitizedDocument.receiptNumber,
+      paymentType: digitizedDocument.paymentType,
+      cashOutAmount: digitizedDocument.cashOutAmount,
+      discountAmount: digitizedDocument.discountAmount,
+      amountExclTax: digitizedDocument.amountExclTax,
+      taxAmount: digitizedDocument.taxAmount,
+      totalAmount: digitizedDocument.totalAmount,
+      totalPaidAmount: (digitizedDocument as any).totalPaidAmount ?? null,
+      surchargeAmount: (digitizedDocument as any).surchargeAmount ?? null,
+      expenseCategory: digitizedDocument.expenseCategory,
+      taxStatus: digitizedDocument.taxStatus,
+      movedAt: new Date(),
+    },
+    create: {
       originalDigitizedId: digitizedDocument.id,
       companyId: digitizedDocument.companyId,
       userId: digitizedDocument.userId,
@@ -174,15 +202,18 @@ export async function DELETE(request: NextRequest) {
       amountExclTax: digitizedDocument.amountExclTax,
       taxAmount: digitizedDocument.taxAmount,
       totalAmount: digitizedDocument.totalAmount,
+      totalPaidAmount: (digitizedDocument as any).totalPaidAmount ?? null,
+      surchargeAmount: (digitizedDocument as any).surchargeAmount ?? null,
       expenseCategory: digitizedDocument.expenseCategory,
       taxStatus: digitizedDocument.taxStatus,
     },
   });
 
-  await prisma.digitized.delete({ where: { id } });
+  // Keep original digitized record to allow later investigation
+  // await prisma.digitized.delete({ where: { id } });
 
   return NextResponse.json(
-    { message: 'Document moved to review' },
+    { message: 'Document copied to review (original retained)' },
     { headers: getCorsHeaders(request.headers.get('origin') || '') }
   );
   } catch (error) {
