@@ -24,9 +24,10 @@ type DataTableProps<TData, TValue> = {
   onRowClick?: (row: Row<TData>) => void
   bulkActions?: (selectedRows: Row<TData>[], clearSelection: () => void) => React.ReactNode
   getRowClassName?: (row: Row<TData>) => string
+  onRowCountChange?: (count: number) => void
 }
 
-export function DataTable<TData, TValue>({ columns, data, defaultVisibleColumnIds, storageKey, onRowClick, bulkActions, getRowClassName }: DataTableProps<TData, TValue>) {
+export function DataTable<TData, TValue>({ columns, data, defaultVisibleColumnIds, storageKey, onRowClick, bulkActions, getRowClassName, onRowCountChange }: DataTableProps<TData, TValue>) {
   const [globalFilter, setGlobalFilter] = React.useState('')
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(() => {
     try {
@@ -95,6 +96,11 @@ export function DataTable<TData, TValue>({ columns, data, defaultVisibleColumnId
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   })
+
+  const rowCount = table.getRowModel().rows.length
+  React.useEffect(() => {
+    onRowCountChange?.(rowCount)
+  }, [rowCount, onRowCountChange])
 
   return (
     <div className="space-y-4">

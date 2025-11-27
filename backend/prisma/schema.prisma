@@ -284,3 +284,53 @@ model DigitizedReady {
 
   @@map("digitized_ready")
 }
+
+model DigitizedReported {
+  id                  String    @id @default(cuid())
+  originalDigitizedId String    @unique
+  companyId           String
+  userId              String
+  originalDocumentId  String
+  fileName            String
+  originalName        String
+  filePath            String
+  fileSize            Int
+  mimeType            String
+  purchaseDate        DateTime?
+  vendorName          String?
+  vendorAbn           String?
+  vendorAddress       String?
+  documentType        String?
+  receiptNumber       String?
+  paymentType         String?
+  cashOutAmount       Float?
+  discountAmount      Float?
+  amountExclTax       Float?
+  taxAmount           Float?
+  totalAmount         Float?
+  totalPaidAmount     Float?
+  surchargeAmount     Float?
+  expenseCategory     String?
+  taxStatus           String?
+  exportedAt          DateTime
+  exportFileName      String
+  exportStatus        String
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@map("digitized_reported")
+}
+
+model ExportHistory {
+  id           String   @id @default(cuid())
+  companyId    String
+  userId       String
+  fileName     String
+  exportedAt   DateTime @default(now())
+  status       String
+  totalRows    Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("export_history")
+}

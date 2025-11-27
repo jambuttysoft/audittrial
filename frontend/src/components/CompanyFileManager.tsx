@@ -212,7 +212,7 @@ export default function CompanyFileManager({ companyId, userId, onDocumentsUpdat
         <div className="mt-4 text-xs text-muted-foreground">
           <p>• Uploaded documents will be automatically processed using AI</p>
           <p>• Processing typically takes 1-2 minutes</p>
-          <p>• You'll be notified when digitization is complete</p>
+          <p>• You&apos;ll be notified when digitization is complete</p>
         </div>
       </CardContent>
     </Card>

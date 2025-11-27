@@ -223,3 +223,125 @@ export async function DELETE(request: NextRequest) {
     );
   }
 }
+
+// PUT - обновить данные оцифрованного документа
+export async function PUT(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    const userId = searchParams.get('userId')
+
+    const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
+
+    if (!id || !userId) {
+      return NextResponse.json(
+        { error: 'Document ID and User ID are required' },
+        { status: 400, headers: corsHeaders }
+      )
+    }
+
+    const existing = await prisma.digitized.findFirst({
+      where: { id, userId },
+      select: { id: true }
+    })
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: 'Document not found or access denied' },
+        { status: 404, headers: corsHeaders }
+      )
+    }
+
+    const body = await request.json()
+
+    // Валидация базовых полей и чисел
+    const toNumber = (v: any) => typeof v === 'number' ? v : typeof v === 'string' ? parseFloat(v) : null
+    const sanitizeString = (v: any) => typeof v === 'string' ? v.trim() : v
+
+    const purchaseDate = body.purchaseDate ? new Date(body.purchaseDate) : null
+    if (purchaseDate && isNaN(purchaseDate.getTime())) {
+      return NextResponse.json(
+        { error: 'Invalid purchaseDate' },
+        { status: 400, headers: corsHeaders }
+      )
+    }
+
+    const cashOutAmount = toNumber(body.cashOutAmount)
+    const discountAmount = toNumber(body.discountAmount)
+    const surchargeAmount = toNumber(body.surchargeAmount)
+    const taxAmount = toNumber(body.taxAmount)
+    const amountExclTax = toNumber(body.amountExclTax)
+    const totalAmount = toNumber(body.totalAmount)
+    const totalPaidAmount = toNumber(body.totalPaidAmount)
+
+    const numbers = { cashOutAmount, discountAmount, surchargeAmount, taxAmount, amountExclTax, totalAmount, totalPaidAmount }
+    for (const [k, v] of Object.entries(numbers)) {
+      if (v !== null && (isNaN(v as number) || (v as number) < 0)) {
+        return NextResponse.json(
+          { error: `Invalid numeric field: ${k}` },
+          { status: 400, headers: corsHeaders }
+        )
+      }
+    }
+
+    // Бизнес-проверки (допуск 0.02)
+    const T = 0.02
+    if (totalAmount !== null && totalPaidAmount !== null && cashOutAmount !== null) {
+      if (Math.abs((totalPaidAmount as number - (cashOutAmount as number)) - (totalAmount as number)) > T) {
+        return NextResponse.json(
+          { error: 'Paid minus Cash Out must equal Total (tolerance 0.02)' },
+          { status: 400, headers: corsHeaders }
+        )
+      }
+    }
+    if (totalAmount !== null && taxAmount !== null) {
+      if ((taxAmount as number) > ((totalAmount as number) / 11 + T)) {
+        return NextResponse.json(
+          { error: 'GST exceeds Total/11' },
+          { status: 400, headers: corsHeaders }
+        )
+      }
+      if (((totalAmount as number) - (taxAmount as number)) < 0) {
+        return NextResponse.json(
+          { error: 'Tax exceeds Total' },
+          { status: 400, headers: corsHeaders }
+        )
+      }
+    }
+
+    // Обновляем запись
+    const updated = await prisma.digitized.update({
+      where: { id },
+      data: {
+        purchaseDate,
+        vendorName: sanitizeString(body.vendorName),
+        vendorAbn: sanitizeString(body.vendorAbn),
+        vendorAddress: sanitizeString(body.vendorAddress),
+        documentType: sanitizeString(body.documentType),
+        receiptNumber: sanitizeString(body.receiptNumber),
+        paymentType: sanitizeString(body.paymentType),
+        cashOutAmount: cashOutAmount ?? undefined,
+        discountAmount: discountAmount ?? undefined,
+        surchargeAmount: surchargeAmount ?? undefined,
+        taxAmount: taxAmount ?? undefined,
+        amountExclTax: amountExclTax ?? undefined,
+        totalAmount: totalAmount ?? undefined,
+        totalPaidAmount: totalPaidAmount ?? undefined,
+        expenseCategory: sanitizeString(body.expenseCategory),
+        taxStatus: sanitizeString(body.taxStatus),
+        updatedAt: new Date(),
+      },
+    })
+
+    return NextResponse.json(
+      { success: true, data: updated },
+      { status: 200, headers: corsHeaders }
+    )
+  } catch (error) {
+    console.error('Error updating digitized document:', error)
+    return NextResponse.json(
+      { error: 'Failed to update digitized document' },
+      { status: 500, headers: getCorsHeaders(request.headers.get('origin') || '') }
+    )
+  }
+}

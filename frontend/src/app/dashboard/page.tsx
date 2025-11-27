@@ -4,7 +4,8 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from "@/components/ui/badge"
+import * as XLSX from 'xlsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   FileText, 
@@ -181,6 +182,7 @@ function DashboardContent() {
   const [digitizedDocuments, setDigitizedDocuments] = useState<DigitizedData[]>([])
   const [reviewDocuments, setReviewDocuments] = useState<DigitizedData[]>([])
   const [readyDocuments, setReadyDocuments] = useState<DigitizedData[]>([])
+  const [readyVisibleCount, setReadyVisibleCount] = useState(0)
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({})
   const [vendorInfo, setVendorInfo] = useState<Record<string, { status: string; name: string; gst?: string }>>({})
   const [companies, setCompanies] = useState<Company[]>([])
@@ -212,6 +214,18 @@ function DashboardContent() {
   const [isTestingXero, setIsTestingXero] = useState(false)
   const [showXeroAccountsModal, setShowXeroAccountsModal] = useState(false)
   const [xeroAccounts, setXeroAccounts] = useState<any[]>([])
+  const [isExporting, setIsExporting] = useState(false)
+  const [exportHistory, setExportHistory] = useState<any[]>([])
+  const [reportedDocuments, setReportedDocuments] = useState<any[]>([])
+  const [exportFilterFile, setExportFilterFile] = useState('')
+  const [exportFilterFrom, setExportFilterFrom] = useState('')
+  const [exportFilterTo, setExportFilterTo] = useState('')
+  const [exportHistoryVisibleCount, setExportHistoryVisibleCount] = useState(0)
+  const [exportHistoryStats, setExportHistoryStats] = useState<{ total: number; success: number; failed: number; rowsExported: number }>({ total: 0, success: 0, failed: 0, rowsExported: 0 })
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [selectedDocumentForEdit, setSelectedDocumentForEdit] = useState<DigitizedData | null>(null)
+  const [editForm, setEditForm] = useState<any>(null)
+  const [editErrors, setEditErrors] = useState<Record<string, string>>({})
   
   // Company management states
   const [isAddCompanyModalOpen, setIsAddCompanyModalOpen] = useState(false)
@@ -508,19 +522,19 @@ function DashboardContent() {
     // 1. Payment Check
     const calculatedTotal = totalPaid - cashOut
     if (Math.abs(calculatedTotal - totalAmt) > TOLERANCE) {
-      errors.push('Ошибка 1: Сумма оплаты не сходится с итогом чека (Paid - CashOut ≠ Total)')
+      errors.push('Error 1: The payment amount does not match the receipt total (Paid - CashOut ≠ Total)')
     }
 
     // 2. GST Plausibility
     const maxPossibleTax = totalAmt / 11
     if (tax > (maxPossibleTax + TOLERANCE)) {
-      errors.push('Ошибка 2: GST слишком большой для данной суммы (Tax > Total / 11)')
+      errors.push('Error 2: GST is too high for this amount (Tax > Total / 11)')
     }
 
     // 3. Net Amount Consistency
     const calculatedNetAmount = totalAmt - tax
     if (calculatedNetAmount < 0) {
-      errors.push('Ошибка 3: Налог превышает общую сумму (Total - Tax < 0)')
+      errors.push('Error 3: The tax exceeds the total amount (Total - Tax < 0)')
     }
 
     return errors
@@ -545,7 +559,7 @@ function DashboardContent() {
       const gst = vendorInfo[abn]?.gst
       const TOLERANCE = 0.02
       if (!gst && payload.taxAmount > TOLERANCE) {
-        e.push('Present GST amount for but company Not registrad GST')
+        e.push('Present GST amount but company Not registrad GST')
       }
       if (e.length > 0) errs[payload.id] = e
       else validIds.push(payload.id)
@@ -560,7 +574,23 @@ function DashboardContent() {
     }
     setValidationErrors(errs)
     if (Object.keys(errs).length > 0) {
-      toast({ title: 'Validate', description: `Найдены ошибки в ${Object.keys(errs).length} строках`, variant: 'destructive' })
+      const entries = Object.entries(errs)
+      toast({
+        title: 'Validate',
+        description: (
+          <div>
+            <div>{`Errors in ${entries.length} rows`}</div>
+            <ul className="mt-2 list-disc pl-4">
+              {entries.slice(0, 10).map(([id, messages]) => (
+                <li key={id}>
+                  <span className="font-medium">Row {id}:</span> {messages.join('; ')}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ),
+        variant: 'destructive'
+      })
     }
     if (validIds.length > 0 && selectedCompany && user) {
       await Promise.all(validIds.map(async (id) => {
@@ -570,9 +600,306 @@ function DashboardContent() {
         loadReadyDocuments(selectedCompany.id),
         loadDigitizedDocuments(selectedCompany.id),
       ])
-      toast({ title: 'Validate', description: `${validIds.length} строк перенесены в Ready for Report` })
+      toast({ title: 'Validate', description: `${validIds.length} moved to Ready for Report` })
     }
   }
+
+  const openEditModal = (doc: DigitizedData) => {
+    const imageId = doc.originalDocumentId || (doc as any).id
+    setSelectedDocumentForEdit({ ...doc, originalDocumentId: imageId })
+    const toDateInput = (v: any) => {
+      if (!v) return ''
+      const d = typeof v === 'string' ? new Date(v) : v
+      if (!d || isNaN(d.getTime())) return ''
+      return d.toISOString().slice(0, 10)
+    }
+    setEditForm({
+      purchaseDate: toDateInput(doc.purchaseDate),
+      vendorName: doc.vendorName || '',
+      vendorAbn: doc.vendorAbn || '',
+      vendorAddress: doc.vendorAddress || '',
+      documentType: doc.documentType || '',
+      receiptNumber: doc.receiptNumber || '',
+      paymentType: doc.paymentType || '',
+      cashOutAmount: typeof doc.cashOutAmount === 'number' ? doc.cashOutAmount : 0,
+      discountAmount: typeof doc.discountAmount === 'number' ? doc.discountAmount : 0,
+      surchargeAmount: typeof doc.surchargeAmount === 'number' ? doc.surchargeAmount : 0,
+      taxAmount: typeof doc.taxAmount === 'number' ? doc.taxAmount : 0,
+      amountExclTax: typeof doc.amountExclTax === 'number' ? doc.amountExclTax : 0,
+      totalAmount: typeof doc.totalAmount === 'number' ? doc.totalAmount : 0,
+      totalPaidAmount: typeof doc.totalPaidAmount === 'number' ? doc.totalPaidAmount : 0,
+      expenseCategory: doc.expenseCategory || '',
+      taxStatus: doc.taxStatus || ''
+    })
+    setEditErrors({})
+    setIsEditModalOpen(true)
+  }
+
+  const validateEditForm = (form: any) => {
+    const errs: Record<string, string> = {}
+    const toNumber = (v: any) => typeof v === 'number' ? v : typeof v === 'string' ? parseFloat(v) : 0
+    const T = 0.02
+    if (!form.purchaseDate) errs.purchaseDate = 'Date is required'
+    const tax = toNumber(form.taxAmount)
+    const total = toNumber(form.totalAmount)
+    const paid = toNumber(form.totalPaidAmount)
+    const cashOut = toNumber(form.cashOutAmount)
+    if (Number.isNaN(tax) || tax < 0) errs.taxAmount = 'Invalid tax amount'
+    if (Number.isNaN(total) || total < 0) errs.totalAmount = 'Invalid total amount'
+    if (Number.isNaN(paid) || paid < 0) errs.totalPaidAmount = 'Invalid paid amount'
+    if (Number.isNaN(cashOut) || cashOut < 0) errs.cashOutAmount = 'Invalid cash out'
+    if (form.vendorAbn && !/^\d{11}$/.test(form.vendorAbn)) errs.vendorAbn = 'ABN must be 11 digits'
+    if (Math.abs((paid - cashOut) - total) > T) errs.totalAmount = 'Paid minus Cash Out must equal Total'
+    if (tax > (total / 11 + T)) errs.taxAmount = 'GST exceeds Total/11'
+    if ((total - tax) < 0) errs.taxAmount = 'Tax exceeds Total'
+
+    const abn = form.vendorAbn
+    if (abn && /^\d{11}$/.test(abn)) {
+      const info = vendorInfo[abn]
+      if (info) {
+        if (info.status && info.status !== 'Active') {
+          errs.vendorAbn = 'Vendor ABN is not Active'
+        }
+        if (!info.gst && tax > 0.02) {
+          errs.taxAmount = 'Vendor not GST registered; taxAmount must be 0'
+        }
+      }
+    }
+    return errs
+  }
+
+  const fetchVendorInfoForAbn = async (abn: string) => {
+    try {
+      if (!/^\d{11}$/.test(abn)) return
+      if (!vendorInfo[abn]) {
+        const r = await fetch(`/api/vendors?abn=${abn}`, { credentials: 'include' })
+        if (r.ok) {
+          const data = await r.json()
+          const name = data.EntityName || (Array.isArray(data.BusinessName) ? (data.BusinessName[0] || '') : '')
+          setVendorInfo(prev => ({ ...prev, [abn]: { status: data.AbnStatus || '', name, gst: data.Gst || '' } }))
+          const addr = [data.AddressState || '', data.AddressPostcode || ''].join(' ').trim()
+          setEditForm((prev: any) => prev ? { 
+            ...prev, 
+            vendorName: prev.vendorName || name,
+            vendorAddress: prev.vendorAddress || addr
+          } : prev)
+        }
+      }
+    } catch {}
+  }
+
+  const handleEditSave = async () => {
+    if (!editForm || !selectedDocumentForEdit) return
+    try {
+      const abn = editForm.vendorAbn
+      if (abn) await fetchVendorInfoForAbn(abn)
+    } catch {}
+    const errs = validateEditForm(editForm)
+    setEditErrors(errs)
+    if (Object.keys(errs).length > 0) {
+      const entries = Object.entries(errs)
+      toast({
+        title: 'Edit Document',
+        description: (
+          <div>
+            <div>{`Validation errors: ${entries.length}`}</div>
+            <ul className="mt-2 list-disc pl-4">
+              {entries.map(([field, message]) => (
+                <li key={field}>
+                  <span className="font-medium">{field}:</span> {message}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ),
+        variant: 'destructive'
+      })
+      return
+    }
+    try {
+      if (!user?.id) {
+        toast({ title: 'Not signed in', description: 'Please sign in to save changes.', variant: 'destructive' })
+        return
+      }
+      const res = await fetch(`/api/digitized?id=${selectedDocumentForEdit.id}&userId=${user.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm)
+      })
+      if (!res.ok) {
+        const text = await res.text()
+        toast({ title: 'Save Failed', description: text || 'Failed to update document', variant: 'destructive' })
+        return
+      }
+      toast({ title: 'Edit Document', description: 'Changes saved successfully' })
+      if (selectedCompany?.id) {
+        await loadDigitizedDocuments(selectedCompany.id)
+      }
+      setIsEditModalOpen(false)
+      setSelectedDocumentForEdit(null)
+      setEditForm(null)
+      setEditErrors({})
+    } catch (e: any) {
+      toast({ title: 'Save Error', description: e?.message || 'Unexpected error', variant: 'destructive' })
+    }
+  }
+
+  const handleEditCancel = () => {
+    setIsEditModalOpen(false)
+    setSelectedDocumentForEdit(null)
+    setEditForm(null)
+    setEditErrors({})
+    setImageZoom(1)
+    setImagePosition({ x: 0, y: 0 })
+    setIsDragging(false)
+  }
+
+  const formatTimestamp = (d: Date) => {
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const yyyy = d.getFullYear()
+    const mm = pad(d.getMonth() + 1)
+    const dd = pad(d.getDate())
+    const HH = pad(d.getHours())
+    const MM = pad(d.getMinutes())
+    const SS = pad(d.getSeconds())
+    return `${yyyy}${mm}${dd}_${HH}${MM}${SS}`
+  }
+
+  const sanitizeFileComponent = (s: string) => s.replace(/[^a-zA-Z0-9_-]+/g, '_')
+
+  const exportReadyRowsToExcel = async (rows: any[]) => {
+    if (!rows.length) return
+    const items = rows.map((r) => r.original)
+    const errsAll: Record<string, string[]> = {}
+    items.forEach((doc: any) => {
+      const payload = {
+        id: doc.id,
+        taxAmount: typeof doc.taxAmount === 'number' ? doc.taxAmount : 0,
+        totalAmount: typeof doc.totalAmount === 'number' ? doc.totalAmount : 0,
+        totalPaidAmount: typeof doc.totalPaidAmount === 'number' ? doc.totalPaidAmount : 0,
+        cashOutAmount: typeof doc.cashOutAmount === 'number' ? doc.cashOutAmount : 0,
+        surchargeAmount: typeof doc.surchargeAmount === 'number' ? doc.surchargeAmount : 0,
+      }
+      const e = validateReceipt(payload)
+      const abn = doc.vendorAbn || ''
+      const gst = vendorInfo[abn]?.gst
+      const T = 0.02
+      if (!gst && payload.taxAmount > T) e.push('Present GST amount but company Not registrad GST')
+      if (e.length > 0) errsAll[payload.id] = e
+    })
+    if (Object.keys(errsAll).length > 0) {
+      setValidationErrors(errsAll)
+      toast({ title: 'Export validation', description: 'Fix validation errors before export', variant: 'destructive' })
+      return
+    }
+    try {
+      setIsExporting(true)
+      const now = new Date()
+      const companyPart = sanitizeFileComponent(selectedCompany?.name || 'company')
+      const fileName = `report_${companyPart}_${formatTimestamp(now)}.xlsx`
+      const data = items.map((d: any) => ({
+        purchaseDate: d.purchaseDate || '',
+        vendorName: d.vendorName || '',
+        vendorAbn: d.vendorAbn || '',
+        vendorAddress: d.vendorAddress || '',
+        documentType: d.documentType || '',
+        receiptNumber: d.receiptNumber || '',
+        paymentType: d.paymentType || '',
+        cashOutAmount: typeof d.cashOutAmount === 'number' ? d.cashOutAmount : 0,
+        discountAmount: typeof d.discountAmount === 'number' ? d.discountAmount : 0,
+        surchargeAmount: typeof d.surchargeAmount === 'number' ? d.surchargeAmount : 0,
+        amountExclTax: typeof d.amountExclTax === 'number' ? d.amountExclTax : 0,
+        taxAmount: typeof d.taxAmount === 'number' ? d.taxAmount : 0,
+        totalAmount: typeof d.totalAmount === 'number' ? d.totalAmount : 0,
+        totalPaidAmount: typeof d.totalPaidAmount === 'number' ? d.totalPaidAmount : 0,
+        expenseCategory: d.expenseCategory || '',
+        taxStatus: d.taxStatus || '',
+        originalName: d.originalName || '',
+        fileName: d.fileName || '',
+      }))
+      const ws = XLSX.utils.json_to_sheet(data)
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Report')
+      XLSX.writeFile(wb, fileName)
+      const ids = items.map((d: any) => d.id)
+      if (user?.id && selectedCompany?.id) {
+        const res = await fetch('/api/reported', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids, userId: user.id, companyId: selectedCompany.id, fileName, exportedAt: now.toISOString(), status: 'SUCCESS' })
+        })
+        if (!res.ok) {
+          toast({ title: 'Move to reported failed', description: 'Server error', variant: 'destructive' })
+        } else {
+          await loadReadyDocuments(selectedCompany.id)
+          await loadExportHistory(selectedCompany.id)
+          toast({ title: 'Export', description: `Exported ${items.length} rows` })
+        }
+      }
+    } catch (e: any) {
+      toast({ title: 'Export error', description: e?.message || 'Unexpected error', variant: 'destructive' })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const loadExportHistory = async (companyId: string) => {
+    if (!user?.id) return
+    try {
+      const r = await fetch(`/api/export-history?companyId=${companyId}&userId=${user.id}`)
+      if (r.ok) {
+        const j = await r.json()
+        setExportHistory(j.history || [])
+        if (j.stats) {
+          setExportHistoryStats(j.stats)
+        } else {
+          const hist = j.history || []
+          setExportHistoryStats({
+            total: hist.length,
+            success: hist.filter((i: any) => i.status === 'SUCCESS').length,
+            failed: hist.filter((i: any) => i.status !== 'SUCCESS').length,
+            rowsExported: hist.reduce((acc: number, i: any) => acc + (i.totalRows || 0), 0),
+          })
+        }
+      }
+    } catch {}
+  }
+
+  const fetchExportHistory = async () => {
+    if (!selectedCompany?.id || !user?.id) return
+    const params = new URLSearchParams({ companyId: selectedCompany.id, userId: user.id })
+    if (exportFilterFile) params.set('file', exportFilterFile)
+    if (exportFilterFrom) params.set('from', exportFilterFrom)
+    if (exportFilterTo) params.set('to', exportFilterTo)
+    try {
+      const r = await fetch(`/api/export-history?${params.toString()}`)
+      if (r.ok) {
+        const j = await r.json()
+        setExportHistory(j.history || [])
+        if (j.stats) {
+          setExportHistoryStats(j.stats)
+        } else {
+          const hist = j.history || []
+          setExportHistoryStats({
+            total: hist.length,
+            success: hist.filter((i: any) => i.status === 'SUCCESS').length,
+            failed: hist.filter((i: any) => i.status !== 'SUCCESS').length,
+            rowsExported: hist.reduce((acc: number, i: any) => acc + (i.totalRows || 0), 0),
+          })
+        }
+      }
+    } catch {}
+  }
+
+  const downloadExportFile = (fileName: string) => {
+    if (!selectedCompany?.id || !user?.id) return
+    const url = `/api/export-files/${selectedCompany.id}/${encodeURIComponent(fileName)}?userId=${user.id}`
+    window.open(url, '_blank')
+  }
+
+  useEffect(() => {
+    if (selectedCompany?.id) loadExportHistory(selectedCompany.id)
+  }, [selectedCompany?.id])
 
   useEffect(() => {
     const abns = new Set<string>()
@@ -1366,6 +1693,7 @@ function DashboardContent() {
   const digitizedCount = digitizedDocuments.length
   const queueDocuments = documents.filter(doc => doc.status === 'QUEUE').length
   const processingDocuments = documents.filter(doc => doc.status === 'PROCESSING').length
+  const readyCount = readyDocuments.length
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -1441,67 +1769,25 @@ function DashboardContent() {
         </DropdownMenu>
       </div>
       
-      {/* Statistics cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Documents</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalDocuments}</div>
-            <p className="text-xs text-muted-foreground">
-              Documents uploaded
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Digitized</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{digitizedCount}</div>
-            <p className="text-xs text-muted-foreground">
-              Processed documents
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Queue</CardTitle>
-            <Upload className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{queueDocuments}</div>
-            <p className="text-xs text-muted-foreground">
-              Awaiting processing
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Processing</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{processingDocuments}</div>
-            <p className="text-xs text-muted-foreground">
-              In progress
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Main content */}
       <Tabs defaultValue="documents" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
-          <TabsTrigger value="digitized">Digitized</TabsTrigger>
-          <TabsTrigger value="ready">Validated for Report</TabsTrigger>
+          <TabsTrigger value="documents">
+            <span>Documents</span>
+            <Badge className="ml-2">{totalDocuments}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="digitized">
+            <span>Digitized</span>
+            <Badge className="ml-2">{digitizedCount}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="ready">
+            <span>Validated for Report</span>
+            <Badge className="ml-2">{readyCount}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="export-history">
+            <span>Export History</span>
+            <Badge className="ml-2">{exportHistoryVisibleCount}</Badge>
+          </TabsTrigger>
           <TabsTrigger value="review">Deleted</TabsTrigger>
           <TabsTrigger value="profile">Profile</TabsTrigger>
         </TabsList>
@@ -1708,13 +1994,20 @@ function DashboardContent() {
           </Card>
         </TabsContent>
 
+        
+
         <TabsContent value="ready" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Validated for Report</CardTitle>
-              <CardDescription>
-                Validated items Validated for reporting
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Validated for Report</CardTitle>
+                  <CardDescription>
+                    Validated items Validated for reporting
+                  </CardDescription>
+                </div>
+                <Badge variant="secondary">{readyVisibleCount}</Badge>
+              </div>
             </CardHeader>
             <CardContent>
               {Object.keys(validationErrors).length > 0 && (
@@ -1811,7 +2104,170 @@ function DashboardContent() {
                 ]
                 const key = user?.id ? `ready_columns_visibility:${user.id}` : undefined
                 return (
-                  <DataTable columns={columns} data={readyDocuments} defaultVisibleColumnIds={defaultVisible} storageKey={key} />
+                  <DataTable 
+                    columns={columns} 
+                    data={readyDocuments} 
+                    defaultVisibleColumnIds={defaultVisible} 
+                    storageKey={key}
+                    onRowCountChange={setReadyVisibleCount}
+                    bulkActions={(rows, clearSelection) => (
+                      <>
+                        <Button size="sm" onClick={() => exportReadyRowsToExcel(rows).then(() => clearSelection())} disabled={isExporting}>
+                          {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Export to Excel'}
+                        </Button>
+                      </>
+                    )}
+                  />
+                )
+              })()}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Link className="h-5 w-5" />
+                    Xero Integration
+                  </CardTitle>
+                  <CardDescription>
+                    Connect your Xero account to sync financial data
+                  </CardDescription>
+                </div>
+                {xeroStatus.connected ? (
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <span className="text-sm text-green-600">Connected</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-orange-500" />
+                    <span className="text-sm text-orange-500">Not Connected</span>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {xeroStatus.connected ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Tenant Name</Label>
+                      <p className="text-sm">{xeroStatus.tenantName}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Tenant ID</Label>
+                      <p className="text-sm font-mono">{xeroStatus.tenantId}</p>
+                    </div>
+                    {xeroStatus.tokenExpiry && (
+                      <div className="md:col-span-2">
+                        <Label className="text-sm font-medium text-muted-foreground">Token Expires</Label>
+                        <p className="text-sm">{formatDate(xeroStatus.tokenExpiry)}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2 flex-wrap">
+                    <Button onClick={handleXeroDisconnect} disabled={isLoadingXero || isTestingXero} variant="outline" size="sm">
+                      <Unlink className="h-4 w-4 mr-2" />
+                      {isLoadingXero ? 'Disconnecting...' : 'Disconnect'}
+                    </Button>
+                    <Button onClick={handleXeroConnect} disabled={isLoadingXero || isTestingXero} variant="outline" size="sm">
+                      <Link className="h-4 w-4 mr-2" />
+                      Reconnect
+                    </Button>
+                    <Button onClick={handleXeroTest} disabled={isLoadingXero || isTestingXero} variant="default" size="sm">
+                      <Search className="h-4 w-4 mr-2" />
+                      {isTestingXero ? 'Testing...' : 'Test Connection'}
+                    </Button>
+                    <Button onClick={handleGetXeroAccounts} disabled={isLoadingXero || isTestingXero} variant="outline" size="sm">
+                      <Eye className="h-4 w-4 mr-2" />
+                      {isTestingXero ? 'Loading...' : 'Get Accounts'}
+                    </Button>
+                  </div>
+
+                  {xeroTestResult && (
+                    <div className="mt-4 p-4 rounded-lg border">
+                      <h4 className="font-medium mb-2">Test Results</h4>
+                      {xeroTestResult.error ? (
+                        <div className="text-red-600 text-sm">
+                          <strong>Error:</strong> {xeroTestResult.error}
+                        </div>
+                      ) : (
+                        <div className="space-y-2 text-sm">
+                          <div className="text-green-600">
+                            <strong>✓ Connection Successful!</strong>
+                          </div>
+                          <div>
+                            <strong>Tenant:</strong> {xeroTestResult.tenantName}
+                          </div>
+                          <div>
+                            <strong>Accounts Retrieved:</strong> {xeroTestResult.accountsCount}
+                          </div>
+                          <Button onClick={() => setShowXeroAccountsModal(true)} variant="outline" size="sm" className="mt-2">
+                            <Eye className="h-4 w-4 mr-2" />
+                            View All Accounts
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">Connect your Xero account to automatically sync invoices, expenses, and other financial data.</p>
+                  <Button onClick={handleXeroConnect} disabled={isLoadingXero} className="w-full sm:w-auto">
+                    <Link className="h-4 w-4 mr-2" />
+                    {isLoadingXero ? 'Connecting...' : 'Connect to Xero'}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="export-history" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Export History</CardTitle>
+                  <CardDescription>All exports for this company</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2 mb-4">
+                <Input placeholder="File name" value={exportFilterFile} onChange={(e) => setExportFilterFile(e.target.value)} className="max-w-xs" />
+                <Input type="date" value={exportFilterFrom} onChange={(e) => setExportFilterFrom(e.target.value)} className="max-w-[180px]" />
+                <Input type="date" value={exportFilterTo} onChange={(e) => setExportFilterTo(e.target.value)} className="max-w-[180px]" />
+                <Button variant="outline" size="sm" onClick={() => { if (selectedCompany?.id && user?.id) fetchExportHistory() }}>Filter</Button>
+              </div>
+              <div className="text-xs text-muted-foreground mb-3 flex flex-wrap gap-2 items-center">
+                <span className="font-medium">Summary:</span>
+                <Badge variant="outline">Total: {exportHistoryStats.total}</Badge>
+                <Badge variant="default">Success: {exportHistoryStats.success}</Badge>
+                <Badge variant="destructive">Failed: {exportHistoryStats.failed}</Badge>
+                <Badge variant="secondary">Rows: {exportHistoryStats.rowsExported}</Badge>
+              </div>
+              {(() => {
+                const columns: ColumnDef<any>[] = [
+                  { accessorKey: 'exportedAt', header: 'Exported At', cell: ({ row }) => <TruncatedCell text={formatDate(row.original.exportedAt)} /> },
+                  { accessorKey: 'fileName', header: 'File Name', cell: ({ row }) => <TruncatedCell text={row.original.fileName} /> },
+                  { accessorKey: 'status', header: 'Status', cell: ({ row }) => <Badge variant={row.original.status === 'SUCCESS' ? 'default' : 'destructive'}>{row.original.status}</Badge> },
+                  { accessorKey: 'totalRows', header: 'Rows', cell: ({ row }) => <TruncatedCell text={String(row.original.totalRows || 0)} /> },
+                  { id: 'actions', header: 'Actions', cell: ({ row }) => (
+                    <Button size="sm" variant="outline" onClick={() => downloadExportFile(row.original.fileName)}>Download</Button>
+                  ) },
+                ]
+                const key = user?.id ? `export_history_columns_visibility:${user.id}` : undefined
+                return (
+                  <DataTable 
+                    columns={columns} 
+                    data={exportHistory} 
+                    storageKey={key}
+                    onRowCountChange={(n) => setExportHistoryVisibleCount(n)}
+                  />
                 )
               })()}
             </CardContent>
@@ -2015,6 +2471,15 @@ function DashboardContent() {
                               onClick={(e) => {
                                 e.preventDefault()
                                 e.stopPropagation()
+                                openEditModal(doc)
+                              }}
+                            >
+                              Edit Document
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
                                 if (!user?.id) {
                                   toast({ title: 'Not signed in', description: 'Please sign in to view images.', variant: 'destructive' })
                                   return
@@ -2096,142 +2561,7 @@ function DashboardContent() {
             </CardContent>
           </Card>
           
-          {/* Xero Integration Card */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Link className="h-5 w-5" />
-                    Xero Integration
-                  </CardTitle>
-                  <CardDescription>
-                    Connect your Xero account to sync financial data
-                  </CardDescription>
-                </div>
-                {xeroStatus.connected ? (
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <span className="text-sm text-green-600">Connected</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-orange-500" />
-                    <span className="text-sm text-orange-500">Not Connected</span>
-                  </div>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {xeroStatus.connected ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-medium text-muted-foreground">Tenant Name</Label>
-                      <p className="text-sm">{xeroStatus.tenantName}</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-muted-foreground">Tenant ID</Label>
-                      <p className="text-sm font-mono">{xeroStatus.tenantId}</p>
-                    </div>
-                    {xeroStatus.tokenExpiry && (
-                      <div className="md:col-span-2">
-                        <Label className="text-sm font-medium text-muted-foreground">Token Expires</Label>
-                        <p className="text-sm">{formatDate(xeroStatus.tokenExpiry)}</p>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="flex gap-2 flex-wrap">
-                    <Button
-                      onClick={handleXeroDisconnect}
-                      disabled={isLoadingXero || isTestingXero}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <Unlink className="h-4 w-4 mr-2" />
-                      {isLoadingXero ? 'Disconnecting...' : 'Disconnect'}
-                    </Button>
-                    <Button
-                      onClick={handleXeroConnect}
-                      disabled={isLoadingXero || isTestingXero}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <Link className="h-4 w-4 mr-2" />
-                      Reconnect
-                    </Button>
-                    <Button
-                      onClick={handleXeroTest}
-                      disabled={isLoadingXero || isTestingXero}
-                      variant="default"
-                      size="sm"
-                    >
-                      <Search className="h-4 w-4 mr-2" />
-                      {isTestingXero ? 'Testing...' : 'Test Connection'}
-                    </Button>
-                    <Button
-                      onClick={handleGetXeroAccounts}
-                      disabled={isLoadingXero || isTestingXero}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      {isTestingXero ? 'Loading...' : 'Get Accounts'}
-                    </Button>
-
-                  </div>
-                  
-                  {/* Test Results */}
-                  {xeroTestResult && (
-                    <div className="mt-4 p-4 rounded-lg border">
-                      <h4 className="font-medium mb-2">Test Results</h4>
-                      {xeroTestResult.error ? (
-                        <div className="text-red-600 text-sm">
-                          <strong>Error:</strong> {xeroTestResult.error}
-                        </div>
-                      ) : (
-                        <div className="space-y-2 text-sm">
-                          <div className="text-green-600">
-                            <strong>✓ Connection Successful!</strong>
-                          </div>
-                          <div>
-                            <strong>Tenant:</strong> {xeroTestResult.tenantName}
-                          </div>
-                          <div>
-                            <strong>Accounts Retrieved:</strong> {xeroTestResult.accountsCount}
-                          </div>
-                          <Button
-                            onClick={() => setShowXeroAccountsModal(true)}
-                            variant="outline"
-                            size="sm"
-                            className="mt-2"
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            View All Accounts
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    Connect your Xero account to automatically sync invoices, expenses, and other financial data.
-                  </p>
-                  <Button
-                    onClick={handleXeroConnect}
-                    disabled={isLoadingXero}
-                    className="w-full sm:w-auto"
-                  >
-                    <Link className="h-4 w-4 mr-2" />
-                    {isLoadingXero ? 'Connecting...' : 'Connect to Xero'}
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          
         </TabsContent>
         
         <TabsContent value="profile" className="space-y-4">
@@ -2474,6 +2804,149 @@ function DashboardContent() {
                 </pre>
               </div>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="max-w-7xl max-h-[98vh] p-0">
+          <DialogHeader className="px-6 py-4 border-b">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <DialogTitle className="text-lg font-semibold">Edit Document</DialogTitle>
+                <DialogDescription className="text-sm mt-1">{selectedDocumentForEdit?.originalName || selectedDocumentForEdit?.fileName}</DialogDescription>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">Zoom: {Math.round(imageZoom * 100)}%</div>
+                <Button variant="outline" size="sm" onClick={() => { setImageZoom(1); setImagePosition({ x: 0, y: 0 }) }}>Reset</Button>
+              </div>
+            </div>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2" style={{ height: 'calc(98vh - 80px)' }}>
+            <div 
+              className="relative bg-black/50 cursor-grab active:cursor-grabbing overflow-hidden"
+              onWheel={(e) => { e.preventDefault(); const delta = e.deltaY > 0 ? 0.85 : 1.15; const newZoom = Math.max(0.1, Math.min(8, imageZoom * delta)); setImageZoom(newZoom) }}
+              onMouseDown={(e) => { if (imageZoom > 1) { setIsDragging(true); setDragStart({ x: e.clientX - imagePosition.x, y: e.clientY - imagePosition.y }) } }}
+              onMouseMove={(e) => { if (isDragging && imageZoom > 1) { setImagePosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y }) } }}
+              onMouseUp={() => setIsDragging(false)}
+              onMouseLeave={() => setIsDragging(false)}
+            >
+              {selectedDocumentForEdit && (
+                <img
+                  ref={imageRef}
+                  src={`/api/files/${selectedDocumentForEdit.originalDocumentId || (selectedDocumentForEdit as any).id}/view?userId=${user?.id}`}
+                  alt={selectedDocumentForEdit.originalName || selectedDocumentForEdit.fileName}
+                  className="absolute top-1/2 left-1/2 max-w-none shadow-2xl transition-transform duration-200 ease-out"
+                  style={{ transform: `translate(-50%, -50%) translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${imageZoom})`, transformOrigin: 'center center' }}
+                  draggable={false}
+                />
+              )}
+              <div className="absolute bottom-4 left-4 bg-black/60 text-white text-xs px-3 py-2 rounded-lg">
+                <p>Mouse wheel - zoom</p>
+                <p>Drag - move</p>
+              </div>
+            </div>
+            <div className="overflow-y-auto p-6">
+              {editForm && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="purchaseDate">Date</Label>
+                    <Input id="purchaseDate" type="date" value={editForm.purchaseDate} onChange={(e) => setEditForm({ ...editForm, purchaseDate: e.target.value })} />
+                    {editErrors.purchaseDate && <div className="text-sm text-destructive">{editErrors.purchaseDate}</div>}
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="vendorName">Vendor Name</Label>
+                      <Input id="vendorName" value={editForm.vendorName} onChange={(e) => setEditForm({ ...editForm, vendorName: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="vendorAbn">Vendor ABN</Label>
+                      <Input 
+                        id="vendorAbn" 
+                        value={editForm.vendorAbn} 
+                        onChange={(e) => setEditForm({ ...editForm, vendorAbn: e.target.value })}
+                        onBlur={(e) => fetchVendorInfoForAbn(e.target.value)}
+                        className={(editForm.vendorAbn && vendorInfo[editForm.vendorAbn]?.status === 'Active') ? 'border-green-600 bg-green-50' : ''}
+                      />
+                      {editErrors.vendorAbn && <div className="text-sm text-destructive">{editErrors.vendorAbn}</div>}
+                      {(editForm.vendorAbn && vendorInfo[editForm.vendorAbn]?.status === 'Active') && (
+                        <div className="text-sm text-green-600">ABN Active</div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="vendorAddress">Vendor Address</Label>
+                    <Textarea id="vendorAddress" value={editForm.vendorAddress} onChange={(e: any) => setEditForm({ ...editForm, vendorAddress: e.target.value })} />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="documentType">Document Type</Label>
+                      <Input id="documentType" value={editForm.documentType} onChange={(e) => setEditForm({ ...editForm, documentType: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="receiptNumber">Receipt/Invoice Number</Label>
+                      <Input id="receiptNumber" value={editForm.receiptNumber} onChange={(e) => setEditForm({ ...editForm, receiptNumber: e.target.value })} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="paymentType">Payment Type</Label>
+                      <Input id="paymentType" value={editForm.paymentType} onChange={(e) => setEditForm({ ...editForm, paymentType: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="expenseCategory">Expense Category</Label>
+                      <Input id="expenseCategory" value={editForm.expenseCategory} onChange={(e) => setEditForm({ ...editForm, expenseCategory: e.target.value })} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="cashOutAmount">Cash Out</Label>
+                    <Input id="cashOutAmount" type="number" inputMode="decimal" step="0.01" min="0" value={editForm.cashOutAmount} onChange={(e) => setEditForm({ ...editForm, cashOutAmount: parseFloat(e.target.value) })} />
+                      {editErrors.cashOutAmount && <div className="text-sm text-destructive">{editErrors.cashOutAmount}</div>}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="discountAmount">Discount</Label>
+                      <Input id="discountAmount" type="number" inputMode="decimal" step="0.01" min="0" value={editForm.discountAmount} onChange={(e) => setEditForm({ ...editForm, discountAmount: parseFloat(e.target.value) })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="surchargeAmount">Card Surcharge</Label>
+                      <Input id="surchargeAmount" type="number" inputMode="decimal" step="0.01" min="0" value={editForm.surchargeAmount} onChange={(e) => setEditForm({ ...editForm, surchargeAmount: parseFloat(e.target.value) })} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="taxAmount">Tax Amount (GST)</Label>
+                      <Input id="taxAmount" type="number" inputMode="decimal" step="0.01" min="0" value={editForm.taxAmount} onChange={(e) => setEditForm({ ...editForm, taxAmount: parseFloat(e.target.value) })} />
+                      {editErrors.taxAmount && <div className="text-sm text-destructive">{editErrors.taxAmount}</div>}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="amountExclTax">Amount Excl Tax</Label>
+                      <Input id="amountExclTax" type="number" inputMode="decimal" step="0.01" min="0" value={editForm.amountExclTax} onChange={(e) => setEditForm({ ...editForm, amountExclTax: parseFloat(e.target.value) })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="totalAmount">Total Amount</Label>
+                      <Input id="totalAmount" type="number" inputMode="decimal" step="0.01" min="0" value={editForm.totalAmount} onChange={(e) => setEditForm({ ...editForm, totalAmount: parseFloat(e.target.value) })} />
+                      {editErrors.totalAmount && <div className="text-sm text-destructive">{editErrors.totalAmount}</div>}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="totalPaidAmount">Total Transaction</Label>
+                      <Input id="totalPaidAmount" type="number" inputMode="decimal" step="0.01" min="0" value={editForm.totalPaidAmount} onChange={(e) => setEditForm({ ...editForm, totalPaidAmount: parseFloat(e.target.value) })} />
+                      {editErrors.totalPaidAmount && <div className="text-sm text-destructive">{editErrors.totalPaidAmount}</div>}
+                    </div>
+                    <div className="space-y-2 hidden">
+                      <Label htmlFor="taxStatus">Tax Status</Label>
+                      <Input id="taxStatus" value={editForm.taxStatus} readOnly disabled />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button variant="outline" onClick={handleEditCancel}>Cancel</Button>
+                    <Button onClick={handleEditSave}>Save</Button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
