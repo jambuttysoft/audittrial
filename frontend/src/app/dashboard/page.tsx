@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from "@/components/ui/badge"
@@ -176,6 +177,18 @@ function DashboardContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
+  const getCurrentQuarterRange = () => {
+    const now = new Date()
+    const y = now.getFullYear()
+    const m = now.getMonth()
+    const qStartMonth = Math.floor(m / 3) * 3
+    const start = new Date(y, qStartMonth, 1)
+    const end = new Date(y, qStartMonth + 3, 0)
+    const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`)
+    const startStr = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`
+    const endStr = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}`
+    return { startStr, endStr }
+  }
   const [user, setUser] = useState<UserData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [documents, setDocuments] = useState<DocumentData[]>([])
@@ -183,8 +196,8 @@ function DashboardContent() {
   const [reviewDocuments, setReviewDocuments] = useState<DigitizedData[]>([])
   const [readyDocuments, setReadyDocuments] = useState<DigitizedData[]>([])
   const [readyVisibleCount, setReadyVisibleCount] = useState(0)
-  const [dateRangeStart, setDateRangeStart] = useState<string>('')
-  const [dateRangeEnd, setDateRangeEnd] = useState<string>('')
+  const [dateRangeStart, setDateRangeStart] = useState<string>(() => getCurrentQuarterRange().startStr)
+  const [dateRangeEnd, setDateRangeEnd] = useState<string>(() => getCurrentQuarterRange().endStr)
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({})
   const [vendorInfo, setVendorInfo] = useState<Record<string, { status: string; name: string; gst?: string }>>({})
   const [companies, setCompanies] = useState<Company[]>([])
@@ -261,124 +274,7 @@ function DashboardContent() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
 
-  useEffect(() => {
-    // Check user authorization
-    const userData = localStorage.getItem('user')
-    if (!userData) {
-      router.push('/auth')
-      return
-    }
-    
-    try {
-      const parsedUser = JSON.parse(userData)
-      setUser(parsedUser)
-      loadDashboardData(parsedUser)
-    } catch (error) {
-      console.error('Error parsing user data:', error)
-      router.push('/auth')
-    }
-  }, [])
-
-  // Handle company parameter from URL and auto-refresh data
-  useEffect(() => {
-    const companyId = searchParams.get('company')
-    if (companyId && companies.length > 0) {
-      const company = companies.find(c => c.id === companyId)
-      if (company && company.id !== selectedCompany?.id) {
-        handleCompanyChange(company)
-      }
-    } else if (companies.length > 0 && !selectedCompany) {
-      // Select first company by default
-      handleCompanyChange(companies[0])
-    }
-  }, [searchParams, companies.length])
-
-  // Auto-refresh documents every 5 seconds to track digitization status
-  useEffect(() => {
-    if (!selectedCompany?.id) return
-
-    const interval = setInterval(() => {
-      const processingDocs = documents.filter(doc => doc.status === 'PROCESSING')
-      if (processingDocs.length > 0) {
-        loadCompanyDocuments(selectedCompany.id)
-      }
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [selectedCompany?.id, documents.length])
-
-  // Auto-refresh dashboard data every 30 seconds
-  useEffect(() => {
-    if (!user?.id) return
-
-    const interval = setInterval(() => {
-      if (user) {
-        loadCompanies(user)
-      }
-      if (selectedCompany?.id) {
-        loadCompanyDocuments(selectedCompany.id)
-        loadDigitizedDocuments(selectedCompany.id)
-      }
-    }, 30000)
-
-    return () => clearInterval(interval)
-  }, [user?.id, selectedCompany?.id])
-
-  const loadDashboardData = async (userData: UserData) => {
-    try {
-      // Load companies
-      await loadCompanies(userData)
-    } catch (error) {
-      console.error('Error loading dashboard data:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const getCurrentQuarterRange = () => {
-    const now = new Date()
-    const y = now.getFullYear()
-    const m = now.getMonth()
-    const qStartMonth = Math.floor(m / 3) * 3
-    const start = new Date(y, qStartMonth, 1)
-    const end = new Date(y, qStartMonth + 3, 0)
-    const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`)
-    const startStr = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`
-    const endStr = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}`
-    return { startStr, endStr }
-  }
-
-  useEffect(() => {
-    if (!dateRangeStart && !dateRangeEnd) {
-      const { startStr, endStr } = getCurrentQuarterRange()
-      setDateRangeStart(startStr)
-      setDateRangeEnd(endStr)
-    }
-  }, [])
-
-  const handleCompanyChange = async (company: Company) => {
-    try {
-      setSelectedCompany(company)
-      // Update URL to reflect the selected company
-      const newUrl = `/dashboard?company=${company.id}`
-      window.history.pushState({}, '', newUrl)
-      // Load documents and digitized documents for the selected company
-      await Promise.all([
-        loadCompanyDocuments(company.id),
-        loadDigitizedDocuments(company.id),
-        loadReviewDocuments(company.id)
-        , loadReadyDocuments(company.id)
-      ])
-      // Refresh companies data to get updated document counts
-      if (user) {
-        await loadCompanies(user)
-      }
-    } catch (error) {
-      console.error('Error changing company:', error)
-    }
-  }
-
-  const loadCompanies = async (userData: UserData) => {
+  const loadCompanies = useCallback(async (userData: UserData) => {
     try {
       const response = await fetch(`/api/companies?userId=${userData.id}`, {
         credentials: 'include'
@@ -399,30 +295,51 @@ function DashboardContent() {
     } catch (error) {
       console.error('Error loading companies:', error)
     }
-  }
+  }, [])
 
-  const loadCompanyDocuments = async (companyId: string) => {
+  const loadDashboardData = useCallback(async (userData: UserData) => {
+    try {
+      await loadCompanies(userData)
+    } catch (error) {
+      console.error('Error loading dashboard data:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [loadCompanies])
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user')
+    if (!userData) {
+      router.push('/auth')
+      return
+    }
+    try {
+      const parsedUser = JSON.parse(userData)
+      setUser(parsedUser)
+      loadDashboardData(parsedUser)
+    } catch (error) {
+      console.error('Error parsing user data:', error)
+      router.push('/auth')
+    }
+  }, [router, loadDashboardData])
+
+  // Handle company parameter from URL and auto-refresh data
+  const loadCompanyDocuments = useCallback(async (companyId: string) => {
     if (!user?.id || !companyId) {
       console.log('Missing user ID or company ID for loading documents')
       return
     }
-    
     console.log('Loading documents for company:', companyId, 'user:', user.id)
-    
     try {
       const response = await fetch(`/api/companies/${companyId}/files?userId=${user.id}`, {
         credentials: 'include'
       })
       console.log('Documents API response status:', response.status)
-      
       if (response.ok) {
         const documentsResponse = await response.json()
         console.log('Documents API response:', documentsResponse)
-        
         const documentsData = documentsResponse.success && documentsResponse.documents ? documentsResponse.documents : []
         const newDigitizedCount = documentsData.filter((doc: DocumentData) => doc.status === 'DIGITIZED').length
-        
-        // Check if the number of digitized documents has increased
         if (previousDigitizedCount > 0 && newDigitizedCount > previousDigitizedCount) {
           const newlyDigitized = newDigitizedCount - previousDigitizedCount
           toast({
@@ -430,7 +347,6 @@ function DashboardContent() {
             description: `${newlyDigitized} ${newlyDigitized === 1 ? 'document digitized' : 'documents digitized'}. Table updated.`,
           })
         }
-        
         setDocuments(documentsData)
         setPreviousDigitizedCount(newDigitizedCount)
       } else {
@@ -452,14 +368,13 @@ function DashboardContent() {
       })
       setDocuments([])
     }
-  }
+  }, [user?.id, previousDigitizedCount, toast])
 
-  const loadDigitizedDocuments = async (companyId: string) => {
+  const loadDigitizedDocuments = useCallback(async (companyId: string) => {
     if (!user?.id || !companyId) {
       console.log('Missing user ID or company ID for loading digitized documents')
       return
     }
-    
     try {
       const response = await fetch(`/api/digitized?userId=${user.id}&companyId=${companyId}`, {
         credentials: 'include'
@@ -467,7 +382,6 @@ function DashboardContent() {
       if (response.ok) {
         const digitizedResponse = await response.json()
         console.log('Digitized documents API response:', digitizedResponse)
-        
         const digitizedData = digitizedResponse.success && digitizedResponse.digitized ? digitizedResponse.digitized : []
         setDigitizedDocuments(digitizedData)
       } else {
@@ -478,9 +392,9 @@ function DashboardContent() {
       console.error('Error loading digitized documents:', error)
       setDigitizedDocuments([])
     }
-  }
+  }, [user?.id])
 
-  const loadReviewDocuments = async (companyId: string) => {
+  const loadReviewDocuments = useCallback(async (companyId: string) => {
     if (!user?.id || !companyId) {
       return
     }
@@ -498,9 +412,9 @@ function DashboardContent() {
     } catch {
       setReviewDocuments([])
     }
-  }
+  }, [user?.id])
 
-  const loadReadyDocuments = async (companyId: string) => {
+  const loadReadyDocuments = useCallback(async (companyId: string) => {
     if (!user?.id || !companyId) return
     try {
       const response = await fetch(`/api/ready?userId=${user.id}&companyId=${companyId}`, { credentials: 'include' })
@@ -509,7 +423,73 @@ function DashboardContent() {
         setReadyDocuments(res.success ? res.ready ?? [] : [])
       } else setReadyDocuments([])
     } catch { setReadyDocuments([]) }
-  }
+  }, [user?.id])
+
+  const handleCompanyChange = useCallback(async (company: Company) => {
+    try {
+      setSelectedCompany(company)
+      const newUrl = `/dashboard?company=${company.id}`
+      window.history.pushState({}, '', newUrl)
+      await Promise.all([
+        loadCompanyDocuments(company.id),
+        loadDigitizedDocuments(company.id),
+        loadReviewDocuments(company.id),
+        loadReadyDocuments(company.id)
+      ])
+      if (user) {
+        await loadCompanies(user)
+      }
+    } catch (error) {
+      console.error('Error changing company:', error)
+    }
+  }, [user, loadCompanyDocuments, loadDigitizedDocuments, loadReviewDocuments, loadReadyDocuments, loadCompanies])
+
+  useEffect(() => {
+    const companyId = searchParams.get('company')
+    if (companyId && companies.length > 0) {
+      const company = companies.find(c => c.id === companyId)
+      if (company && company.id !== selectedCompany?.id) {
+        handleCompanyChange(company)
+      }
+    } else if (companies.length > 0 && !selectedCompany) {
+      handleCompanyChange(companies[0])
+    }
+  }, [searchParams, companies, selectedCompany, handleCompanyChange])
+
+  // Auto-refresh documents every 5 seconds to track digitization status
+  useEffect(() => {
+    if (!selectedCompany?.id) return
+    const interval = setInterval(() => {
+      const processingDocs = documents.filter(doc => doc.status === 'PROCESSING')
+      if (processingDocs.length > 0) {
+        loadCompanyDocuments(selectedCompany.id)
+      }
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [selectedCompany?.id, documents, loadCompanyDocuments])
+
+  // Auto-refresh dashboard data every 30 seconds
+  useEffect(() => {
+    if (!user?.id) return
+    const interval = setInterval(() => {
+      if (user) {
+        loadCompanies(user)
+      }
+      if (selectedCompany?.id) {
+        loadCompanyDocuments(selectedCompany.id)
+        loadDigitizedDocuments(selectedCompany.id)
+      }
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [user, selectedCompany?.id, loadCompanies, loadCompanyDocuments, loadDigitizedDocuments])
+
+  
+
+  
+
+  
+
+  
 
   const handleBulkDeleteSelected = async (rows: any[]) => {
     if (!selectedCompany?.id || !user?.id) {
@@ -866,7 +846,7 @@ function DashboardContent() {
     }
   }
 
-  const loadExportHistory = async (companyId: string) => {
+  const loadExportHistory = useCallback(async (companyId: string) => {
     if (!user?.id) return
     try {
       const r = await fetch(`/api/export-history?companyId=${companyId}&userId=${user.id}`)
@@ -886,7 +866,7 @@ function DashboardContent() {
         }
       }
     } catch {}
-  }
+  }, [user?.id])
 
   const fetchExportHistory = async () => {
     if (!selectedCompany?.id || !user?.id) return
@@ -922,7 +902,7 @@ function DashboardContent() {
 
   useEffect(() => {
     if (selectedCompany?.id) loadExportHistory(selectedCompany.id)
-  }, [selectedCompany?.id])
+  }, [selectedCompany?.id, loadExportHistory])
 
   useEffect(() => {
     const abns = new Set<string>()
@@ -940,7 +920,7 @@ function DashboardContent() {
         setVendorInfo(prev => ({ ...prev, [abn]: { status: data.AbnStatus || '', name, gst: data.Gst || '' } }))
       } catch {}
     }))
-  }, [digitizedDocuments, reviewDocuments, readyDocuments])
+  }, [digitizedDocuments, reviewDocuments, readyDocuments, vendorInfo])
 
   const handleCompanyUpdate = async () => {
     if (!editedCompany || !user?.id) return
@@ -1493,9 +1473,8 @@ function DashboardContent() {
   }
 
   // Xero integration functions
-  const checkXeroStatus = async () => {
+  const checkXeroStatus = useCallback(async () => {
     if (!user?.id) return
-    
     try {
       const response = await fetch(`/api/xero/status?userId=${user.id}`, {
         credentials: 'include'
@@ -1507,7 +1486,7 @@ function DashboardContent() {
     } catch (error) {
       console.error('Error checking Xero status:', error)
     }
-  }
+  }, [user?.id])
 
   const handleXeroConnect = async () => {
     if (!user?.id) return
@@ -1687,7 +1666,7 @@ function DashboardContent() {
     if (user?.id) {
       checkXeroStatus()
     }
-  }, [user?.id])
+  }, [user?.id, checkXeroStatus])
 
   if (isLoading) {
     return (
@@ -1866,18 +1845,12 @@ function DashboardContent() {
                         <div className="flex items-center space-x-3">
                           {doc.mimeType.startsWith('image/') ? (
                             <div className="relative w-10 h-10 rounded-md overflow-hidden bg-muted flex-shrink-0">
-                              <img 
+                              <Image
                                 src={`/api/files/${doc.id}/view?userId=${user?.id}`}
                                 alt={doc.originalName}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement
-                                  target.style.display = 'none'
-                                  const parent = target.parentElement
-                                  if (parent) {
-                                    parent.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="h-5 w-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2z"></path></svg></div>'
-                                  }
-                                }}
+                                fill
+                                sizes="40px"
+                                className="object-cover"
                               />
                             </div>
                           ) : (
@@ -2905,10 +2878,12 @@ function DashboardContent() {
               onMouseLeave={() => setIsDragging(false)}
             >
               {selectedDocumentForEdit && (
-                <img
-                  ref={imageRef}
+                <Image
+                  ref={imageRef as any}
                   src={`/api/files/${selectedDocumentForEdit.originalDocumentId || (selectedDocumentForEdit as any).id}/view?userId=${user?.id}`}
                   alt={selectedDocumentForEdit.originalName || selectedDocumentForEdit.fileName}
+                  width={2000}
+                  height={2000}
                   className="absolute top-1/2 left-1/2 max-w-none shadow-2xl transition-transform duration-200 ease-out"
                   style={{ transform: `translate(-50%, -50%) translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${imageZoom})`, transformOrigin: 'center center' }}
                   draggable={false}
@@ -3121,31 +3096,24 @@ function DashboardContent() {
                   </div>
                 </div>
                 
-                <img 
-                  ref={imageRef}
+                <Image 
+                  ref={imageRef as any}
                   src={`/api/files/${selectedDocumentForImage.id}/view?userId=${user?.id}`}
                   alt={selectedDocumentForImage.originalName}
+                  width={2000}
+                  height={2000}
                   className="absolute top-1/2 left-1/2 max-w-none shadow-2xl transition-transform duration-200 ease-out"
                   style={{
                     transform: `translate(-50%, -50%) translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${imageZoom})`,
                     transformOrigin: 'center center',
                     filter: 'drop-shadow(0 10px 25px rgba(0,0,0,0.5))'
                   }}
-                  onError={(e) => {
-                    console.error('Image loading error for document:', selectedDocumentForImage.id)
-                    console.error('Image URL:', e.currentTarget.src)
-                    
-                    // Hide image and loading indicator
+                  onError={(e: any) => {
                     e.currentTarget.style.display = 'none'
                     const loadingDiv = e.currentTarget.parentElement?.querySelector('.loading-indicator') as HTMLElement
                     if (loadingDiv) loadingDiv.style.display = 'none'
-                    
-                    // Show error message
                     const errorDiv = e.currentTarget.parentElement?.querySelector('.error-message') as HTMLElement
-                    if (errorDiv) {
-                      errorDiv.style.display = 'flex'
-                    }
-                    
+                    if (errorDiv) errorDiv.style.display = 'flex'
                     toast({
                       title: "Image Loading Error",
                       description: `Failed to load document image: ${selectedDocumentForImage.originalName}`,
@@ -3153,13 +3121,8 @@ function DashboardContent() {
                     })
                   }}
                   onLoad={() => {
-                    console.log('Image successfully loaded for document:', selectedDocumentForImage.id)
-                    
-                    // Hide loading indicator
                     const loadingDiv = imageRef.current?.parentElement?.querySelector('.loading-indicator') as HTMLElement
                     if (loadingDiv) loadingDiv.style.display = 'none'
-                    
-                    // Hide error message if it was shown
                     const errorDiv = imageRef.current?.parentElement?.querySelector('.error-message') as HTMLElement
                     if (errorDiv) errorDiv.style.display = 'none'
                   }}
