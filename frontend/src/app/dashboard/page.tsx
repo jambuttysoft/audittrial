@@ -216,6 +216,12 @@ function DashboardContent() {
   const [digitizingDocuments, setDigitizingDocuments] = useState<Set<string>>(new Set())
   const [isBulkDigitizing, setIsBulkDigitizing] = useState(false)
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
+  const [bulkDigitizeStart, setBulkDigitizeStart] = useState<number | null>(null)
+  const [bulkDigitizeElapsed, setBulkDigitizeElapsed] = useState(0)
+  const [bulkDigitizeProcessed, setBulkDigitizeProcessed] = useState(0)
+  const [bulkDigitizeTotal, setBulkDigitizeTotal] = useState(0)
+  const [bulkDigitizeSuccess, setBulkDigitizeSuccess] = useState(0)
+  const [bulkDigitizeError, setBulkDigitizeError] = useState(0)
   
   // Xero integration state
   const [xeroStatus, setXeroStatus] = useState<{
@@ -258,6 +264,7 @@ function DashboardContent() {
   
   // File upload states
   const [isUploading, setIsUploading] = useState(false)
+  const [isDragOver, setIsDragOver] = useState(false)
   
   // Image zoom states
   const [imageZoom, setImageZoom] = useState(1)
@@ -272,6 +279,48 @@ function DashboardContent() {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const imageRef = useRef<HTMLImageElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (isBulkDigitizing && bulkDigitizeStart) {
+      const interval = setInterval(() => {
+        setBulkDigitizeElapsed(Math.floor((Date.now() - bulkDigitizeStart) / 1000))
+      }, 1000)
+      return () => clearInterval(interval)
+    } else {
+      setBulkDigitizeElapsed(0)
+    }
+  }, [isBulkDigitizing, bulkDigitizeStart])
+
+  const formatMMSS = (s: number) => {
+    const m = Math.floor(s / 60).toString().padStart(2, '0')
+    const ss = (s % 60).toString().padStart(2, '0')
+    return `${m}:${ss}`
+  }
+
+  // Restore last progress from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('bulkDigitizeProgress')
+      if (saved) {
+        const data = JSON.parse(saved)
+        if (data.status === 'active' && data.start) {
+          setIsBulkDigitizing(true)
+          setBulkDigitizeStart(data.start)
+          setBulkDigitizeTotal(data.total || 0)
+          setBulkDigitizeProcessed(data.processed || 0)
+          setBulkDigitizeSuccess(data.success || 0)
+          setBulkDigitizeError(data.error || 0)
+        } else if (data.status === 'completed') {
+          setIsBulkDigitizing(false)
+          setBulkDigitizeStart(null)
+          setBulkDigitizeTotal(data.total || 0)
+          setBulkDigitizeProcessed(data.processed || 0)
+          setBulkDigitizeSuccess(data.success || 0)
+          setBulkDigitizeError(data.error || 0)
+        }
+      }
+    } catch {}
+  }, [])
 
 
   const loadCompanies = useCallback(async (userData: UserData) => {
@@ -428,8 +477,6 @@ function DashboardContent() {
   const handleCompanyChange = useCallback(async (company: Company) => {
     try {
       setSelectedCompany(company)
-      const newUrl = `/dashboard?company=${company.id}`
-      window.history.pushState({}, '', newUrl)
       await Promise.all([
         loadCompanyDocuments(company.id),
         loadDigitizedDocuments(company.id),
@@ -445,16 +492,32 @@ function DashboardContent() {
   }, [user, loadCompanyDocuments, loadDigitizedDocuments, loadReviewDocuments, loadReadyDocuments, loadCompanies])
 
   useEffect(() => {
+    if (selectedCompany) return
     const companyId = searchParams.get('company')
-    if (companyId && companies.length > 0) {
-      const company = companies.find(c => c.id === companyId)
-      if (company && company.id !== selectedCompany?.id) {
-        handleCompanyChange(company)
+    if (companies.length === 0) return
+    if (companyId) {
+      const company = companies.find(c => String(c.id) === companyId)
+      if (company) {
+        setSelectedCompany(company)
+        Promise.all([
+          loadCompanyDocuments(company.id),
+          loadDigitizedDocuments(company.id),
+          loadReviewDocuments(company.id),
+          loadReadyDocuments(company.id)
+        ])
       }
-    } else if (companies.length > 0 && !selectedCompany) {
-      handleCompanyChange(companies[0])
+    } else {
+      const company = companies[0]
+      setSelectedCompany(company)
+      Promise.all([
+        loadCompanyDocuments(company.id),
+        loadDigitizedDocuments(company.id),
+        loadReviewDocuments(company.id),
+        loadReadyDocuments(company.id)
+      ])
     }
-  }, [searchParams, companies, selectedCompany, handleCompanyChange])
+  }, [searchParams, companies, selectedCompany, loadCompanyDocuments, loadDigitizedDocuments, loadReviewDocuments, loadReadyDocuments])
+
 
   // Auto-refresh documents every 5 seconds to track digitization status
   useEffect(() => {
@@ -562,7 +625,7 @@ function DashboardContent() {
       const gst = vendorInfo[abn]?.gst
       const TOLERANCE = 0.02
       if (!gst && payload.taxAmount > TOLERANCE) {
-        e.push('Present GST amount but company Not registrad GST')
+        e.push(`${row.original.vendorName} The selected record has a tax applied, but the company is not a GST payer.`)
       }
       if (e.length > 0) errs[payload.id] = e
       else validIds.push(payload.id)
@@ -586,7 +649,7 @@ function DashboardContent() {
             <ul className="mt-2 list-disc pl-4">
               {entries.slice(0, 10).map(([id, messages]) => (
                 <li key={id}>
-                  <span className="font-medium">Row {id}:</span> {messages.join('; ')}
+                  <span className="font-medium"></span> {messages.join('; ')}
                 </li>
               ))}
             </ul>
@@ -1055,13 +1118,42 @@ function DashboardContent() {
     handleFileUpload(files)
   }
 
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(true)
+  }
+
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
+    e.stopPropagation()
+    e.dataTransfer.dropEffect = 'copy'
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
   }
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
-    const files = Array.from(e.dataTransfer.files || [])
+    e.stopPropagation()
+    setIsDragOver(false)
+    const dt = e.dataTransfer
+    let files: File[] = []
+    if (dt.items && dt.items.length) {
+      for (let i = 0; i < dt.items.length; i++) {
+        const item = dt.items[i]
+        if (item.kind === 'file') {
+          const file = item.getAsFile()
+          if (file) files.push(file)
+        }
+      }
+    } else {
+      files = Array.from(dt.files || [])
+    }
     if (files.length > 0) {
       handleFileUpload(files)
     }
@@ -1231,10 +1323,39 @@ function DashboardContent() {
     setIsBulkDigitizing(true)
     try {
       const docs = rows.map((r) => r.original).filter((d: any) => d.status === 'QUEUE' || d.status === 'ERROR')
+      const startTs = Date.now()
+      setBulkDigitizeStart(startTs)
+      setBulkDigitizeProcessed(0)
+      setBulkDigitizeTotal(docs.length)
+      setBulkDigitizeSuccess(0)
+      setBulkDigitizeError(0)
+      localStorage.setItem('bulkDigitizeProgress', JSON.stringify({ status: 'active', start: startTs, total: docs.length, processed: 0, success: 0, error: 0 }))
       if (docs.length === 0) {
         toast({ title: 'Digitize', description: 'No eligible documents selected', variant: 'destructive' })
+        setIsBulkDigitizing(false)
       } else {
-        await Promise.all(docs.map((d: any) => digitizeDocument(d.id)))
+        const promises = docs.map((d: any) =>
+          digitizeDocument(d.id)
+            .then(() => {
+              setBulkDigitizeProcessed((p) => {
+                const next = p + 1
+                const s = bulkDigitizeSuccess + 1
+                setBulkDigitizeSuccess(s)
+                localStorage.setItem('bulkDigitizeProgress', JSON.stringify({ status: 'active', start: startTs, total: docs.length, processed: next, success: s, error: bulkDigitizeError }))
+                return next
+              })
+            })
+            .catch(() => {
+              setBulkDigitizeProcessed((p) => {
+                const next = p + 1
+                const e = bulkDigitizeError + 1
+                setBulkDigitizeError(e)
+                localStorage.setItem('bulkDigitizeProgress', JSON.stringify({ status: 'active', start: startTs, total: docs.length, processed: next, success: bulkDigitizeSuccess, error: e }))
+                return next
+              })
+            })
+        )
+        await Promise.allSettled(promises)
         await Promise.all([
           loadCompanyDocuments(selectedCompany.id),
           loadDigitizedDocuments(selectedCompany.id),
@@ -1246,6 +1367,8 @@ function DashboardContent() {
       toast({ title: 'Digitize failed', description: 'Не удалось выполнить массовую оцифровку', variant: 'destructive' })
     } finally {
       setIsBulkDigitizing(false)
+      setBulkDigitizeStart(null)
+      localStorage.setItem('bulkDigitizeProgress', JSON.stringify({ status: 'completed', start: null, total: bulkDigitizeTotal, processed: bulkDigitizeProcessed, success: bulkDigitizeSuccess, error: bulkDigitizeError }))
     }
   }
 
@@ -1828,9 +1951,11 @@ function DashboardContent() {
             </CardHeader>
             <CardContent>
               <div
+                onDragEnter={handleDragEnter}
                 onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                className="mb-4 border-2 border-dashed rounded-md p-4 text-center text-sm text-muted-foreground"
+                className={`mb-4 border-2 border-dashed rounded-md p-4 text-center text-sm ${isDragOver ? 'border-primary bg-muted/50' : 'text-muted-foreground'}`}
               >
                 Drag & drop files here or click Choose Files
               </div>
@@ -1980,6 +2105,15 @@ function DashboardContent() {
                           <Button size="sm" variant="destructive" onClick={() => handleBulkDeleteDocuments(rows).then(() => clearSelection())} disabled={isBulkDigitizing || isBulkDeleting}>
                             {isBulkDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete'}
                           </Button>
+                          {isBulkDigitizing && (
+                            <div className="flex items-center gap-2 ml-2 text-xs text-muted-foreground">
+                              <Badge variant="secondary">{formatMMSS(bulkDigitizeElapsed)}</Badge>
+                              <Badge variant="outline">{bulkDigitizeProcessed}/{bulkDigitizeTotal}</Badge>
+                              <Badge variant="outline">{bulkDigitizeTotal > 0 ? `${Math.round((bulkDigitizeProcessed / bulkDigitizeTotal) * 100)}%` : '0%'}</Badge>
+                              <Badge variant="secondary">ETA {bulkDigitizeProcessed > 0 ? formatMMSS(Math.max(0, Math.round((bulkDigitizeTotal - bulkDigitizeProcessed) * (bulkDigitizeElapsed / bulkDigitizeProcessed)))) : '--:--'}</Badge>
+                              <Badge variant="outline">{bulkDigitizeSuccess} ✓ / {bulkDigitizeError} ✗</Badge>
+                            </div>
+                          )}
                         </>
                       )}
                     />
