@@ -2067,7 +2067,7 @@ function DashboardContent() {
                     }
                   }
                   return outside > 0 ? (
-                    <div className="mt-2 text-sm italic text-orange-600">*Pay attention that ({outside}) records not present in selected range</div>
+                    <div className="mt-2 text-sm italic text-orange-600">*Please note that ({outside}) records did not fall within the period you selected.</div>
                   ) : null
                 })()}
               </div>

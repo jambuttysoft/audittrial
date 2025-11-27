@@ -57,3 +57,12 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes fall {
+  0% { transform: translateY(-20%); opacity: 0; }
+  50% { opacity: 0.4; }
+  100% { transform: translateY(120%); opacity: 0; }
+}
+
+.hero-animated { position: relative; overflow: hidden; background: linear-gradient(180deg, #e5e7eb 0%, #ffffff 60%); }
+.falling-number { position: absolute; color: #93c5fd; font-weight: 600; opacity: 0; animation: fall 8s linear infinite; }
