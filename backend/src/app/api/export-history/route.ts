@@ -20,9 +20,15 @@ export async function GET(request: NextRequest) {
     const where: any = { companyId, userId }
     if (file) where.fileName = { contains: file }
     if (from || to) {
-      where.exportedAt = {}
-      if (from) where.exportedAt.gte = new Date(from)
-      if (to) where.exportedAt.lte = new Date(to)
+      const fromDate = from ? new Date(from) : null
+      const toDate = to ? new Date(to) : null
+      const validFrom = fromDate && !isNaN(fromDate.getTime()) ? fromDate : null
+      const validTo = toDate && !isNaN(toDate.getTime()) ? toDate : null
+      if (validFrom || validTo) {
+        where.exportedAt = {}
+        if (validFrom) where.exportedAt.gte = validFrom
+        if (validTo) where.exportedAt.lte = validTo
+      }
     }
     const items = await (prisma as any).exportHistory.findMany({ where, orderBy: { exportedAt: 'desc' } })
     const stats = {
