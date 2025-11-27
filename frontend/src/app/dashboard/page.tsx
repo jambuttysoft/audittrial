@@ -183,6 +183,8 @@ function DashboardContent() {
   const [reviewDocuments, setReviewDocuments] = useState<DigitizedData[]>([])
   const [readyDocuments, setReadyDocuments] = useState<DigitizedData[]>([])
   const [readyVisibleCount, setReadyVisibleCount] = useState(0)
+  const [dateRangeStart, setDateRangeStart] = useState<string>('')
+  const [dateRangeEnd, setDateRangeEnd] = useState<string>('')
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({})
   const [vendorInfo, setVendorInfo] = useState<Record<string, { status: string; name: string; gst?: string }>>({})
   const [companies, setCompanies] = useState<Company[]>([])
@@ -332,6 +334,27 @@ function DashboardContent() {
       setIsLoading(false)
     }
   }
+
+  const getCurrentQuarterRange = () => {
+    const now = new Date()
+    const y = now.getFullYear()
+    const m = now.getMonth()
+    const qStartMonth = Math.floor(m / 3) * 3
+    const start = new Date(y, qStartMonth, 1)
+    const end = new Date(y, qStartMonth + 3, 0)
+    const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`)
+    const startStr = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`
+    const endStr = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}`
+    return { startStr, endStr }
+  }
+
+  useEffect(() => {
+    if (!dateRangeStart && !dateRangeEnd) {
+      const { startStr, endStr } = getCurrentQuarterRange()
+      setDateRangeStart(startStr)
+      setDateRangeEnd(endStr)
+    }
+  }, [])
 
   const handleCompanyChange = async (company: Company) => {
     try {
@@ -1781,7 +1804,7 @@ function DashboardContent() {
             <Badge className="ml-2">{digitizedCount}</Badge>
           </TabsTrigger>
           <TabsTrigger value="ready">
-            <span>Validated for Report</span>
+            <span>Validated for Tax Report</span>
             <Badge className="ml-2">{readyCount}</Badge>
           </TabsTrigger>
           <TabsTrigger value="export-history">
@@ -2001,25 +2024,75 @@ function DashboardContent() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Validated for Report</CardTitle>
+                  <CardTitle>Validated for Tax Report</CardTitle>
                   <CardDescription>
-                    Validated items Validated for reporting
+                    Items validated for Tax reporting
                   </CardDescription>
                 </div>
                 <Badge variant="secondary">{readyVisibleCount}</Badge>
               </div>
             </CardHeader>
             <CardContent>
-              {Object.keys(validationErrors).length > 0 && (
-                <div role="alert" className="mb-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                  {Object.entries(validationErrors).map(([id, errs]) => (
-                    <div key={id}>
-                      <span className="font-medium">Row {id}:</span> {errs.join('; ')}
-                    </div>
-                  ))}
+              <div className="mb-4">
+                <div className="flex flex-wrap items-end gap-3">
+                  <div>
+                    <Label htmlFor="range-start">From</Label>
+                    <Input id="range-start" type="date" value={dateRangeStart} onChange={(e) => setDateRangeStart(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label htmlFor="range-end">To</Label>
+                    <Input id="range-end" type="date" value={dateRangeEnd} onChange={(e) => setDateRangeEnd(e.target.value)} />
+                  </div>
                 </div>
-              )}
+                {(() => {
+                  const hasRange = !!dateRangeStart && !!dateRangeEnd
+                  const parseLocalDate = (s?: string) => {
+                    if (!s) return null
+                    const d = new Date(s)
+                    return isNaN(d.getTime()) ? null : d
+                  }
+                  let outside = 0
+                  if (hasRange && readyDocuments.length > 0) {
+                    const [y1, m1, d1] = dateRangeStart.split('-').map((v) => parseInt(v, 10))
+                    const [y2, m2, d2] = dateRangeEnd.split('-').map((v) => parseInt(v, 10))
+                    if (!isNaN(y1) && !isNaN(m1) && !isNaN(d1) && !isNaN(y2) && !isNaN(m2) && !isNaN(d2)) {
+                      const start = new Date(y1, m1 - 1, d1, 0, 0, 0, 0).getTime()
+                      const end = new Date(y2, m2 - 1, d2, 23, 59, 59, 999).getTime()
+                      outside = readyDocuments.reduce((acc, doc) => {
+                        const pd = parseLocalDate(doc.purchaseDate)
+                        if (!pd) return acc + 1
+                        const t = pd.getTime()
+                        return t < start || t > end ? acc + 1 : acc
+                      }, 0)
+                    }
+                  }
+                  return outside > 0 ? (
+                    <div className="mt-2 text-sm italic text-orange-600">*Pay attention that ({outside}) records not present in selected range</div>
+                  ) : null
+                })()}
+              </div>
               {(() => {
+                const hasRange = !!dateRangeStart && !!dateRangeEnd
+                const parseLocalDate = (s?: string) => {
+                  if (!s) return null
+                  const d = new Date(s)
+                  return isNaN(d.getTime()) ? null : d
+                }
+                let dataForTable = readyDocuments
+                if (hasRange && readyDocuments.length > 0) {
+                  const [y1, m1, d1] = dateRangeStart.split('-').map((v) => parseInt(v, 10))
+                  const [y2, m2, d2] = dateRangeEnd.split('-').map((v) => parseInt(v, 10))
+                  if (!isNaN(y1) && !isNaN(m1) && !isNaN(d1) && !isNaN(y2) && !isNaN(m2) && !isNaN(d2)) {
+                    const start = new Date(y1, m1 - 1, d1, 0, 0, 0, 0).getTime()
+                    const end = new Date(y2, m2 - 1, d2, 23, 59, 59, 999).getTime()
+                    dataForTable = readyDocuments.filter((doc) => {
+                      const pd = parseLocalDate(doc.purchaseDate)
+                      if (!pd) return false
+                      const t = pd.getTime()
+                      return t >= start && t <= end
+                    })
+                  }
+                }
                 const columns: ColumnDef<DigitizedData>[] = [
                   { accessorKey: 'purchaseDate', header: 'Purchase Date', cell: ({ row }) => <TruncatedCell text={row.original.purchaseDate ? formatDate(row.original.purchaseDate) : '-'} /> },
                   { accessorKey: 'vendorName', header: 'Vendor Name', cell: ({ row }) => {
@@ -2106,7 +2179,7 @@ function DashboardContent() {
                 return (
                   <DataTable 
                     columns={columns} 
-                    data={readyDocuments} 
+                    data={dataForTable} 
                     defaultVisibleColumnIds={defaultVisible} 
                     storageKey={key}
                     onRowCountChange={setReadyVisibleCount}
