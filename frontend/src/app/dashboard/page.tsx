@@ -722,7 +722,7 @@ function DashboardContent() {
     if (Object.keys(errs).length > 0) {
       const entries = Object.entries(errs)
       toast({
-        title: 'Edit Document',
+        title: 'Edit Source Document',
         description: (
           <div>
             <div>{`Validation errors: ${entries.length}`}</div>
@@ -1982,7 +1982,7 @@ function DashboardContent() {
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Delete Document</p>
+                              <p>Delete Source Document</p>
                             </TooltipContent>
                           </Tooltip>
                         </div>
@@ -2026,10 +2026,10 @@ function DashboardContent() {
                 <div>
                   <CardTitle>Validated for Tax Report</CardTitle>
                   <CardDescription>
-                    Items validated for Tax reporting
+                     {readyVisibleCount} Source Documents Validated for Tax Reporting
                   </CardDescription>
                 </div>
-                <Badge variant="secondary">{readyVisibleCount}</Badge>
+                
               </div>
             </CardHeader>
             <CardContent>
@@ -2547,7 +2547,7 @@ function DashboardContent() {
                                 openEditModal(doc)
                               }}
                             >
-                              Edit Document
+                              Edit Source Document
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={(e) => {
@@ -2600,7 +2600,7 @@ function DashboardContent() {
                               }}
                               className="text-destructive"
                             >
-                              Delete Document
+                              Delete Source Document
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
