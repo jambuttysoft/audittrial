@@ -197,6 +197,8 @@ function DashboardContent() {
   const [abnData, setAbnData] = useState<any>(null)
   const [isLoadingAbn, setIsLoadingAbn] = useState(false)
   const [digitizingDocuments, setDigitizingDocuments] = useState<Set<string>>(new Set())
+  const [isBulkDigitizing, setIsBulkDigitizing] = useState(false)
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
   
   // Xero integration state
   const [xeroStatus, setXeroStatus] = useState<{
@@ -539,6 +541,12 @@ function DashboardContent() {
       }
       console.log('Validate payload:', payload)
       const e = validateReceipt(payload)
+      const abn = row.original.vendorAbn || ''
+      const gst = vendorInfo[abn]?.gst
+      const TOLERANCE = 0.02
+      if (!gst && payload.taxAmount > TOLERANCE) {
+        e.push('Present GST amount for but company Not registrad GST')
+      }
       if (e.length > 0) errs[payload.id] = e
       else validIds.push(payload.id)
     })
@@ -882,6 +890,57 @@ function DashboardContent() {
     } finally {
       setIsDeleteModalOpen(false)
       setDocumentToDelete(null)
+    }
+  }
+
+  const handleBulkDigitizeDocuments = async (rows: any[]) => {
+    if (!selectedCompany?.id || !user?.id) {
+      toast({ title: 'Error', description: 'Please select a company and sign in', variant: 'destructive' })
+      return
+    }
+    setIsBulkDigitizing(true)
+    try {
+      const docs = rows.map((r) => r.original).filter((d: any) => d.status === 'QUEUE' || d.status === 'ERROR')
+      if (docs.length === 0) {
+        toast({ title: 'Digitize', description: 'No eligible documents selected', variant: 'destructive' })
+      } else {
+        await Promise.all(docs.map((d: any) => digitizeDocument(d.id)))
+        await Promise.all([
+          loadCompanyDocuments(selectedCompany.id),
+          loadDigitizedDocuments(selectedCompany.id),
+        ])
+        toast({ title: 'Digitize', description: `${docs.length} документ(а) отправлены на оцифровку` })
+      }
+    } catch (e) {
+      console.error('Bulk digitize failed', e)
+      toast({ title: 'Digitize failed', description: 'Не удалось выполнить массовую оцифровку', variant: 'destructive' })
+    } finally {
+      setIsBulkDigitizing(false)
+    }
+  }
+
+  const handleBulkDeleteDocuments = async (rows: any[]) => {
+    if (!selectedCompany?.id || !user?.id) {
+      toast({ title: 'Error', description: 'Please select a company and sign in', variant: 'destructive' })
+      return
+    }
+    if (!confirm('Удалить выбранные документы?')) return
+    setIsBulkDeleting(true)
+    try {
+      const ids = rows.map((r) => r.original.id).filter(Boolean)
+      const results = await Promise.all(ids.map(async (id) => {
+        const resp = await fetch(`/api/documents/${id}?userId=${user.id}`, { method: 'DELETE', credentials: 'include', headers: { 'Content-Type': 'application/json' } })
+        return resp.ok
+      }))
+      const successCount = results.filter(Boolean).length
+      await loadCompanyDocuments(selectedCompany.id)
+      await loadDashboardData(user)
+      toast({ title: 'Delete', description: `${successCount}/${ids.length} документ(ов) удалено` })
+    } catch (e) {
+      console.error('Bulk delete documents failed', e)
+      toast({ title: 'Delete failed', description: 'Не удалось удалить выбранные документы', variant: 'destructive' })
+    } finally {
+      setIsBulkDeleting(false)
     }
   }
 
@@ -1442,7 +1501,7 @@ function DashboardContent() {
         <TabsList>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="digitized">Digitized</TabsTrigger>
-          <TabsTrigger value="ready">Ready for Report</TabsTrigger>
+          <TabsTrigger value="ready">Validated for Report</TabsTrigger>
           <TabsTrigger value="review">Deleted</TabsTrigger>
           <TabsTrigger value="profile">Profile</TabsTrigger>
         </TabsList>
@@ -1487,21 +1546,14 @@ function DashboardContent() {
               >
                 Drag & drop files here or click Choose Files
               </div>
-              <TooltipProvider>
-                <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>File Name</TableHead>
-                    <TableHead>Size</TableHead>
-                    <TableHead>Upload Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {documents.map((doc) => (
-                    <TableRow key={doc.id}>
-                      <TableCell className="font-medium">
+              {(() => {
+                const columns: ColumnDef<DocumentData>[] = [
+                  {
+                    accessorKey: 'fileName',
+                    header: 'File Name',
+                    cell: ({ row }) => {
+                      const doc = row.original as DocumentData
+                      return (
                         <div className="flex items-center space-x-3">
                           {doc.mimeType.startsWith('image/') ? (
                             <div className="relative w-10 h-10 rounded-md overflow-hidden bg-muted flex-shrink-0">
@@ -1514,7 +1566,7 @@ function DashboardContent() {
                                   target.style.display = 'none'
                                   const parent = target.parentElement
                                   if (parent) {
-                                    parent.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="h-5 w-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>'
+                                    parent.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="h-5 w-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2z"></path></svg></div>'
                                   }
                                 }}
                               />
@@ -1529,25 +1581,22 @@ function DashboardContent() {
                             <span className="text-xs text-muted-foreground">{doc.mimeType}</span>
                           </div>
                         </div>
-                      </TableCell>
-                      <TableCell>{formatFileSize(doc.fileSize)}</TableCell>
-                      <TableCell>{formatDate(doc.uploadDate)}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            doc.status === 'DIGITIZED'
-                              ? 'default'
-                              : doc.status === 'PROCESSING'
-                              ? 'secondary'
-                              : doc.status === 'ERROR'
-                              ? 'destructive'
-                              : 'outline'
-                          }
-                        >
-                          {doc.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
+                      )
+                    }
+                  },
+                  { accessorKey: 'fileSize', header: 'Size', cell: ({ row }) => formatFileSize((row.original as DocumentData).fileSize) },
+                  { accessorKey: 'uploadDate', header: 'Upload Date', cell: ({ row }) => formatDate((row.original as DocumentData).uploadDate) },
+                  { accessorKey: 'status', header: 'Status', cell: ({ row }) => {
+                    const doc = row.original as DocumentData
+                    const variant = doc.status === 'DIGITIZED' ? 'default' : doc.status === 'PROCESSING' ? 'secondary' : doc.status === 'ERROR' ? 'destructive' : 'outline'
+                    return (<Badge variant={variant as any}>{doc.status}</Badge>)
+                  } },
+                  {
+                    id: 'actions',
+                    header: 'Actions',
+                    cell: ({ row }) => {
+                      const doc = row.original as DocumentData
+                      return (
                         <div className="flex items-center space-x-2">
                           {doc.mimeType.startsWith('image/') && (
                             <Tooltip>
@@ -1557,11 +1606,7 @@ function DashboardContent() {
                                   size="sm"
                                   onClick={() => {
                                     if (!user?.id) {
-                                      toast({
-                                        title: 'Not signed in',
-                                        description: 'Please sign in to view images.',
-                                        variant: 'destructive',
-                                      })
+                                      toast({ title: 'Not signed in', description: 'Please sign in to view images.', variant: 'destructive' })
                                       return
                                     }
                                     setSelectedDocumentForImage(doc)
@@ -1572,7 +1617,7 @@ function DashboardContent() {
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>View Image</p>
+                                <p>View Source Document</p>
                               </TooltipContent>
                             </Tooltip>
                           )}
@@ -1632,19 +1677,33 @@ function DashboardContent() {
                             </TooltipContent>
                           </Tooltip>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {documents.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        No documents uploaded yet. Upload your first document above.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-                </Table>
-              </TooltipProvider>
+                      )
+                    }
+                  },
+                ]
+                const defaultVisible = ['fileName', 'fileSize', 'uploadDate', 'status', 'actions']
+                const key = user?.id ? `documents_columns_visibility:${user.id}` : undefined
+                return (
+                  <TooltipProvider>
+                    <DataTable 
+                      columns={columns} 
+                      data={documents} 
+                      defaultVisibleColumnIds={defaultVisible} 
+                      storageKey={key}
+                      bulkActions={(rows, clearSelection) => (
+                        <>
+                          <Button size="sm" onClick={() => handleBulkDigitizeDocuments(rows).then(() => clearSelection())} disabled={isBulkDigitizing || isBulkDeleting}>
+                            {isBulkDigitizing ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Digitize'}
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleBulkDeleteDocuments(rows).then(() => clearSelection())} disabled={isBulkDigitizing || isBulkDeleting}>
+                            {isBulkDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete'}
+                          </Button>
+                        </>
+                      )}
+                    />
+                  </TooltipProvider>
+                )
+              })()}
             </CardContent>
           </Card>
         </TabsContent>
@@ -1652,9 +1711,9 @@ function DashboardContent() {
         <TabsContent value="ready" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Ready for Report</CardTitle>
+              <CardTitle>Validated for Report</CardTitle>
               <CardDescription>
-                Validated items ready for reporting
+                Validated items Validated for reporting
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1709,7 +1768,7 @@ function DashboardContent() {
                   { accessorKey: 'surchargeAmount', header: 'Card Surcharge', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.surchargeAmount === 'number' ? row.original.surchargeAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'taxAmount', header: 'Tax Amount (GST)', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.taxAmount === 'number' ? row.original.taxAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'totalAmount', header: 'Total Amount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalAmount === 'number' ? row.original.totalAmount : 0).toFixed(2)} /> },
-                  { accessorKey: 'totalPaidAmount', header: 'Total Paid Amount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalPaidAmount === 'number' ? row.original.totalPaidAmount : 0).toFixed(2)} /> },
+                  { accessorKey: 'totalPaidAmount', header: 'Total Transaction', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalPaidAmount === 'number' ? row.original.totalPaidAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'gstStatus', header: 'GST Status', cell: ({ row }) => {
                     const doc = row.original
                     const abn = doc.vendorAbn || ''
@@ -1801,7 +1860,7 @@ function DashboardContent() {
                   { accessorKey: 'surchargeAmount', header: 'Card Surcharge', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.surchargeAmount === 'number' ? row.original.surchargeAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'taxAmount', header: 'Tax Amount (GST)', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.taxAmount === 'number' ? row.original.taxAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'totalAmount', header: 'Total Amount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalAmount === 'number' ? row.original.totalAmount : 0).toFixed(2)} /> },
-                  { accessorKey: 'totalPaidAmount', header: 'Total Paid Amount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalPaidAmount === 'number' ? row.original.totalPaidAmount : 0).toFixed(2)} /> },
+                  { accessorKey: 'totalPaidAmount', header: 'Total Transaction', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalPaidAmount === 'number' ? row.original.totalPaidAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'gstStatus', header: 'GST Status', cell: ({ row }) => {
                     const abn = row.original.vendorAbn || ''
                     const gst = vendorInfo[abn]?.gst
@@ -1853,7 +1912,7 @@ function DashboardContent() {
                                 setIsImageModalOpen(true)
                               }}
                             >
-                              View Image
+                              View Source Document
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -1913,7 +1972,7 @@ function DashboardContent() {
                   { accessorKey: 'surchargeAmount', header: 'Card Surcharge', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.surchargeAmount === 'number' ? row.original.surchargeAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'taxAmount', header: 'Tax Amount (GST)', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.taxAmount === 'number' ? row.original.taxAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'totalAmount', header: 'Total Amount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalAmount === 'number' ? row.original.totalAmount : 0).toFixed(2)} /> },
-                  { accessorKey: 'totalPaidAmount', header: 'Total Paid Amount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalPaidAmount === 'number' ? row.original.totalPaidAmount : 0).toFixed(2)} /> },
+                  { accessorKey: 'totalPaidAmount', header: 'Total Transaction', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalPaidAmount === 'number' ? row.original.totalPaidAmount : 0).toFixed(2)} /> },
                   
                   { accessorKey: 'gstStatus', header: 'GST Status', cell: ({ row }) => {
                     const abn = row.original.vendorAbn || ''
@@ -1966,7 +2025,7 @@ function DashboardContent() {
                                 setIsImageModalOpen(true)
                               }}
                             >
-                              View Image
+                              View Source Document
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={(e) => {
@@ -1984,7 +2043,7 @@ function DashboardContent() {
                                 }
                               }}
                             >
-                              Check Vendor
+                              Check ASIC Validation
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={(e) => {
@@ -1993,7 +2052,7 @@ function DashboardContent() {
                                 toast({ title: 'Xero Journal Record', description: 'Xero Journal Record creation feature will be implemented' })
                               }}
                             >
-                              Create Xero Journal Record
+                              Create Xero Journal Entry
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={(e) => {
@@ -2607,7 +2666,7 @@ function DashboardContent() {
       <Dialog open={isAbnModalOpen} onOpenChange={setIsAbnModalOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Vendor Check - {selectedDocumentForAbn?.vendor || 'Unknown vendor'}</DialogTitle>
+            <DialogTitle>ASIC Check - {selectedDocumentForAbn?.vendor || 'Unknown vendor'}</DialogTitle>
             <DialogDescription>ABR lookup details for the selected vendor.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
