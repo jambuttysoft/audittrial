@@ -20,6 +20,14 @@ model User {
   oauthProvider String? // "google", "facebook", etc.
   oauthId   String?  // OAuth provider user ID
   
+  // Email verification
+  isVerified Boolean @default(false)
+  verificationToken String? @unique
+  
+  // Password reset
+  resetToken String? @unique
+  resetTokenExpiry DateTime?
+  
   // Profile information
   name      String?
   userType  UserType @default(INDIVIDUAL)

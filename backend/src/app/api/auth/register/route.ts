@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { getCorsHeaders, handleCorsOptions } from '@/lib/cors';
+import { generateToken, sendVerificationEmail } from '@/lib/email';
 
 interface RegisterRequest {
   email: string;
@@ -11,6 +12,7 @@ interface RegisterRequest {
   phone?: string;
   company?: string;
   services?: string;
+  acceptsJobOffers?: boolean;
   // OAuth fields
   isOAuthUser?: boolean;
   oauthProvider?: string;
@@ -27,16 +29,17 @@ export async function POST(request: NextRequest) {
   try {
     const origin = request.headers.get('origin');
     const corsHeaders = getCorsHeaders(origin);
-    
+
     const body: RegisterRequest = await request.json();
-    const { 
-      email, 
-      password, 
-      name, 
-      userType, 
-      phone, 
-      company, 
+    const {
+      email,
+      password,
+      name,
+      userType,
+      phone,
+      company,
       services,
+      acceptsJobOffers,
       isOAuthUser = false,
       oauthProvider,
       oauthId
@@ -46,7 +49,7 @@ export async function POST(request: NextRequest) {
     if (!email || !name || !userType) {
       return NextResponse.json(
         { error: 'Email, name, and user type are required' },
-        { 
+        {
           status: 400,
           headers: corsHeaders
         }
@@ -57,7 +60,7 @@ export async function POST(request: NextRequest) {
     if (!isOAuthUser && !password) {
       return NextResponse.json(
         { error: 'Password is required' },
-        { 
+        {
           status: 400,
           headers: corsHeaders
         }
@@ -80,7 +83,7 @@ export async function POST(request: NextRequest) {
     if (existingUser) {
       return NextResponse.json(
         { error: 'A user with this email already exists' },
-        { 
+        {
           status: 409,
           headers: corsHeaders
         }
@@ -92,6 +95,9 @@ export async function POST(request: NextRequest) {
     if (!isOAuthUser && password) {
       hashedPassword = await bcrypt.hash(password, 12);
     }
+
+    // Generate verification token for non-OAuth users
+    const verificationToken = isOAuthUser ? null : generateToken();
 
     // Create new user
     const newUser = await prisma.user.create({
@@ -108,8 +114,9 @@ export async function POST(request: NextRequest) {
         oauthId,
         isActive: true,
         isDeleted: false,
-        isVisibleToClients: userType === 'BUSINESS',
-        acceptsJobOffers: userType === 'BUSINESS'
+        isVerified: isOAuthUser, // OAuth users are auto-verified
+        verificationToken,
+        acceptsJobOffers: acceptsJobOffers ?? (userType === 'BUSINESS')
       },
       select: {
         id: true,
@@ -121,18 +128,23 @@ export async function POST(request: NextRequest) {
         services: true,
         isOAuthUser: true,
         oauthProvider: true,
-        isVisibleToClients: true,
         acceptsJobOffers: true,
         isActive: true,
+        isVerified: true,
         createdAt: true
       }
     });
+
+    // Send verification email for non-OAuth users
+    if (!isOAuthUser && verificationToken) {
+      await sendVerificationEmail(email, verificationToken);
+    }
 
     // Automatically create a company if user is BUSINESS type or company name is provided
     let createdCompany = null;
     if (userType === 'BUSINESS' || company) {
       const companyName = company || `${name}'s Company`;
-      
+
       try {
         createdCompany = await prisma.company.create({
           data: {
@@ -160,10 +172,13 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      message: 'User registered successfully',
+      message: isOAuthUser
+        ? 'User registered successfully'
+        : 'Registration successful! Please check your email to verify your account.',
       user: newUser,
-      company: createdCompany
-    }, { 
+      company: createdCompany,
+      requiresVerification: !isOAuthUser
+    }, {
       status: 201,
       headers: corsHeaders
     });
@@ -174,7 +189,7 @@ export async function POST(request: NextRequest) {
     const corsHeaders = getCorsHeaders(origin);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { 
+      {
         status: 500,
         headers: corsHeaders
       }

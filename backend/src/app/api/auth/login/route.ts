@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     if (!email) {
       return NextResponse.json(
         { success: false, message: 'Email is required' } as LoginResponse,
-        { 
+        {
           status: 400,
           headers: corsHeaders
         }
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     if (isOAuthUser && (!oauthProvider || !oauthId)) {
       return NextResponse.json(
         { success: false, message: 'OAuth provider and ID are required for OAuth login' } as LoginResponse,
-        { 
+        {
           status: 400,
           headers: corsHeaders
         }
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     if (!isOAuthUser && !password) {
       return NextResponse.json(
         { success: false, message: 'Password is required' } as LoginResponse,
-        { 
+        {
           status: 400,
           headers: corsHeaders
         }
@@ -85,14 +85,15 @@ export async function POST(request: NextRequest) {
         oauthId: true,
         isActive: true,
         isDeleted: true,
+        isVerified: true,
       },
     })
 
     if (!user) {
       return NextResponse.json(
-        { success: false, message: 'Invalid email or password' } as LoginResponse,
-        { 
-          status: 401,
+        { success: false, message: 'User not found' } as LoginResponse,
+        {
+          status: 404, // Changed to 404 for specific error
           headers: corsHeaders
         }
       )
@@ -102,8 +103,19 @@ export async function POST(request: NextRequest) {
     if (!user.isActive || user.isDeleted) {
       return NextResponse.json(
         { success: false, message: 'Account is deactivated' } as LoginResponse,
-        { 
+        {
           status: 401,
+          headers: corsHeaders
+        }
+      )
+    }
+
+    // Check if email is verified (for non-OAuth users)
+    if (!user.isOAuthUser && !user.isVerified) {
+      return NextResponse.json(
+        { success: false, message: 'Please verify your email address before logging in. Check your inbox for the verification link.' } as LoginResponse,
+        {
+          status: 403,
           headers: corsHeaders
         }
       )
@@ -114,7 +126,7 @@ export async function POST(request: NextRequest) {
       if (!user.isOAuthUser || user.oauthProvider !== oauthProvider || user.oauthId !== oauthId) {
         return NextResponse.json(
           { success: false, message: 'Invalid OAuth credentials' } as LoginResponse,
-          { 
+          {
             status: 401,
             headers: corsHeaders
           }
@@ -125,7 +137,7 @@ export async function POST(request: NextRequest) {
       if (user.isOAuthUser || !user.password) {
         return NextResponse.json(
           { success: false, message: 'This account uses OAuth login' } as LoginResponse,
-          { 
+          {
             status: 401,
             headers: corsHeaders
           }
@@ -136,8 +148,8 @@ export async function POST(request: NextRequest) {
       const isPasswordValid = await bcrypt.compare(password!, user.password)
       if (!isPasswordValid) {
         return NextResponse.json(
-          { success: false, message: 'Invalid email or password' } as LoginResponse,
-          { 
+          { success: false, message: 'Invalid password' } as LoginResponse,
+          {
             status: 401,
             headers: corsHeaders
           }
@@ -147,10 +159,10 @@ export async function POST(request: NextRequest) {
 
     // Generate JWT token
     const token = jwt.sign(
-      { 
-        userId: user.id, 
+      {
+        userId: user.id,
         email: user.email,
-        userType: user.userType 
+        userType: user.userType
       },
       process.env.JWT_SECRET || 'fallback-secret-key',
       { expiresIn: '7d' }
@@ -170,7 +182,7 @@ export async function POST(request: NextRequest) {
         },
         token,
       } as LoginResponse,
-      { 
+      {
         status: 200,
         headers: corsHeaders
       }
@@ -181,7 +193,7 @@ export async function POST(request: NextRequest) {
     const corsHeaders = getCorsHeaders(origin);
     return NextResponse.json(
       { success: false, message: 'Internal server error' } as LoginResponse,
-      { 
+      {
         status: 500,
         headers: corsHeaders
       }

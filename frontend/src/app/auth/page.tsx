@@ -1,28 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import { Checkbox } from '@/components/ui/checkbox'
 import { useRouter } from 'next/navigation'
-import { Eye, EyeOff, Mail, Lock, User, Building, Phone, MapPin } from 'lucide-react'
+import { Eye, EyeOff, Box } from 'lucide-react'
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google'
 
 interface RegisterData {
   email: string
   password: string
+  confirmPassword: string
   name: string
   userType: 'INDIVIDUAL' | 'BUSINESS'
   phone?: string
-  address?: string
   company?: string
   services?: string
-  isVisibleToClients: boolean
   acceptsJobOffers: boolean
+  acceptsTerms: boolean
 }
 
 interface LoginData {
@@ -32,34 +25,37 @@ interface LoginData {
 
 export default function AuthPage() {
   const router = useRouter()
+  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login')
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('')
+
   const [loginData, setLoginData] = useState<LoginData>({
     email: '',
     password: ''
   })
-  
+
   const [registerData, setRegisterData] = useState<RegisterData>({
     email: '',
     password: '',
+    confirmPassword: '',
     name: '',
     userType: 'INDIVIDUAL',
     phone: '',
-    address: '',
     company: '',
     services: '',
-    isVisibleToClients: true,
-    acceptsJobOffers: true
+    acceptsJobOffers: true,
+    acceptsTerms: false
   })
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
-    
+
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -69,19 +65,99 @@ export default function AuthPage() {
         credentials: 'include',
         body: JSON.stringify(loginData),
       })
-      
+
       const data = await response.json()
-      
+
       if (response.ok) {
         setSuccess('Successful login! Redirecting...')
-        // Save user data to localStorage
         localStorage.setItem('user', JSON.stringify(data.user))
-        // Redirect to dashboard
         setTimeout(() => {
           router.push('/dashboard')
         }, 1000)
       } else {
-        setError(data.error || 'Login error')
+        setError(data.message || 'Login error')
+      }
+    } catch (error) {
+      setError('Server connection error')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    setIsLoading(true)
+    setError('')
+
+    try {
+      const response = await fetch('http://localhost:3645/api/auth/google', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ credential: credentialResponse.credential }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setSuccess('Login successful! Redirecting...')
+        localStorage.setItem('user', JSON.stringify(data.user))
+        setTimeout(() => {
+          router.push('/dashboard')
+        }, 1000)
+      } else {
+        setError(data.message || 'Google login failed')
+      }
+    } catch (error) {
+      setError('Server connection error')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, '')
+    if (value.length > 10) value = value.slice(0, 10)
+
+    // Format as 04XX XXX XXX
+    if (value.length >= 4) {
+      value = value.slice(0, 4) + ' ' + value.slice(4)
+    }
+    if (value.length >= 8) {
+      value = value.slice(0, 8) + ' ' + value.slice(8)
+    }
+
+    setRegisterData({ ...registerData, phone: value })
+  }
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      const response = await fetch('http://localhost:3645/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ email: forgotPasswordEmail }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setSuccess(data.message)
+        setForgotPasswordEmail('')
+        setTimeout(() => {
+          setShowForgotPassword(false)
+          setSuccess('')
+        }, 3000)
+      } else {
+        setError(data.error || 'Failed to send reset email')
       }
     } catch (error) {
       setError('Server connection error')
@@ -92,70 +168,59 @@ export default function AuthPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (registerData.password !== registerData.confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+
+    if (!registerData.acceptsTerms) {
+      setError('You must accept the Terms & Conditions and Privacy Policy')
+      return
+    }
+
     setIsLoading(true)
     setError('')
-    
+
     try {
+      // Remove confirmPassword before sending to API
+      const { confirmPassword, ...apiData } = registerData
+
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(registerData),
+        body: JSON.stringify(apiData),
       })
-      
+
       const data = await response.json()
-      
+
       if (response.ok) {
-        setSuccess('Registration successful!')
-        
-        // Автоматический логин после успешной регистрации
-        try {
-          const loginResponse = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-              email: registerData.email,
-              password: registerData.password
-            }),
-          })
-          
-          const loginData = await loginResponse.json()
-          
-          if (loginResponse.ok) {
-            // Сохранить данные пользователя в localStorage
-            localStorage.setItem('user', JSON.stringify(loginData.user))
-            
-            // Перенаправить на дашборд
-            setTimeout(() => {
-              router.push('/dashboard')
-            }, 1000)
-          } else {
-            setError('Registration successful, but auto-login failed. Please log in manually.')
-          }
-        } catch (loginError) {
-          setError('Registration successful, but auto-login failed. Please log in manually.')
-        }
-        
+        setSuccess('Registration successful! Please check your email to verify your account.')
+
+        // Switch to login tab
+        setActiveTab('login')
+
+        // Scroll to top to show message
+        window.scrollTo(0, 0)
+
         // Clear form
         setRegisterData({
           email: '',
           password: '',
+          confirmPassword: '',
           name: '',
           userType: 'INDIVIDUAL',
           phone: '',
-          address: '',
           company: '',
           services: '',
-          isVisibleToClients: true,
-          acceptsJobOffers: true
+          acceptsJobOffers: true,
+          acceptsTerms: false
         })
       } else {
-        setError(data.error || 'Registration error')
+        setError(data.message || 'Registration error')
       }
     } catch (error) {
       setError('Server connection error')
@@ -165,252 +230,365 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">TRAKYTT Validation Portal</h1>
-          <p className="text-gray-600">Automated Source Document Processing & Compliance Verification</p>
-        </div>
-          
-        {error && (
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-red-600 text-sm">{error}</p>
+    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''}>
+      <div className="auth-container">
+        <div className="auth-wrapper">
+          {/* Left Panel: Info (Dark Side) */}
+          <div className="auth-left">
+            <div className="auth-content">
+              {/* Header */}
+              <div>
+                <div className="brand-logo">
+                  <Box size={32} /> TRAKYTT
+                </div>
+                <div style={{ marginTop: '40px' }}>
+                  <h1 style={{ fontSize: '32px', fontWeight: '600', marginBottom: '16px', lineHeight: '1.2' }}>
+                    TRAKYTT Validation Portal
+                  </h1>
+                  <p style={{ fontSize: '18px', fontWeight: '500', marginBottom: '12px', color: '#e4e4e7' }}>
+                    The Compliance-First Platform for Source Document Automation
+                  </p>
+                  <p style={{ fontSize: '16px', color: '#a1a1aa', lineHeight: '1.6' }}>
+                    Upload, validate, and prepare financial documents with automated GST logic,
+                    ABN checks, and compliance-grade verification.
+                  </p>
+                </div>
+              </div>
+
+              {/* Mid Section - Features */}
+              <div style={{ marginTop: '60px', marginBottom: '60px' }}>
+                <div style={{ marginBottom: '32px' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: '#f4f4f5' }}>
+                    Document Verification
+                  </h3>
+                  <p style={{ fontSize: '14px', color: '#a1a1aa', lineHeight: '1.5' }}>
+                    Automated GST logic, ABN checks, vendor lookups & validation.
+                  </p>
+                </div>
+
+                <div style={{ marginBottom: '32px' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: '#f4f4f5' }}>
+                    Multi-Entity Management
+                  </h3>
+                  <p style={{ fontSize: '14px', color: '#a1a1aa', lineHeight: '1.5' }}>
+                    Manage multiple clients & orgs.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: '#f4f4f5' }}>
+                    Analytics & Reports
+                  </h3>
+                  <p style={{ fontSize: '14px', color: '#a1a1aa', lineHeight: '1.5' }}>
+                    Audit-ready summaries & logs.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="footer-copyright" style={{ fontSize: '13px', color: '#71717a', lineHeight: '1.6' }}>
+              <div style={{ marginBottom: '4px' }}>
+                <strong>Early Access Version</strong> - Developed by 3030 Technologies © 2025
+              </div>
+              <div>
+                For testing and evaluation only
+              </div>
+            </div>
           </div>
-        )}
-        
-        {success && (
-          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
-            <p className="text-green-600 text-sm">{success}</p>
-          </div>
-        )}
-        
-        <Tabs defaultValue="login" className="mt-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Login</TabsTrigger>
-            <TabsTrigger value="register">Register</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="login">
-            <Card>
-              <CardHeader>
-                <CardTitle>Sign in to TRAKYTT</CardTitle>
-                <CardDescription>Access your document workspace and continue processing.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="login-email"
-                        type="email"
-                        placeholder="your@email.com"
-                        className="pl-10"
-                        value={loginData.email}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLoginData({...loginData, email: e.target.value})}
-                        required
-                      />
-                    </div>
+
+          {/* Right Panel: Forms (Light Side) */}
+          <div className="auth-right">
+            <div className="auth-header-mobile">
+              <h1><Box size={24} /> TRAKYTT</h1>
+            </div>
+
+            {/* Login Form */}
+            <div className={`auth-form auth-form-login ${activeTab === 'login' ? 'active' : ''}`} id="login-form">
+              <div className="form-header">
+                <h2>Welcome back</h2>
+                <p>Enter your email to sign in to your account</p>
+              </div>
+
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-red-600 text-sm">{error}</p>
+                </div>
+              )}
+
+              {success && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                  <p className="text-green-600 text-sm">{success}</p>
+                </div>
+              )}
+
+              <form onSubmit={handleLogin}>
+                <div className="form-group">
+                  <label htmlFor="login-email">Email</label>
+                  <input
+                    type="email"
+                    id="login-email"
+                    placeholder="m@example.com"
+                    required
+                    value={loginData.email}
+                    onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="login-password">Password</label>
+                  <input
+                    type="password"
+                    id="login-password"
+                    required
+                    value={loginData.password}
+                    onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                  />
+                </div>
+                <button type="submit" className="btn btn-primary btn-block" disabled={isLoading}>
+                  {isLoading ? 'Logging in...' : 'Sign In with Email'}
+                </button>
+              </form>
+
+              <div className="auth-switch" style={{ marginTop: '16px', marginBottom: '16px' }}>
+                <a onClick={() => { setShowForgotPassword(true); setError(''); }}>Forgot password?</a>
+              </div>
+
+              <div className="auth-divider">
+                <span>Or continue with</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => setError('Google login failed')}
+                  useOneTap
+                />
+              </div>
+
+              <div className="auth-switch">
+                Don't have an account? <a onClick={() => { setActiveTab('register'); setError(''); }}>Sign up</a>
+              </div>
+            </div>
+
+            {/* Register Form */}
+            <div className={`auth-form ${activeTab === 'register' ? 'active' : ''}`} id="register-form">
+              <div className="form-header">
+                <h2>Create an account</h2>
+                <p>Enter your email below to create your account</p>
+              </div>
+
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-red-600 text-sm">{error}</p>
+                </div>
+              )}
+
+              <form onSubmit={handleRegister}>
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label htmlFor="register-name">Full Name</label>
+                    <input
+                      type="text"
+                      id="register-name"
+                      placeholder="John Doe"
+                      required
+                      value={registerData.name}
+                      onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
+                    />
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="login-password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Enter password"
-                        className="pl-10 pr-10"
-                        value={loginData.password}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLoginData({...loginData, password: e.target.value})}
-                        required
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
-                        onClick={(e: React.MouseEvent) => {
-                          e.preventDefault()
-                          setShowPassword(!showPassword)
-                        }}
-                      >
-                        {showPassword ? <EyeOff /> : <Eye />}
-                      </button>
-                    </div>
+                  <div className="form-group">
+                    <label htmlFor="register-email">Email</label>
+                    <input
+                      type="email"
+                      id="register-email"
+                      placeholder="m@example.com"
+                      required
+                      value={registerData.email}
+                      onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                    />
                   </div>
-                  
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Logging in...' : 'Sign In Securely'}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="register">
-            <Card>
-              <CardHeader>
-                <CardTitle>Create Account</CardTitle>
-                <CardDescription>
-                  Fill in the information to create a new account
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleRegister} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="register-name">Full Name</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="register-name"
-                        type="text"
-                        placeholder="John Doe"
-                        className="pl-10"
-                        value={registerData.name}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRegisterData({...registerData, name: e.target.value})}
-                        required
-                      />
-                    </div>
+
+                  <div className="form-group">
+                    <label htmlFor="register-password">Password</label>
+                    <input
+                      type="password"
+                      id="register-password"
+                      required
+                      value={registerData.password}
+                      onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                    />
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="register-email">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="register-email"
-                        type="email"
-                        placeholder="your@email.com"
-                        className="pl-10"
-                        value={registerData.email}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRegisterData({...registerData, email: e.target.value})}
-                        required
-                      />
-                    </div>
+                  <div className="form-group">
+                    <label htmlFor="register-confirm">Confirm Password</label>
+                    <input
+                      type="password"
+                      id="register-confirm"
+                      required
+                      value={registerData.confirmPassword}
+                      onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
+                    />
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="register-password">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="register-password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Create password"
-                        className="pl-10 pr-10"
-                        value={registerData.password}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRegisterData({...registerData, password: e.target.value})}
-                        required
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
-                        onClick={(e: React.MouseEvent) => {
-                          e.preventDefault()
-                          setShowPassword(!showPassword)
-                        }}
-                      >
-                        {showPassword ? <EyeOff /> : <Eye />}
-                      </button>
-                    </div>
+
+                  <div className="form-group">
+                    <label htmlFor="register-type">Account Type</label>
+                    <select
+                      id="register-type"
+                      value={registerData.userType}
+                      onChange={(e) => setRegisterData({ ...registerData, userType: e.target.value as 'INDIVIDUAL' | 'BUSINESS' })}
+                    >
+                      <option value="INDIVIDUAL">Individual</option>
+                      <option value="BUSINESS">Business</option>
+                    </select>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="user-type">Account Type</Label>
-                    <Select value={registerData.userType} onValueChange={(value: 'INDIVIDUAL' | 'BUSINESS') => setRegisterData({...registerData, userType: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select account type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="INDIVIDUAL">Individual</SelectItem>
-                        <SelectItem value="BUSINESS">Business</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="form-group">
+                    <label htmlFor="register-phone">Phone (Optional)</label>
+                    <input
+                      type="tel"
+                      id="register-phone"
+                      placeholder="04XX XXX XXX"
+                      value={registerData.phone}
+                      onChange={handlePhoneChange}
+                    />
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="register-phone">Phone (Optional)</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="register-phone"
-                        type="tel"
-                        placeholder="+1 (555) 123-4567"
-                        className="pl-10"
-                        value={registerData.phone}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRegisterData({...registerData, phone: e.target.value})}
-                      />
-                    </div>
-                  </div>
-                  
+
                   {registerData.userType === 'BUSINESS' && (
-                    <div className="space-y-2">
-                      <Label htmlFor="register-company">Company Name</Label>
-                      <div className="relative">
-                        <Building className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input
-                          id="register-company"
-                          type="text"
-                          placeholder="Company Name"
-                          className="pl-10"
-                          value={registerData.company}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRegisterData({...registerData, company: e.target.value})}
-                        />
-                      </div>
+                    <div className="form-group full-width">
+                      <label htmlFor="register-company">Company Name</label>
+                      <input
+                        type="text"
+                        id="register-company"
+                        placeholder="Company Name"
+                        value={registerData.company}
+                        onChange={(e) => setRegisterData({ ...registerData, company: e.target.value })}
+                      />
                     </div>
                   )}
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="register-address">Address (Optional)</Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Textarea
-                        id="register-address"
-                        placeholder="Your address"
-                        className="pl-10 min-h-[80px]"
-                        value={registerData.address}
-                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRegisterData({...registerData, address: e.target.value})}
-                      />
-                    </div>
+                </div>
+
+                <div className="form-checkboxes">
+                  <label className="checkbox-container">
+                    <input
+                      type="checkbox"
+                      id="register-terms"
+                      checked={registerData.acceptsTerms}
+                      onChange={(e) => setRegisterData({ ...registerData, acceptsTerms: e.target.checked })}
+                    />
+                    I agree to the <a href="#" style={{ textDecoration: 'underline' }}>Terms & Conditions</a> and <a href="#" style={{ textDecoration: 'underline' }}>Privacy Policy</a>
+                  </label>
+                  <label className="checkbox-container">
+                    <input
+                      type="checkbox"
+                      id="register-offers"
+                      checked={registerData.acceptsJobOffers}
+                      onChange={(e) => setRegisterData({ ...registerData, acceptsJobOffers: e.target.checked })}
+                    />
+                    Accept job offers from clients
+                  </label>
+                </div>
+
+                <button type="submit" className="btn btn-primary btn-block" disabled={isLoading}>
+                  {isLoading ? 'Creating Account...' : 'Create Account'}
+                </button>
+              </form>
+
+              <div className="auth-divider">
+                <span>Or continue with</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => setError('Google login failed')}
+                />
+              </div>
+
+              <div className="auth-switch">
+                Already have an account? <a onClick={() => { setActiveTab('login'); setError(''); }}>Sign in</a>
+              </div>
+            </div>
+          </div>
+
+          {/* Forgot Password Modal */}
+          {showForgotPassword && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000
+            }}>
+              <div style={{
+                backgroundColor: 'white',
+                padding: '40px',
+                borderRadius: '8px',
+                maxWidth: '400px',
+                width: '90%',
+                position: 'relative'
+              }}>
+                <button
+                  onClick={() => {
+                    setShowForgotPassword(false)
+                    setError('')
+                    setSuccess('')
+                  }}
+                  style={{
+                    position: 'absolute',
+                    top: '16px',
+                    right: '16px',
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '24px',
+                    cursor: 'pointer',
+                    color: '#71717a'
+                  }}
+                >
+                  ×
+                </button>
+
+                <div className="form-header">
+                  <h2>Reset Password</h2>
+                  <p>Enter your email to receive a password reset link</p>
+                </div>
+
+                {error && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-red-600 text-sm">{error}</p>
                   </div>
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="visible-to-clients"
-                        checked={registerData.isVisibleToClients}
-                        onCheckedChange={(checked: boolean) => setRegisterData({...registerData, isVisibleToClients: checked})}
-                      />
-                      <Label htmlFor="visible-to-clients" className="text-sm">
-                        Make my profile visible to clients
-                      </Label>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="accepts-job-offers"
-                        checked={registerData.acceptsJobOffers}
-                        onCheckedChange={(checked: boolean) => setRegisterData({...registerData, acceptsJobOffers: checked})}
-                      />
-                      <Label htmlFor="accepts-job-offers" className="text-sm">
-                        Accept job offers from clients
-                      </Label>
-                    </div>
+                )}
+
+                {success && (
+                  <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                    <p className="text-green-600 text-sm">{success}</p>
                   </div>
-                  
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Creating Account...' : 'Create Account'}
-                  </Button>
+                )}
+
+                <form onSubmit={handleForgotPassword}>
+                  <div className="form-group">
+                    <label htmlFor="forgot-email">Email</label>
+                    <input
+                      type="email"
+                      id="forgot-email"
+                      placeholder="m@example.com"
+                      value={forgotPasswordEmail}
+                      onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <button type="submit" className="btn btn-primary btn-block" disabled={isLoading}>
+                    {isLoading ? 'Sending...' : 'Send Reset Link'}
+                  </button>
                 </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-        <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">Early Access Version — Developed by 3030 Technologie</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </GoogleOAuthProvider >
   )
 }
