@@ -5,6 +5,7 @@ node_modules/
 frontend/.next/
 backend/.next/
 backend/uploads/
+backend/storage/
 frontend/node_modules/
 backend/node_modules/
 
