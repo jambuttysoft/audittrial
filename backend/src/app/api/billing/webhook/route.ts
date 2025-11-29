@@ -200,6 +200,41 @@ export async function POST(request: NextRequest) {
           })
           break
         }
+        case 'checkout.session.async_payment_succeeded': {
+          const session = event.data.object as Stripe.Checkout.Session
+          const invoiceId = session.metadata?.invoiceId || session.client_reference_id || ''
+          if (!invoiceId) break
+          await (prisma as any).invoice.update({
+            where: { id: invoiceId },
+            data: {
+              status: 'PAID',
+              paidAt: new Date(),
+              metadata: {
+                stripeSessionId: session.id,
+                paymentStatus: 'succeeded',
+                async: true,
+              },
+            },
+          })
+          break
+        }
+        case 'checkout.session.async_payment_failed': {
+          const session = event.data.object as Stripe.Checkout.Session
+          const invoiceId = session.metadata?.invoiceId || session.client_reference_id || ''
+          if (!invoiceId) break
+          await (prisma as any).invoice.update({
+            where: { id: invoiceId },
+            data: {
+              status: 'FAILED',
+              metadata: {
+                stripeSessionId: session.id,
+                paymentStatus: 'failed',
+                async: true,
+              },
+            },
+          })
+          break
+        }
         default:
           break
       }
