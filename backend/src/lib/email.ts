@@ -10,6 +10,8 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  logger: true,
+  debug: true,
 })
 
 console.log('📧 Email Service Initialized')
@@ -53,12 +55,33 @@ export async function sendVerificationEmail(email: string, token: string) {
 
   try {
     console.log(`📧 Attempting to send verification email to: ${email}`)
+    console.log('SMTP Config:', {
+      host: process.env.SMTP_HOST || 'smtp.ethereal.email',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: false,
+      from: mailOptions.from,
+    })
+    try {
+      const verifyOk = await transporter.verify()
+      console.log('SMTP Verify:', verifyOk)
+    } catch (verifyErr: any) {
+      console.error('SMTP Verify Error:', {
+        code: verifyErr?.code,
+        responseCode: verifyErr?.responseCode,
+        command: verifyErr?.command,
+        response: verifyErr?.response,
+      })
+    }
     const info = await transporter.sendMail(mailOptions)
     console.log('--------------------------------------------------')
     console.log('📧 Verification Email Sent')
     console.log('To:', email)
     console.log('Message ID:', info.messageId)
     console.log('🔗 Verification Link:', verificationUrl)
+    console.log('SMTP Response:', info.response)
+    console.log('Envelope:', info.envelope)
+    console.log('Accepted:', info.accepted)
+    console.log('Rejected:', info.rejected)
     console.log('--------------------------------------------------')
 
     // For Ethereal testing
@@ -68,7 +91,14 @@ export async function sendVerificationEmail(email: string, token: string) {
 
     return { success: true, messageId: info.messageId }
   } catch (error) {
-    console.error('Error sending verification email:', error)
+    const err: any = error
+    console.error('Error sending verification email:', {
+      code: err?.code,
+      responseCode: err?.responseCode,
+      command: err?.command,
+      response: err?.response,
+      message: err?.message,
+    })
     return { success: false, error }
   }
 }
@@ -107,12 +137,33 @@ export async function sendPasswordResetEmail(email: string, token: string) {
 
   try {
     console.log(`📧 Attempting to send password reset email to: ${email}`)
+    console.log('SMTP Config:', {
+      host: process.env.SMTP_HOST || 'smtp.ethereal.email',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: false,
+      from: mailOptions.from,
+    })
+    try {
+      const verifyOk = await transporter.verify()
+      console.log('SMTP Verify:', verifyOk)
+    } catch (verifyErr: any) {
+      console.error('SMTP Verify Error:', {
+        code: verifyErr?.code,
+        responseCode: verifyErr?.responseCode,
+        command: verifyErr?.command,
+        response: verifyErr?.response,
+      })
+    }
     const info = await transporter.sendMail(mailOptions)
     console.log('--------------------------------------------------')
     console.log('📧 Password Reset Email Sent')
     console.log('To:', email)
     console.log('Message ID:', info.messageId)
     console.log('🔗 Reset Link:', resetUrl)
+    console.log('SMTP Response:', info.response)
+    console.log('Envelope:', info.envelope)
+    console.log('Accepted:', info.accepted)
+    console.log('Rejected:', info.rejected)
     console.log('--------------------------------------------------')
 
     // For Ethereal testing
@@ -122,7 +173,14 @@ export async function sendPasswordResetEmail(email: string, token: string) {
 
     return { success: true, messageId: info.messageId }
   } catch (error) {
-    console.error('Error sending password reset email:', error)
+    const err: any = error
+    console.error('Error sending password reset email:', {
+      code: err?.code,
+      responseCode: err?.responseCode,
+      command: err?.command,
+      response: err?.response,
+      message: err?.message,
+    })
     return { success: false, error }
   }
 }

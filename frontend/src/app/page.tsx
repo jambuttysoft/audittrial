@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Box } from 'lucide-react'
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google'
@@ -30,8 +30,14 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [errorRaw, setErrorRaw] = useState('')
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('')
+  const [loginError, setLoginError] = useState('')
+  const [registerError, setRegisterError] = useState('')
+  const [loginStatus, setLoginStatus] = useState<number | null>(null)
+  const [isResendingLogin, setIsResendingLogin] = useState(false)
+  const [resendDisabledLogin, setResendDisabledLogin] = useState(false)
 
   const [loginData, setLoginData] = useState<LoginData>({
     email: '',
@@ -54,7 +60,7 @@ export default function AuthPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    setError('')
+    setLoginError('')
 
     try {
       const response = await fetch('/api/auth/login', {
@@ -66,7 +72,9 @@ export default function AuthPage() {
         body: JSON.stringify(loginData),
       })
 
-      const data = await response.json()
+      const raw = await response.text()
+      let data: any = undefined
+      try { data = JSON.parse(raw) } catch { data = raw }
 
       if (response.ok) {
         setSuccess('Successful login! Redirecting...')
@@ -75,18 +83,67 @@ export default function AuthPage() {
           router.push('/dashboard')
         }, 1000)
       } else {
-        setError(data.message || 'Login error')
+        let msg = ''
+        if (typeof data === 'string') {
+          msg = data
+        } else if (data && typeof data === 'object') {
+          msg = (
+            (data as any)?.error?.message ||
+            (typeof (data as any)?.error === 'string' ? (data as any).error : '') ||
+            (data as any)?.message ||
+            ''
+          )
+        }
+        if (response.status === 401 || /invalid email|invalid password|incorrect/i.test(msg)) {
+          msg = 'Неверный email или пароль'
+        }
+        if (!msg) msg = 'Ошибка входа'
+        setLoginError(msg)
+        setLoginStatus(response.status)
+        console.error('Auth error', { status: response.status, body: raw, data })
       }
     } catch (error) {
-      setError('Server connection error')
+      setLoginError('Ошибка соединения с сервером')
     } finally {
       setIsLoading(false)
     }
   }
 
+  useEffect(() => {
+    // No long cooldown display; we only block for 60s after a successful resend
+    setResendDisabledLogin(false)
+  }, [loginData.email])
+
+  const handleResendActivationLogin = async () => {
+    const email = loginData.email
+    if (!email) return
+    if (isResendingLogin || resendDisabledLogin) return
+    setLoginError('')
+    setSuccess('')
+    setIsResendingLogin(true)
+    try {
+      const resp = await fetch('/api/auth/resend-verification', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ email })
+      })
+      const raw = await resp.text()
+      let data: any
+      try { data = JSON.parse(raw) } catch { data = raw }
+      if (resp.ok) {
+        setSuccess('Activation sent. Please check your email and click the link')
+        setResendDisabledLogin(true)
+        setTimeout(() => setResendDisabledLogin(false), 60000)
+      } else if (resp.status === 429) {
+        setLoginError('Too many requests. Please try again later')
+      }
+      console.error('Login resend', { status: resp.status, data })
+    } finally {
+      setIsResendingLogin(false)
+    }
+  }
+
   const handleGoogleSuccess = async (credentialResponse: any) => {
     setIsLoading(true)
-    setError('')
+    setLoginError('')
 
     try {
       const response = await fetch('/api/auth/google', {
@@ -98,7 +155,9 @@ export default function AuthPage() {
         body: JSON.stringify({ credential: credentialResponse.credential }),
       })
 
-      const data = await response.json()
+      const raw = await response.text()
+      let data: any = undefined
+      try { data = JSON.parse(raw) } catch { data = raw }
 
       if (response.ok) {
         setSuccess('Login successful! Redirecting...')
@@ -107,10 +166,23 @@ export default function AuthPage() {
           router.push('/dashboard')
         }, 1000)
       } else {
-        setError(data.message || 'Google login failed')
+        let msg = ''
+        if (typeof data === 'string') {
+          msg = data
+        } else if (data && typeof data === 'object') {
+          msg = (
+            (data as any)?.error?.message ||
+            (typeof (data as any)?.error === 'string' ? (data as any).error : '') ||
+            (data as any)?.message ||
+            ''
+          )
+        }
+        if (!msg) msg = 'Сбой входа через Google'
+        setLoginError(msg)
+        console.error('Google auth error', { status: response.status, body: raw, data })
       }
     } catch (error) {
-      setError('Server connection error')
+      setLoginError('Ошибка соединения с сервером')
     } finally {
       setIsLoading(false)
     }
@@ -170,17 +242,18 @@ export default function AuthPage() {
     e.preventDefault()
 
     if (registerData.password !== registerData.confirmPassword) {
-      setError('Passwords do not match')
+      setRegisterError('Passwords do not match')
       return
     }
 
     if (!registerData.acceptsTerms) {
-      setError('You must accept the Terms & Conditions and Privacy Policy')
+      setRegisterError('You must accept the Terms & Conditions and Privacy Policy')
       return
     }
 
     setIsLoading(true)
-    setError('')
+    setRegisterError('')
+    setErrorRaw('')
 
     try {
       // Remove confirmPassword before sending to API
@@ -195,7 +268,9 @@ export default function AuthPage() {
         body: JSON.stringify(apiData),
       })
 
-      const data = await response.json()
+      const raw = await response.text()
+      let data: any = undefined
+      try { data = JSON.parse(raw) } catch { data = raw }
 
       if (response.ok) {
         setSuccess('Registration successful! Please check your email to verify your account.')
@@ -220,10 +295,29 @@ export default function AuthPage() {
           acceptsTerms: false
         })
       } else {
-        setError(data.message || 'Registration error')
+        let msg = ''
+        if (typeof data === 'string') {
+          msg = data
+        } else if (data && typeof data === 'object') {
+          const errField = (data as any)?.error
+          if (typeof errField === 'string') {
+            msg = errField
+          } else if (errField && typeof errField === 'object') {
+            msg = (
+              (Array.isArray(errField?.details) && errField.details[0]?.message) ||
+              errField?.message ||
+              ''
+            )
+          } else {
+            msg = (data as any)?.message || ''
+          }
+        }
+        if (!msg) msg = 'Registration error'
+        setRegisterError(msg)
+        console.error('Register error', { status: response.status, body: raw, data })
       }
     } catch (error) {
-      setError('Server connection error')
+      setRegisterError('Ошибка соединения с сервером')
     } finally {
       setIsLoading(false)
     }
@@ -310,9 +404,21 @@ export default function AuthPage() {
                 <p>Enter your email to sign in to your account</p>
               </div>
 
-              {error && (
+              {loginError && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                  <p className="text-red-600 text-sm">{error}</p>
+                  <p className="text-red-600 text-sm">{loginError}</p>
+                  {loginStatus === 403 && (
+                    <div style={{ marginTop: '8px' }}>
+                      <button
+                        onClick={handleResendActivationLogin}
+                        disabled={!loginData.email || resendDisabledLogin || isResendingLogin}
+                        className="btn btn-secondary"
+                        style={{ backgroundColor: '#09090b', color: 'white', padding: '8px 16px', borderRadius: '6px' }}
+                      >
+                        {isResendingLogin ? 'Sending...' : 'Resend Activation'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -360,13 +466,13 @@ export default function AuthPage() {
               <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <GoogleLogin
                   onSuccess={handleGoogleSuccess}
-                  onError={() => setError('Google login failed')}
+                  onError={() => setLoginError('Сбой входа через Google')}
                   useOneTap
                 />
               </div>
 
               <div className="auth-switch">
-                Don&apos;t have an account? <a onClick={() => { setActiveTab('register'); setError(''); }}>Sign up</a>
+                Don&apos;t have an account? <a onClick={() => { setActiveTab('register'); setLoginError(''); setRegisterError(''); }}>Sign up</a>
               </div>
             </div>
 
@@ -377,11 +483,12 @@ export default function AuthPage() {
                 <p>Enter your email below to create your account</p>
               </div>
 
-              {error && (
+              {registerError && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                  <p className="text-red-600 text-sm">{error}</p>
+                  <p className="text-red-600 text-sm">{registerError}</p>
                 </div>
               )}
+              
 
               <form onSubmit={handleRegister}>
                 <div className="form-grid">
@@ -503,7 +610,7 @@ export default function AuthPage() {
               </div>
 
               <div className="auth-switch">
-                Already have an account? <a onClick={() => { setActiveTab('login'); setError(''); }}>Sign in</a>
+                Already have an account? <a onClick={() => { setActiveTab('login'); setRegisterError(''); setLoginError(''); }}>Sign in</a>
               </div>
             </div>
           </div>

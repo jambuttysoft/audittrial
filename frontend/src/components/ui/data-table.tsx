@@ -105,45 +105,42 @@ export function DataTable<TData, TValue>({ columns, data, defaultVisibleColumnId
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        {table.getSelectedRowModel().rows.length > 0 && bulkActions ? (
+        <Input
+          placeholder="Search..."
+          value={globalFilter}
+          onChange={(e) => setGlobalFilter(e.target.value)}
+          className="max-w-xs"
+        />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">Columns</Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            {table
+              .getAllColumns()
+              .filter((column) => column.getCanHide())
+              .map((column) => {
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                  >
+                    {column.id}
+                  </DropdownMenuCheckboxItem>
+                )
+              })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {bulkActions ? (
           <div className="flex items-center gap-2">
             {bulkActions(table.getSelectedRowModel().rows, () => {
               table.resetRowSelection()
               setRowSelection({})
             })}
           </div>
-        ) : (
-          <>
-            <Input
-              placeholder="Search..."
-              value={globalFilter}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              className="max-w-xs"
-            />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">Columns</Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                {table
-                  .getAllColumns()
-                  .filter((column) => column.getCanHide())
-                  .map((column) => {
-                    return (
-                      <DropdownMenuCheckboxItem
-                        key={column.id}
-                        className="capitalize"
-                        checked={column.getIsVisible()}
-                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                      >
-                        {column.id}
-                      </DropdownMenuCheckboxItem>
-                    )
-                  })}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </>
-        )}
+        ) : null}
         <div className="ml-auto text-sm text-muted-foreground">
           Selected: {Object.keys(rowSelection).length}
         </div>

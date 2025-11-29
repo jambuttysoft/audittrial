@@ -177,6 +177,14 @@ function DashboardContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
+  const formatAbn2Input = (digits: string) => {
+    const d = digits.replace(/[^\d]/g, '').slice(0, 11)
+    const a = d.slice(0, 2)
+    const b = d.slice(2, 5)
+    const c = d.slice(5, 8)
+    const e = d.slice(8, 11)
+    return [a, b, c, e].filter(Boolean).join(' ')
+  }
   const getCurrentQuarterRange = () => {
     const now = new Date()
     const y = now.getFullYear()
@@ -476,24 +484,29 @@ function DashboardContent() {
 
   const handleCompanyChange = useCallback(async (company: Company) => {
     try {
+      if (selectedCompany?.id === company.id) return
       setSelectedCompany(company)
+      try {
+        const url = new URL(window.location.href)
+        url.searchParams.set('company', String(company.id))
+        window.history.replaceState(null, '', url.toString())
+      } catch {}
+      try { localStorage.setItem('lastCompanyId', String(company.id)) } catch {}
       await Promise.all([
         loadCompanyDocuments(company.id),
         loadDigitizedDocuments(company.id),
         loadReviewDocuments(company.id),
         loadReadyDocuments(company.id)
       ])
-      if (user) {
-        await loadCompanies(user)
-      }
     } catch (error) {
       console.error('Error changing company:', error)
     }
-  }, [user, loadCompanyDocuments, loadDigitizedDocuments, loadReviewDocuments, loadReadyDocuments, loadCompanies])
+  }, [selectedCompany?.id, loadCompanyDocuments, loadDigitizedDocuments, loadReviewDocuments, loadReadyDocuments])
 
   useEffect(() => {
     if (selectedCompany) return
     const companyId = searchParams.get('company')
+    const lastCompanyId = (() => { try { return localStorage.getItem('lastCompanyId') || '' } catch { return '' } })()
     if (companies.length === 0) return
     if (companyId) {
       const company = companies.find(c => String(c.id) === companyId)
@@ -506,6 +519,15 @@ function DashboardContent() {
           loadReadyDocuments(company.id)
         ])
       }
+    } else if (lastCompanyId) {
+      const company = companies.find(c => String(c.id) === lastCompanyId) || companies[0]
+      setSelectedCompany(company)
+      Promise.all([
+        loadCompanyDocuments(company.id),
+        loadDigitizedDocuments(company.id),
+        loadReviewDocuments(company.id),
+        loadReadyDocuments(company.id)
+      ])
     } else {
       const company = companies[0]
       setSelectedCompany(company)
@@ -517,6 +539,23 @@ function DashboardContent() {
       ])
     }
   }, [searchParams, companies, selectedCompany, loadCompanyDocuments, loadDigitizedDocuments, loadReviewDocuments, loadReadyDocuments])
+
+  
+
+  useEffect(() => {
+    const onPopstate = () => {
+      try {
+        const url = new URL(window.location.href)
+        const companyId = url.searchParams.get('company')
+        if (!companyId || companies.length === 0) return
+        if (selectedCompany?.id && String(selectedCompany.id) === companyId) return
+        const company = companies.find(c => String(c.id) === companyId)
+        if (company) handleCompanyChange(company)
+      } catch {}
+    }
+    window.addEventListener('popstate', onPopstate)
+    return () => window.removeEventListener('popstate', onPopstate)
+  }, [companies, selectedCompany?.id, handleCompanyChange])
 
 
   // Auto-refresh documents every 5 seconds to track digitization status
@@ -1031,6 +1070,57 @@ function DashboardContent() {
     setIsAddCompanyModalOpen(true)
   }
 
+  const formatAbnInput = (digits: string) => {
+    const d = digits.replace(/[^\d]/g, '').slice(0, 11)
+    const a = d.slice(0, 2)
+    const b = d.slice(2, 5)
+    const c = d.slice(5, 8)
+    const e = d.slice(8, 11)
+    return [a, b, c, e].filter(Boolean).join(' ')
+  }
+
+  const handleCompanyPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let digits = e.target.value.replace(/[^\d]/g, '')
+    if (digits.startsWith('61')) digits = digits.slice(2)
+    if (digits.startsWith('0')) digits = digits.slice(1)
+    let formatted = '+61'
+    if (digits.length > 0) {
+      formatted += ' '
+      const first = digits[0]
+      if (first === '4') {
+        const a = digits.slice(0, 1)
+        const b = digits.slice(1, 4)
+        const c = digits.slice(4, 7)
+        const d = digits.slice(7, 10)
+        formatted += a + (b ? ' ' + b : '') + (c ? ' ' + c : '') + (d ? ' ' + d : '')
+      } else {
+        const a = digits.slice(0, 1)
+        const b = digits.slice(1, 5)
+        const c = digits.slice(5, 9)
+        formatted += a + (b ? ' ' + b : '') + (c ? ' ' + c : '')
+      }
+    }
+    setNewCompanyData({ ...newCompanyData, phone: formatted.trim() })
+  }
+
+  const handleCompanyAbnBlur = async (abn: string) => {
+    const clean = abn.replace(/[^\d]/g, '')
+    if (!/^\d{11}$/.test(clean)) return
+    try {
+      const r = await fetch(`/api/vendors?abn=${clean}`, { credentials: 'include' })
+      if (!r.ok) return
+      const data = await r.json()
+      const name = data.EntityName || (Array.isArray(data.BusinessName) ? (data.BusinessName[0] || '') : '')
+      const addr = [data.AddressState || '', data.AddressPostcode || ''].join(' ').trim()
+      setNewCompanyData(prev => ({
+        ...prev,
+        name: prev.name || name,
+        address: prev.address || addr,
+        abn: formatAbnInput(clean)
+      }))
+    } catch {}
+  }
+
   const handleCreateCompany = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newCompanyData.name.trim() || !user?.id) return
@@ -1045,34 +1135,21 @@ function DashboardContent() {
         credentials: 'include',
         body: JSON.stringify({
           ...newCompanyData,
+          abn: newCompanyData.abn.replace(/[^\d]/g, ''),
           userId: user.id
         }),
       })
 
       if (response.ok) {
-        const newCompany = await response.json()
-        setCompanies(prev => [newCompany, ...prev])
-        
-        toast({
-          title: 'Success',
-          description: 'Company created successfully!'
-        })
-        
-        // Close modal and reset form
-        setIsAddCompanyModalOpen(false)
-        setNewCompanyData({
-          name: '',
-          description: '',
-          email: '',
-          phone: '',
-          address: '',
-          website: '',
-          abn: '',
-          industry: ''
-        })
-        
-        // Navigate to the new company using optimized handler
-        handleCompanyChange(newCompany)
+        const payload = await response.json()
+        const newCompany = payload?.company || payload
+        if (!newCompany || !newCompany.id) {
+          toast({ title: 'Error', description: 'Invalid response while creating company', variant: 'destructive' })
+          return
+        }
+        try { localStorage.setItem('lastCompanyId', String(newCompany.id)) } catch {}
+        window.location.href = `/dashboard?company=${newCompany.id}`
+        return
       } else {
         const errorData = await response.json()
         toast({
@@ -1108,8 +1185,11 @@ function DashboardContent() {
   }
 
   const handleLogout = () => {
+    try {
+      if (selectedCompany?.id) localStorage.setItem('lastCompanyId', String(selectedCompany.id))
+    } catch {}
     localStorage.removeItem('user')
-    window.location.href = '/auth'
+    window.location.href = '/'
   }
 
   // File upload functions
@@ -2292,7 +2372,7 @@ function DashboardContent() {
                     onRowCountChange={setReadyVisibleCount}
                     bulkActions={(rows, clearSelection) => (
                       <>
-                        <Button size="sm" onClick={() => exportReadyRowsToExcel(rows).then(() => clearSelection())} disabled={isExporting}>
+                        <Button size="sm" onClick={() => exportReadyRowsToExcel(rows).then(() => clearSelection())} disabled={!rows.length || isExporting}>
                           {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Export to Excel'}
                         </Button>
                       </>
@@ -2690,15 +2770,7 @@ function DashboardContent() {
                             >
                               Check ASIC Validation
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.preventDefault()
-                                e.stopPropagation()
-                                toast({ title: 'Xero Journal Record', description: 'Xero Journal Record creation feature will be implemented' })
-                              }}
-                            >
-                              Create Xero Journal Entry
-                            </DropdownMenuItem>
+               
                             <DropdownMenuItem
                               onClick={(e) => {
                                 e.preventDefault()
@@ -2730,8 +2802,8 @@ function DashboardContent() {
                     storageKey={key}
                     bulkActions={(rows, clearSelection) => (
                       <>
-                        <Button size="sm" onClick={() => validateSelected(rows).then(() => clearSelection())}>Validate</Button>
-                        <Button size="sm" variant="destructive" onClick={() => handleBulkDeleteSelected(rows)}>Delete</Button>
+                        <Button size="sm" disabled={!rows.length} onClick={() => validateSelected(rows).then(() => clearSelection())}>Validate</Button>
+                        <Button size="sm" variant="destructive" disabled={!rows.length} onClick={() => handleBulkDeleteSelected(rows)}>Delete</Button>
                       </>
                     )}
                     getRowClassName={(row) => validationErrors[row.original.id] ? 'bg-red-50' : ''}
@@ -3478,29 +3550,47 @@ function DashboardContent() {
       {/* Add Company Modal */}
       <Dialog open={isAddCompanyModalOpen} onOpenChange={setIsAddCompanyModalOpen}>
         <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Create New Company</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleCreateCompany} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="company-name">Company Name *</Label>
-                <Input
-                  id="company-name"
-                  value={newCompanyData.name}
-                  onChange={(e) => setNewCompanyData({...newCompanyData, name: e.target.value})}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="company-industry">Industry</Label>
-                <Input
-                  id="company-industry"
-                  value={newCompanyData.industry}
-                  onChange={(e) => setNewCompanyData({...newCompanyData, industry: e.target.value})}
-                />
-              </div>
+        <DialogHeader>
+          <DialogTitle>Create New Company</DialogTitle>
+          <DialogDescription>Enter details to create a new company</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleCreateCompany} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="company-abn">ABN *</Label>
+            <Input
+              id="company-abn"
+              value={newCompanyData.abn}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/[^\d]/g, '')
+                setNewCompanyData({ ...newCompanyData, abn: formatAbnInput(digits) })
+              }}
+              onBlur={(e) => handleCompanyAbnBlur(e.target.value)}
+              required
+              inputMode="numeric"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="company-name">Company Name *</Label>
+              <Input
+                id="company-name"
+                value={newCompanyData.name}
+                disabled
+                readOnly
+                placeholder="Auto-filled from ABN"
+                required
+              />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="company-industry">Industry</Label>
+              <Input
+                id="company-industry"
+                value={newCompanyData.industry}
+                onChange={(e) => setNewCompanyData({...newCompanyData, industry: e.target.value})}
+              />
+            </div>
+          </div>
             
             <div className="space-y-2">
               <Label htmlFor="company-description">Description</Label>
@@ -3512,53 +3602,49 @@ function DashboardContent() {
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="company-email">Email</Label>
-                <Input
-                  id="company-email"
-                  type="email"
-                  value={newCompanyData.email}
-                  onChange={(e) => setNewCompanyData({...newCompanyData, email: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="company-phone">Phone</Label>
-                <Input
-                  id="company-phone"
-                  value={newCompanyData.phone}
-                  onChange={(e) => setNewCompanyData({...newCompanyData, phone: e.target.value})}
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="company-website">Website</Label>
-                <Input
-                  id="company-website"
-                  value={newCompanyData.website}
-                  onChange={(e) => setNewCompanyData({...newCompanyData, website: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="company-abn">ABN</Label>
-                <Input
-                  id="company-abn"
-                  value={newCompanyData.abn}
-                  onChange={(e) => setNewCompanyData({...newCompanyData, abn: e.target.value})}
-                />
-              </div>
-            </div>
-            
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="company-address">Address</Label>
+              <Label htmlFor="company-email">Email</Label>
               <Input
-                id="company-address"
-                value={newCompanyData.address}
-                onChange={(e) => setNewCompanyData({...newCompanyData, address: e.target.value})}
+                id="company-email"
+                type="email"
+                value={newCompanyData.email}
+                onChange={(e) => setNewCompanyData({...newCompanyData, email: e.target.value})}
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="company-phone">Phone *</Label>
+              <Input
+                id="company-phone"
+                value={newCompanyData.phone}
+                onChange={handleCompanyPhoneChange}
+                inputMode="tel"
+                required
+              />
+            </div>
+          </div>
+            
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="company-website">Website</Label>
+              <Input
+                id="company-website"
+                value={newCompanyData.website}
+                onChange={(e) => setNewCompanyData({...newCompanyData, website: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2"></div>
+          </div>
+            
+          <div className="space-y-2">
+            <Label htmlFor="company-address">Address *</Label>
+            <Input
+              id="company-address"
+              value={newCompanyData.address}
+              onChange={(e) => setNewCompanyData({...newCompanyData, address: e.target.value})}
+              required
+            />
+          </div>
             
             <div className="flex justify-end space-x-2">
               <Button type="button" variant="outline" onClick={handleCloseModal}>
@@ -3631,6 +3717,7 @@ export default function DashboardPage() {
 
 // Component for creating a new company
 function CreateCompanyDialog({ onCompanyCreated }: { onCompanyCreated: (userData: UserData) => void }) {
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
   const [companyData, setCompanyData] = useState({
@@ -3644,6 +3731,57 @@ function CreateCompanyDialog({ onCompanyCreated }: { onCompanyCreated: (userData
     industry: ''
   })
   const { toast } = useToast()
+
+  const formatAbn2Input = (digits: string) => {
+    const d = digits.replace(/[^\d]/g, '').slice(0, 11)
+    const a = d.slice(0, 2)
+    const b = d.slice(2, 5)
+    const c = d.slice(5, 8)
+    const e = d.slice(8, 11)
+    return [a, b, c, e].filter(Boolean).join(' ')
+  }
+
+  const handleCompany2PhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let digits = e.target.value.replace(/[^\d]/g, '')
+    if (digits.startsWith('61')) digits = digits.slice(2)
+    if (digits.startsWith('0')) digits = digits.slice(1)
+    let formatted = '+61'
+    if (digits.length > 0) {
+      formatted += ' '
+      const first = digits[0]
+      if (first === '4') {
+        const a = digits.slice(0, 1)
+        const b = digits.slice(1, 4)
+        const c = digits.slice(4, 7)
+        const d = digits.slice(7, 10)
+        formatted += a + (b ? ' ' + b : '') + (c ? ' ' + c : '') + (d ? ' ' + d : '')
+      } else {
+        const a = digits.slice(0, 1)
+        const b = digits.slice(1, 5)
+        const c = digits.slice(5, 9)
+        formatted += a + (b ? ' ' + b : '') + (c ? ' ' + c : '')
+      }
+    }
+    setCompanyData(prev => ({ ...prev, phone: formatted.trim() }))
+  }
+
+  const handleCompany2AbnBlur = async (abn: string) => {
+    const clean = abn.replace(/[^\d]/g, '')
+    if (!/^\d{11}$/.test(clean)) return
+    try {
+      const r = await fetch(`/api/vendors?abn=${clean}`, { credentials: 'include' })
+      if (!r.ok) return
+      const data = await r.json()
+      const name = data.EntityName || (Array.isArray(data.BusinessName) ? (data.BusinessName[0] || '') : '')
+      const addr = [data.AddressState || '', data.AddressPostcode || ''].join(' ').trim()
+      setCompanyData(prev => ({
+        ...prev,
+        name: prev.name || name,
+        address: prev.address || addr,
+        abn: formatAbn2Input(clean)
+      }))
+    } catch {}
+  }
 
   const handleCreateCompany = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -3669,18 +3807,26 @@ function CreateCompanyDialog({ onCompanyCreated }: { onCompanyCreated: (userData
         credentials: 'include',
         body: JSON.stringify({
           ...companyData,
+          abn: companyData.abn.replace(/[^\d]/g, ''),
           userId: user.id
         }),
       })
 
       if (response.ok) {
-        const newCompany = await response.json()
+        const payload = await response.json()
+        const newCompany = payload?.company || payload
+        if (!newCompany || !newCompany.id) {
+          toast({ title: 'Error', description: 'Invalid response while creating company', variant: 'destructive' })
+          return
+        }
         toast({
           title: 'Success',
           description: 'Company created successfully!'
         })
         setIsOpen(false)
-        onCompanyCreated(user)
+        try { localStorage.setItem('lastCompanyId', String(newCompany.id)) } catch {}
+        window.location.href = `/dashboard?company=${newCompany.id}`
+        return
       } else {
         const errorData = await response.json()
         toast({
@@ -3712,15 +3858,33 @@ function CreateCompanyDialog({ onCompanyCreated }: { onCompanyCreated: (userData
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Create New Company</DialogTitle>
+          <DialogDescription>Fill in ABN and details to create company</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleCreateCompany} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="company-abn">ABN *</Label>
+            <Input
+              id="company-abn"
+              value={companyData.abn}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/[^\d]/g, '')
+                setCompanyData({ ...companyData, abn: formatAbn2Input(digits) })
+              }}
+              onBlur={(e) => handleCompany2AbnBlur(e.target.value)}
+              required
+              inputMode="numeric"
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="company-name">Company Name *</Label>
               <Input
                 id="company-name"
                 value={companyData.name}
-                onChange={(e) => setCompanyData({...companyData, name: e.target.value})}
+                disabled
+                readOnly
+                placeholder="Auto-filled from ABN"
                 required
               />
             </div>
@@ -3755,11 +3919,13 @@ function CreateCompanyDialog({ onCompanyCreated }: { onCompanyCreated: (userData
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="company-phone">Phone</Label>
+              <Label htmlFor="company-phone">Phone *</Label>
               <Input
                 id="company-phone"
                 value={companyData.phone}
-                onChange={(e) => setCompanyData({...companyData, phone: e.target.value})}
+                onChange={handleCompany2PhoneChange}
+                inputMode="tel"
+                required
               />
             </div>
           </div>
@@ -3773,22 +3939,16 @@ function CreateCompanyDialog({ onCompanyCreated }: { onCompanyCreated: (userData
                 onChange={(e) => setCompanyData({...companyData, website: e.target.value})}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="company-abn">ABN</Label>
-              <Input
-                id="company-abn"
-                value={companyData.abn}
-                onChange={(e) => setCompanyData({...companyData, abn: e.target.value})}
-              />
-            </div>
+            <div className="space-y-2"></div>
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="company-address">Address</Label>
+            <Label htmlFor="company-address">Address *</Label>
             <Input
               id="company-address"
               value={companyData.address}
               onChange={(e) => setCompanyData({...companyData, address: e.target.value})}
+              required
             />
           </div>
           
