@@ -11,7 +11,8 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "cron:generate-invoices": "node scripts/generateInvoices.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -25,8 +26,11 @@
     "next": "15.4.5",
     "nodemailer": "^7.0.11",
     "openid-client": "^6.6.3",
+    "pdf-lib": "^1.17.1",
+    "pdfkit": "^0.14.0",
     "pg": "^8.16.3",
     "prisma": "6.14.0",
+    "stripe": "^16.12.0",
     "xero-node": "^4.34.0",
     "xlsx": "^0.18.5",
     "zod": "^4.0.14"

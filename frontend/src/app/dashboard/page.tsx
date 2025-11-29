@@ -49,7 +49,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import UserMenu from '@/components/UserMenu'
 import { useRef } from 'react'
 
 // Component for truncated text with tooltip
@@ -485,6 +485,16 @@ function DashboardContent() {
   const handleCompanyChange = useCallback(async (company: Company) => {
     try {
       if (selectedCompany?.id === company.id) return
+      try {
+        if (user?.id) {
+          const r = await fetch(`/api/billing/status?userId=${user.id}`, { credentials: 'include' })
+          const data = await r.json()
+          if (data?.locked) {
+            toast({ title: 'Billing overdue', description: 'Please pay your invoice to switch companies', variant: 'destructive' })
+            return
+          }
+        }
+      } catch {}
       setSelectedCompany(company)
       try {
         const url = new URL(window.location.href)
@@ -501,7 +511,7 @@ function DashboardContent() {
     } catch (error) {
       console.error('Error changing company:', error)
     }
-  }, [selectedCompany?.id, loadCompanyDocuments, loadDigitizedDocuments, loadReviewDocuments, loadReadyDocuments])
+  }, [selectedCompany?.id, user?.id, toast, loadCompanyDocuments, loadDigitizedDocuments, loadReviewDocuments, loadReadyDocuments])
 
   useEffect(() => {
     if (selectedCompany) return
@@ -1457,7 +1467,7 @@ function DashboardContent() {
       toast({ title: 'Error', description: 'Please select a company and sign in', variant: 'destructive' })
       return
     }
-    if (!confirm('Удалить выбранные документы?')) return
+    if (!confirm('Delete Selected Docs')) return
     setIsBulkDeleting(true)
     try {
       const ids = rows.map((r) => r.original.id).filter(Boolean)
@@ -1943,35 +1953,7 @@ function DashboardContent() {
         </div>
         
         {/* User Profile Dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center space-x-2">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback>
-                  {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="hidden md:block text-left">
-                <div className="text-sm font-medium">{user?.name}</div>
-                <div className="text-xs text-muted-foreground">{user?.email}</div>
-              </div>
-              <ChevronDown className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <User className="h-4 w-4 mr-2" />
-              Profile
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <UserMenu user={{ name: user?.name, email: user?.email }} onLogout={handleLogout} />
       </div>
       
       {/* Main content */}

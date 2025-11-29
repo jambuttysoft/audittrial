@@ -64,6 +64,7 @@ model User {
   documents Document[]
   companies Company[]
   digitized Digitized[]
+  invoices  Invoice[]
   
   @@map("users")
 }
@@ -341,4 +342,29 @@ model ExportHistory {
   updatedAt    DateTime @updatedAt
 
   @@map("export_history")
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  periodStart    DateTime
+  periodEnd      DateTime
+  generatedAt    DateTime      @default(now())
+  activeCompanies Int
+  amount         Float
+  status         InvoiceStatus @default(PENDING)
+  paidAt         DateTime?
+  metadata       Json?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("invoices")
 }
