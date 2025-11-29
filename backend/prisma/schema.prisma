@@ -57,6 +57,10 @@ model User {
   xeroTenantId       String?   // Xero tenant/organisation ID
   xeroTenantName     String?   // Xero organisation name
   xeroConnectedAt    DateTime? // When Xero was first connected
+
+  stripeCustomerId       String?  @unique
+  defaultPaymentMethodId String?
+  autoChargeEnabled      Boolean  @default(false)
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

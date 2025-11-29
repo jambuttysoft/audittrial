@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import Stripe from 'stripe'
 import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
 
 export async function OPTIONS(request: NextRequest) {
@@ -48,15 +49,56 @@ export async function GET(request: NextRequest) {
             amount: count * 20,
           },
         })
-        invoices.push({
-          id: inv.id,
-          generatedAt: inv.generatedAt.toISOString().slice(0, 10),
-          periodStart: inv.periodStart.toISOString().slice(0, 10),
-          periodEnd: inv.periodEnd.toISOString().slice(0, 10),
-          activeCompanies: inv.activeCompanies,
-          amount: inv.amount,
-          status: 'UNPAID',
-        })
+        try {
+          const user = await prisma.user.findUnique({ where: { id: userId }, select: { autoChargeEnabled: true, stripeCustomerId: true, defaultPaymentMethodId: true } })
+          const paidCount = await (prisma as any).invoice.count({ where: { userId, status: 'PAID' } })
+          const eligible = !!user?.autoChargeEnabled && !!user?.stripeCustomerId && !!user?.defaultPaymentMethodId && paidCount >= 1 && (inv.amount || 0) > 0
+          if (eligible) {
+            const key = process.env.STRIPE_SECRET_KEY
+            if (key && key.startsWith('sk_')) {
+              const stripe = new Stripe(key)
+              const amountCents = Math.round((inv.amount || 0) * 100)
+              try {
+                const pi = await stripe.paymentIntents.create({
+                  amount: amountCents,
+                  currency: 'aud',
+                  customer: user!.stripeCustomerId!,
+                  payment_method: user!.defaultPaymentMethodId!,
+                  off_session: true,
+                  confirm: true,
+                  description: `Monthly billing ${start.toISOString().slice(0,10)} - ${end.toISOString().slice(0,10)}`,
+                  metadata: { invoiceId: inv.id, userId },
+                })
+                await (prisma as any).invoice.update({
+                  where: { id: inv.id },
+                  data: {
+                    status: 'PAID',
+                    paidAt: new Date(),
+                    metadata: { stripePaymentIntentId: pi.id, offSession: true },
+                  },
+                })
+              } catch (err: any) {
+                const msg = typeof err?.message === 'string' ? err.message : 'off_session_failed'
+                await (prisma as any).invoice.update({
+                  where: { id: inv.id },
+                  data: { status: 'PENDING', metadata: { lastError: msg } },
+                })
+              }
+            }
+          }
+        } catch {}
+        {
+          const latest = await (prisma as any).invoice.findUnique({ where: { id: inv.id } })
+          invoices.push({
+            id: latest.id,
+            generatedAt: latest.generatedAt.toISOString().slice(0, 10),
+            periodStart: latest.periodStart.toISOString().slice(0, 10),
+            periodEnd: latest.periodEnd.toISOString().slice(0, 10),
+            activeCompanies: latest.activeCompanies,
+            amount: latest.amount,
+            status: latest.status === 'PAID' ? 'PAID' : 'UNPAID',
+          })
+        }
       }
       return NextResponse.json({ success: true, invoices }, { headers: corsHeaders })
     } catch {

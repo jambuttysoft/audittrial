@@ -95,15 +95,15 @@ export default function AuthPage() {
           )
         }
         if (response.status === 401 || /invalid email|invalid password|incorrect/i.test(msg)) {
-          msg = 'Неверный email или пароль'
+          msg = 'Incorrect email or password'
         }
-        if (!msg) msg = 'Ошибка входа'
+        if (!msg) msg = 'Login error'
         setLoginError(msg)
         setLoginStatus(response.status)
         console.error('Auth error', { status: response.status, body: raw, data })
       }
     } catch (error) {
-      setLoginError('Ошибка соединения с сервером')
+      setLoginError('Server connection error')
     } finally {
       setIsLoading(false)
     }
@@ -177,12 +177,12 @@ export default function AuthPage() {
             ''
           )
         }
-        if (!msg) msg = 'Сбой входа через Google'
+        if (!msg) msg = 'Google login failed'
         setLoginError(msg)
         console.error('Google auth error', { status: response.status, body: raw, data })
       }
     } catch (error) {
-      setLoginError('Ошибка соединения с сервером')
+      setLoginError('Server connection error')
     } finally {
       setIsLoading(false)
     }
@@ -317,7 +317,7 @@ export default function AuthPage() {
         console.error('Register error', { status: response.status, body: raw, data })
       }
     } catch (error) {
-      setRegisterError('Ошибка соединения с сервером')
+      setRegisterError('Server connection error')
     } finally {
       setIsLoading(false)
     }
@@ -466,7 +466,7 @@ export default function AuthPage() {
               <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <GoogleLogin
                   onSuccess={handleGoogleSuccess}
-                  onError={() => setLoginError('Сбой входа через Google')}
+                  onError={() => setLoginError('Google login failed')}
                   useOneTap
                 />
               </div>

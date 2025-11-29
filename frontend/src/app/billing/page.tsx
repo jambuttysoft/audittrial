@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -19,11 +20,21 @@ type Invoice = {
   pdfUrl?: string | null
 }
 
+type Profile = {
+  id: string
+  email?: string
+  name?: string
+  autoChargeEnabled?: boolean
+  stripeCustomerId?: string | null
+  defaultPaymentMethodId?: string | null
+}
+
 export default function BillingPage() {
   const { toast } = useToast()
   const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3645'
   const [user, setUser] = useState<{ id: string; email?: string; name?: string; avatar?: string } | null>(null)
   const [invoices, setInvoices] = useState<Invoice[]>([])
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isPaying, setIsPaying] = useState<string | null>(null)
 
@@ -49,7 +60,16 @@ export default function BillingPage() {
     }
   }, [user?.id, toast, API_BASE])
 
-  useEffect(() => { loadInvoices() }, [loadInvoices])
+  const loadProfile = useCallback(async () => {
+    if (!user?.id) return
+    try {
+      const r = await fetch(`${API_BASE}/api/profile?userId=${user.id}`, { credentials: 'include' })
+      const data = await r.json()
+      if (data?.profile) setProfile(data.profile as Profile)
+    } catch {}
+  }, [user?.id, API_BASE])
+
+  useEffect(() => { loadInvoices(); loadProfile() }, [loadInvoices, loadProfile])
 
   const unpaid = useMemo(() => invoices.filter(i => i.status === 'UNPAID'), [invoices])
   const paid = useMemo(() => invoices.filter(i => i.status === 'PAID'), [invoices])
@@ -79,6 +99,24 @@ export default function BillingPage() {
     }
   }
 
+  const toggleAutoCharge = async (checked: boolean) => {
+    if (!user?.id) return
+    try {
+      const r = await fetch(`${API_BASE}/api/profile/update`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ userId: user.id, autoChargeEnabled: checked }),
+      })
+      const data = await r.json()
+      if (!r.ok || !data?.success) throw new Error('Update failed')
+      setProfile((p) => (p ? { ...p, autoChargeEnabled: checked } : p))
+      toast({ title: 'Saved', description: checked ? 'Auto-charge enabled' : 'Auto-charge disabled' })
+    } catch {
+      toast({ title: 'Error', description: 'Failed to update auto-charge setting', variant: 'destructive' })
+    }
+  }
+
   const handleLogout = () => {
     localStorage.removeItem('user')
     window.location.href = '/'
@@ -100,6 +138,15 @@ export default function BillingPage() {
           <CardDescription>Pending invoices and payment methods</CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="flex items-center gap-3 mb-4">
+            <Checkbox id="auto-charge" checked={!!profile?.autoChargeEnabled} onCheckedChange={(v) => toggleAutoCharge(!!v)} />
+            <label htmlFor="auto-charge" className="text-sm">
+              Enable auto-charge for future invoices
+            </label>
+            <div className="ml-auto text-xs text-muted-foreground">
+              {profile?.defaultPaymentMethodId ? 'Card on file' : 'No saved card'}
+            </div>
+          </div>
           <div className="flex flex-wrap items-end gap-3 mb-4">
             <Input placeholder="Search invoices" className="max-w-xs" />
             <div className="ml-auto text-sm text-muted-foreground">

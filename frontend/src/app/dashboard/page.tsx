@@ -1450,11 +1450,11 @@ function DashboardContent() {
           loadCompanyDocuments(selectedCompany.id),
           loadDigitizedDocuments(selectedCompany.id),
         ])
-        toast({ title: 'Digitize', description: `${docs.length} документ(а) отправлены на оцифровку` })
+        toast({ title: 'Digitize', description: `${docs.length} document(s) queued for digitization` })
       }
     } catch (e) {
       console.error('Bulk digitize failed', e)
-      toast({ title: 'Digitize failed', description: 'Не удалось выполнить массовую оцифровку', variant: 'destructive' })
+      toast({ title: 'Digitize failed', description: 'Failed to perform bulk digitization', variant: 'destructive' })
     } finally {
       setIsBulkDigitizing(false)
       setBulkDigitizeStart(null)
@@ -1478,10 +1478,10 @@ function DashboardContent() {
       const successCount = results.filter(Boolean).length
       await loadCompanyDocuments(selectedCompany.id)
       await loadDashboardData(user)
-      toast({ title: 'Delete', description: `${successCount}/${ids.length} документ(ов) удалено` })
+      toast({ title: 'Delete', description: `${successCount}/${ids.length} document(s) deleted` })
     } catch (e) {
       console.error('Bulk delete documents failed', e)
-      toast({ title: 'Delete failed', description: 'Не удалось удалить выбранные документы', variant: 'destructive' })
+      toast({ title: 'Delete failed', description: 'Failed to delete selected documents', variant: 'destructive' })
     } finally {
       setIsBulkDeleting(false)
     }
@@ -2002,7 +2002,6 @@ function DashboardContent() {
                   <Button 
                     variant="outline" 
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading}
                     size="sm"
                   >
                     <Upload className="h-4 w-4 mr-2" />
@@ -2116,7 +2115,6 @@ function DashboardContent() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => digitizeDocument(doc.id)}
-                                  disabled={digitizingDocuments.has(doc.id)}
                                 >
                                   {digitizingDocuments.has(doc.id) ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -2161,10 +2159,10 @@ function DashboardContent() {
                       storageKey={key}
                       bulkActions={(rows, clearSelection) => (
                         <>
-                          <Button size="sm" onClick={() => handleBulkDigitizeDocuments(rows).then(() => clearSelection())} disabled={isBulkDigitizing || isBulkDeleting}>
+                          <Button size="sm" onClick={() => handleBulkDigitizeDocuments(rows).then(() => clearSelection())}>
                             {isBulkDigitizing ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Digitize'}
                           </Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleBulkDeleteDocuments(rows).then(() => clearSelection())} disabled={isBulkDigitizing || isBulkDeleting}>
+                          <Button size="sm" variant="destructive" onClick={() => handleBulkDeleteDocuments(rows).then(() => clearSelection())}>
                             {isBulkDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete'}
                           </Button>
                           {isBulkDigitizing && (
@@ -2354,7 +2352,7 @@ function DashboardContent() {
                     onRowCountChange={setReadyVisibleCount}
                     bulkActions={(rows, clearSelection) => (
                       <>
-                        <Button size="sm" onClick={() => exportReadyRowsToExcel(rows).then(() => clearSelection())} disabled={!rows.length || isExporting}>
+                        <Button size="sm" onClick={() => { if (!rows.length) { toast({ title: 'Nothing selected', description: 'Please select at least one row', variant: 'destructive' }) ; return } ; exportReadyRowsToExcel(rows).then(() => clearSelection()) }}>
                           {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Export to Excel'}
                         </Button>
                       </>
@@ -2410,19 +2408,19 @@ function DashboardContent() {
                   </div>
 
                   <div className="flex gap-2 flex-wrap">
-                    <Button onClick={handleXeroDisconnect} disabled={isLoadingXero || isTestingXero} variant="outline" size="sm">
+                    <Button onClick={handleXeroDisconnect} variant="outline" size="sm">
                       <Unlink className="h-4 w-4 mr-2" />
                       {isLoadingXero ? 'Disconnecting...' : 'Disconnect'}
                     </Button>
-                    <Button onClick={handleXeroConnect} disabled={isLoadingXero || isTestingXero} variant="outline" size="sm">
+                    <Button onClick={handleXeroConnect} variant="outline" size="sm">
                       <Link className="h-4 w-4 mr-2" />
                       Reconnect
                     </Button>
-                    <Button onClick={handleXeroTest} disabled={isLoadingXero || isTestingXero} variant="default" size="sm">
+                    <Button onClick={handleXeroTest} variant="default" size="sm">
                       <Search className="h-4 w-4 mr-2" />
                       {isTestingXero ? 'Testing...' : 'Test Connection'}
                     </Button>
-                    <Button onClick={handleGetXeroAccounts} disabled={isLoadingXero || isTestingXero} variant="outline" size="sm">
+                    <Button onClick={handleGetXeroAccounts} variant="outline" size="sm">
                       <Eye className="h-4 w-4 mr-2" />
                       {isTestingXero ? 'Loading...' : 'Get Accounts'}
                     </Button>
@@ -2458,7 +2456,7 @@ function DashboardContent() {
               ) : (
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">Connect your Xero account to automatically sync invoices, expenses, and other financial data.</p>
-                  <Button onClick={handleXeroConnect} disabled={isLoadingXero} className="w-full sm:w-auto">
+                  <Button onClick={handleXeroConnect} className="w-full sm:w-auto">
                     <Link className="h-4 w-4 mr-2" />
                     {isLoadingXero ? 'Connecting...' : 'Connect to Xero'}
                   </Button>
@@ -2784,8 +2782,8 @@ function DashboardContent() {
                     storageKey={key}
                     bulkActions={(rows, clearSelection) => (
                       <>
-                        <Button size="sm" disabled={!rows.length} onClick={() => validateSelected(rows).then(() => clearSelection())}>Validate</Button>
-                        <Button size="sm" variant="destructive" disabled={!rows.length} onClick={() => handleBulkDeleteSelected(rows)}>Delete</Button>
+                        <Button size="sm" onClick={() => { if (!rows.length) { toast({ title: 'Nothing selected', description: 'Please select at least one row', variant: 'destructive' }) ; return } ; validateSelected(rows).then(() => clearSelection()) }}>Validate</Button>
+                        <Button size="sm" variant="destructive" onClick={() => { if (!rows.length) { toast({ title: 'Nothing selected', description: 'Please select at least one row', variant: 'destructive' }) ; return } ; handleBulkDeleteSelected(rows) }}>Delete</Button>
                       </>
                     )}
                     getRowClassName={(row) => validationErrors[row.original.id] ? 'bg-red-50' : ''}
@@ -3632,7 +3630,7 @@ function DashboardContent() {
               <Button type="button" variant="outline" onClick={handleCloseModal}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isCreatingCompany}>
+              <Button type="submit">
                 {isCreatingCompany ? 'Creating...' : 'Create Company'}
               </Button>
             </div>
@@ -3938,7 +3936,7 @@ function CreateCompanyDialog({ onCompanyCreated }: { onCompanyCreated: (userData
             <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit">
               {isLoading ? 'Creating...' : 'Create Company'}
             </Button>
           </div>

@@ -24,7 +24,7 @@ export default function VerifyClient() {
         if (data.verified || (data.message || '').includes('already verified')) {
           setStatus('success'); setMessage(data.message)
           setTimeout(() => { router.push('/') }, 3000)
-        } else { setStatus('error'); setMessage('Ссылка активации устарела') }
+        } else { setStatus('error'); setMessage('Activation link has expired') }
       })
       .catch(() => { setStatus('error'); setMessage('An error occurred during verification') })
   }, [searchParams, router])
@@ -85,7 +85,7 @@ export default function VerifyClient() {
                 <h2 style={{ fontSize: '24px', marginBottom: '16px', color: '#09090b' }}>Verification Failed</h2>
                 <p style={{ color: '#71717a', marginBottom: '20px' }}>{message}</p>
                 <div style={{ marginBottom: '16px' }}>
-                  <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Введите email" className="input" />
+                  <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Enter email" className="input" />
                 </div>
                 {resendError && (
                   <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md"><p className="text-red-600 text-sm">{resendError}</p></div>

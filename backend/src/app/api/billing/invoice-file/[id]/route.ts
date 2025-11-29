@@ -9,11 +9,11 @@ export async function OPTIONS(request: NextRequest) {
   return handleCorsOptions(request.headers.get('origin') || '')
 }
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest, { params }: any) {
   const origin = request.headers.get('origin') || ''
   const corsHeaders = getCorsHeaders(origin)
   try {
-    const { id } = await params
+    const { id } = params
     const inv = await (prisma as any).invoice.findUnique({ where: { id } })
     const path = inv?.metadata?.pdfPath
     if (!path) {

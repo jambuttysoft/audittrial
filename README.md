@@ -1,4 +1,8 @@
 # Document Digitization System
+Stipre webhook wor local dev
+stripe login
+stripe listen --forward-to http://localhost:3645/api/billing/webhook
+
 
 Система цифровизации документов, состоящая из фронтенда и бэкенда.
 
