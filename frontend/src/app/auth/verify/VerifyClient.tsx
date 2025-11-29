@@ -18,7 +18,7 @@ export default function VerifyClient() {
   useEffect(() => {
     const token = searchParams.get('token')
     if (!token) { setStatus('error'); setMessage('No verification token provided'); return }
-    fetch(`http://localhost:3645/api/auth/verify?token=${token}`, { method: 'GET', credentials: 'include' })
+    fetch(`/api/auth/verify?token=${token}`, { method: 'GET', credentials: 'include' })
       .then(res => res.json())
       .then(data => {
         if (data.verified || (data.message || '').includes('already verified')) {
