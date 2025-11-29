@@ -366,7 +366,7 @@ export default function AuthPage() {
               </div>
 
               <div className="auth-switch">
-                Don't have an account? <a onClick={() => { setActiveTab('register'); setError(''); }}>Sign up</a>
+                Don&apos;t have an account? <a onClick={() => { setActiveTab('register'); setError(''); }}>Sign up</a>
               </div>
             </div>
 
