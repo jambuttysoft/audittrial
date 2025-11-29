@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
 import { prisma } from '@/lib/prisma'
 import Stripe from 'stripe'
+import { sendInvoicePaidEmail } from '@/lib/email'
 import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { join } from 'path'
 
@@ -157,6 +158,16 @@ export async function POST(request: NextRequest) {
               },
             },
           })
+          if (user?.email) {
+            await sendInvoicePaidEmail({
+              to: user.email,
+              invoiceId: inv.id,
+              periodStart: new Date(inv.periodStart),
+              periodEnd: new Date(inv.periodEnd),
+              amount: Number(inv.amount || 0),
+              filePath,
+            })
+          }
           break
         }
         case 'payment_intent.succeeded': {
@@ -252,6 +263,17 @@ export async function POST(request: NextRequest) {
               },
             },
           })
+          const user2 = await prisma.user.findUnique({ where: { id: inv.userId }, select: { email: true } })
+          if (user2?.email) {
+            await sendInvoicePaidEmail({
+              to: user2.email,
+              invoiceId: inv.id,
+              periodStart: new Date(inv.periodStart),
+              periodEnd: new Date(inv.periodEnd),
+              amount: Number(inv.amount || 0),
+              filePath,
+            })
+          }
           break
         }
         case 'payment_intent.payment_failed': {

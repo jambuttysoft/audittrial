@@ -184,3 +184,46 @@ export async function sendPasswordResetEmail(email: string, token: string) {
     return { success: false, error }
   }
 }
+
+// Send invoice email with PDF attachment
+export async function sendInvoicePaidEmail(params: {
+  to: string
+  invoiceId: string
+  periodStart: Date
+  periodEnd: Date
+  amount: number
+  filePath: string
+}) {
+  const { to, invoiceId, periodStart, periodEnd, amount, filePath } = params
+  const mailOptions = {
+    from: process.env.SMTP_FROM || 'Billing <noreply@trakytt.com>',
+    to,
+    subject: `Payment received — Invoice ${invoiceId}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 640px; margin:0 auto;">
+        <h2 style="color:#0f172a;">Thank you for your payment</h2>
+        <p>Your payment has been successfully processed. Please find your invoice attached.</p>
+        <table style="margin-top:16px; font-size:14px;">
+          <tr><td style="color:#64748b;">Invoice:</td><td><strong>${invoiceId}</strong></td></tr>
+          <tr><td style="color:#64748b;">Period:</td><td><strong>${periodStart.toISOString().slice(0,10)} — ${periodEnd.toISOString().slice(0,10)}</strong></td></tr>
+          <tr><td style="color:#64748b;">Amount:</td><td><strong>$${Number(amount).toFixed(2)} AUD</strong></td></tr>
+        </table>
+        <p style="margin-top:16px; color:#334155;">We appreciate your business and thank you for using our service.</p>
+      </div>
+    `,
+    attachments: [
+      {
+        filename: `invoice_${invoiceId}.pdf`,
+        path: filePath,
+        contentType: 'application/pdf',
+      },
+    ],
+  } as any
+
+  try {
+    await transporter.sendMail(mailOptions)
+    return { success: true }
+  } catch (error) {
+    return { success: false, error }
+  }
+}
