@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       const stripe = new Stripe(secret)
       const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3646'
       const amountCents = Math.round(inv.amount * 100)
-      const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, stripeCustomerId: true } })
+      const user: any = await prisma.user.findUnique({ where: { id: userId } })
 
       let customerId = user?.stripeCustomerId || undefined
       if (!customerId && user?.email) {
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
           metadata: { userId }
         })
         customerId = customer.id
-        await prisma.user.update({ where: { id: userId }, data: { stripeCustomerId: customerId } })
+        await (prisma as any).user.update({ where: { id: userId }, data: { stripeCustomerId: customerId } })
       }
 
       const session = await stripe.checkout.sessions.create({

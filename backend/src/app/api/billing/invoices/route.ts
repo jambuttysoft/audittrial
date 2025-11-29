@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
           },
         })
         try {
-          const user = await prisma.user.findUnique({ where: { id: userId }, select: { autoChargeEnabled: true, stripeCustomerId: true, defaultPaymentMethodId: true } })
+          const user = await prisma.user.findUnique({ where: { id: userId } }) as any
           const paidCount = await (prisma as any).invoice.count({ where: { userId, status: 'PAID' } })
           const eligible = !!user?.autoChargeEnabled && !!user?.stripeCustomerId && !!user?.defaultPaymentMethodId && paidCount >= 1 && (inv.amount || 0) > 0
           if (eligible) {

@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
           if (customerId) {
             const inv = await (prisma as any).invoice.findUnique({ where: { id: invoiceId } })
             if (inv) {
-              await prisma.user.update({ where: { id: inv.userId }, data: { stripeCustomerId: customerId } })
+              await (prisma as any).user.update({ where: { id: inv.userId }, data: { stripeCustomerId: customerId } })
             }
           }
           if (session.payment_intent) {
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
               if (pmId && customerId) {
                 const inv = await (prisma as any).invoice.findUnique({ where: { id: invoiceId } })
                 if (inv) {
-                  await prisma.user.update({ where: { id: inv.userId }, data: { defaultPaymentMethodId: pmId, autoChargeEnabled: true } })
+                  await (prisma as any).user.update({ where: { id: inv.userId }, data: { defaultPaymentMethodId: pmId, autoChargeEnabled: true } })
                 }
               }
             } catch {}
