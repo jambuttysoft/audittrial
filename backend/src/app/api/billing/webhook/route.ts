@@ -92,22 +92,57 @@ export async function POST(request: NextRequest) {
           const pdfDoc = await PDFDocument.create()
           const page = pdfDoc.addPage([595.28, 841.89])
           const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
-          let y = 800
-          const draw = (text: string, size = 12) => {
-            page.drawText(text, { x: 50, y, size, font, color: rgb(0, 0, 0) })
-            y -= size + 8
-          }
-          draw('TRAKYYT Invoice', 18)
-          draw(`Invoice ID: ${inv.id}`)
-          draw(`Date: ${new Date(inv.generatedAt).toISOString().slice(0,10)}`)
-          draw(`Period: ${new Date(inv.periodStart).toISOString().slice(0,10)} - ${new Date(inv.periodEnd).toISOString().slice(0,10)}`)
-          draw(`User: ${user?.email || inv.userId}`)
-          draw(`Active Companies: ${inv.activeCompanies}`)
-          draw(`Amount: $${Number(inv.amount).toFixed(2)} AUD`)
-          draw(`Status: PAID`)
-          draw('Payment Details')
-          draw(`Stripe Session: ${session.id}`)
-          draw(`Payment Status: ${session.payment_status}`)
+          const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+          const brand = 'TRAKYYT'
+          const companyName = process.env.COMPANY_NAME || 'TRAKYYT Pty Ltd'
+          const companyAddress = process.env.COMPANY_ADDRESS || 'Australia'
+          const companyVat = process.env.COMPANY_VAT || ''
+          const customerName = (user as any)?.name || (user?.email || inv.userId)
+          const customerCompany = (user as any)?.company || ''
+          const customerAddress = (user as any)?.address || ''
+          page.drawRectangle({ x: 0, y: 800, width: 595.28, height: 20, color: rgb(0.2, 0.3, 0.9) })
+          page.drawText(brand, { x: 30, y: 805, size: 14, font: bold, color: rgb(1, 1, 1) })
+          page.drawText('Date', { x: 420, y: 810, size: 9, font: font, color: rgb(1,1,1) })
+          page.drawText(new Date(inv.generatedAt).toISOString().slice(0,10), { x: 420, y: 800, size: 10, font: bold, color: rgb(1,1,1) })
+          page.drawText('Invoice #', { x: 500, y: 810, size: 9, font: font, color: rgb(1,1,1) })
+          page.drawText(inv.id, { x: 500, y: 800, size: 10, font: bold, color: rgb(1,1,1) })
+          page.drawRectangle({ x: 0, y: 740, width: 595.28, height: 60, color: rgb(0.95,0.97,1) })
+          page.drawText('Supplier', { x: 30, y: 780, size: 11, font: bold })
+          page.drawText(companyName, { x: 30, y: 765, size: 10, font: font })
+          if (companyVat) page.drawText(`VAT: ${companyVat}`, { x: 30, y: 752, size: 9, font: font })
+          page.drawText(companyAddress, { x: 30, y: 739, size: 9, font: font })
+          page.drawText('Customer', { x: 320, y: 780, size: 11, font: bold })
+          page.drawText(customerCompany || customerName, { x: 320, y: 765, size: 10, font: font })
+          page.drawText(customerName, { x: 320, y: 752, size: 9, font: font })
+          if (customerAddress) page.drawText(customerAddress, { x: 320, y: 739, size: 9, font: font })
+          const headersY = 710
+          page.drawText('#', { x: 35, y: headersY, size: 10, font: bold })
+          page.drawText('Product', { x: 60, y: headersY, size: 10, font: bold })
+          page.drawText('Price', { x: 300, y: headersY, size: 10, font: bold })
+          page.drawText('Qty', { x: 360, y: headersY, size: 10, font: bold })
+          page.drawText('Subtotal', { x: 410, y: headersY, size: 10, font: bold })
+          page.drawText('Total', { x: 500, y: headersY, size: 10, font: bold })
+          page.drawLine({ start: { x: 30, y: headersY-5 }, end: { x: 565, y: headersY-5 }, color: rgb(0.2,0.3,0.9) })
+          const unit = 20
+          const qty = Number(inv.activeCompanies || 0)
+          const subtotal = unit * qty
+          page.drawText('1.', { x: 35, y: 690, size: 10, font: font })
+          page.drawText(`Monthly subscription (${qty} active companies)`, { x: 60, y: 690, size: 10, font: font })
+          page.drawText(`$${unit.toFixed(2)}`, { x: 300, y: 690, size: 10, font: font })
+          page.drawText(String(qty), { x: 360, y: 690, size: 10, font: font })
+          page.drawText(`$${subtotal.toFixed(2)}`, { x: 410, y: 690, size: 10, font: font })
+          page.drawText(`$${subtotal.toFixed(2)}`, { x: 500, y: 690, size: 10, font: font })
+          page.drawLine({ start: { x: 30, y: 675 }, end: { x: 565, y: 675 }, color: rgb(0.85,0.85,0.9) })
+          page.drawText('Net total:', { x: 400, y: 650, size: 10, font: font, color: rgb(0.4,0.4,0.4) })
+          page.drawText(`$${subtotal.toFixed(2)}`, { x: 500, y: 650, size: 11, font: bold, color: rgb(0.1,0.2,0.8) })
+          page.drawText('GST:', { x: 400, y: 633, size: 10, font: font, color: rgb(0.4,0.4,0.4) })
+          page.drawText('$0.00', { x: 500, y: 633, size: 11, font: bold, color: rgb(0.1,0.2,0.8) })
+          page.drawRectangle({ x: 395, y: 600, width: 170, height: 24, color: rgb(0.2,0.3,0.9) })
+          page.drawText('Total:', { x: 405, y: 607, size: 11, font: bold, color: rgb(1,1,1) })
+          page.drawText(`$${subtotal.toFixed(2)}`, { x: 470, y: 607, size: 11, font: bold, color: rgb(1,1,1) })
+          page.drawText('Payment', { x: 30, y: 570, size: 11, font: bold })
+          page.drawText('Paid via Stripe', { x: 30, y: 555, size: 10, font: font })
+          page.drawText(`Session: ${session.id}`, { x: 30, y: 542, size: 9, font: font })
           const pdfBytes = await pdfDoc.save()
           writeFileSync(filePath, pdfBytes)
 
@@ -152,24 +187,59 @@ export async function POST(request: NextRequest) {
           const pdfDoc = await PDFDocument.create()
           const page = pdfDoc.addPage([595.28, 841.89])
           const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
-          let y = 800
-          const draw = (text: string, size = 12) => {
-            page.drawText(text, { x: 50, y, size, font, color: rgb(0, 0, 0) })
-            y -= size + 8
-          }
-          draw('TRAKYYT Invoice', 18)
-          draw(`Invoice ID: ${inv.id}`)
-          draw(`Date: ${new Date(inv.generatedAt).toISOString().slice(0,10)}`)
-          draw(`Period: ${new Date(inv.periodStart).toISOString().slice(0,10)} - ${new Date(inv.periodEnd).toISOString().slice(0,10)}`)
-          draw(`User: ${user?.email || inv.userId}`)
-          draw(`Active Companies: ${inv.activeCompanies}`)
-          draw(`Amount: $${Number(inv.amount).toFixed(2)} AUD`)
-          draw(`Status: PAID`)
-          draw('Payment Details')
-          draw(`Payment Intent: ${pi.id}`)
-          draw(`Payment Status: succeeded`)
-          const pdfBytes = await pdfDoc.save()
-          writeFileSync(filePath, pdfBytes)
+          const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+          const brand = 'TRAKYYT'
+          const companyName = process.env.COMPANY_NAME || 'TRAKYYT Pty Ltd'
+          const companyAddress = process.env.COMPANY_ADDRESS || 'Australia'
+          const companyVat = process.env.COMPANY_VAT || ''
+          const customerName = (user as any)?.name || (user?.email || inv.userId)
+          const customerCompany = (user as any)?.company || ''
+          const customerAddress = (user as any)?.address || ''
+          page.drawRectangle({ x: 0, y: 800, width: 595.28, height: 20, color: rgb(0.2, 0.3, 0.9) })
+          page.drawText(brand, { x: 30, y: 805, size: 14, font: bold, color: rgb(1, 1, 1) })
+          page.drawText('Date', { x: 420, y: 810, size: 9, font: font, color: rgb(1,1,1) })
+          page.drawText(new Date(inv.generatedAt).toISOString().slice(0,10), { x: 420, y: 800, size: 10, font: bold, color: rgb(1,1,1) })
+          page.drawText('Invoice #', { x: 500, y: 810, size: 9, font: font, color: rgb(1,1,1) })
+          page.drawText(inv.id, { x: 500, y: 800, size: 10, font: bold, color: rgb(1,1,1) })
+          page.drawRectangle({ x: 0, y: 740, width: 595.28, height: 60, color: rgb(0.95,0.97,1) })
+          page.drawText('Supplier', { x: 30, y: 780, size: 11, font: bold })
+          page.drawText(companyName, { x: 30, y: 765, size: 10, font: font })
+          if (companyVat) page.drawText(`VAT: ${companyVat}`, { x: 30, y: 752, size: 9, font: font })
+          page.drawText(companyAddress, { x: 30, y: 739, size: 9, font: font })
+          page.drawText('Customer', { x: 320, y: 780, size: 11, font: bold })
+          page.drawText(customerCompany || customerName, { x: 320, y: 765, size: 10, font: font })
+          page.drawText(customerName, { x: 320, y: 752, size: 9, font: font })
+          if (customerAddress) page.drawText(customerAddress, { x: 320, y: 739, size: 9, font: font })
+          const headersY2 = 710
+          page.drawText('#', { x: 35, y: headersY2, size: 10, font: bold })
+          page.drawText('Product', { x: 60, y: headersY2, size: 10, font: bold })
+          page.drawText('Price', { x: 300, y: headersY2, size: 10, font: bold })
+          page.drawText('Qty', { x: 360, y: headersY2, size: 10, font: bold })
+          page.drawText('Subtotal', { x: 410, y: headersY2, size: 10, font: bold })
+          page.drawText('Total', { x: 500, y: headersY2, size: 10, font: bold })
+          page.drawLine({ start: { x: 30, y: headersY2-5 }, end: { x: 565, y: headersY2-5 }, color: rgb(0.2,0.3,0.9) })
+          const unit2 = 20
+          const qty2 = Number(inv.activeCompanies || 0)
+          const subtotal2 = unit2 * qty2
+          page.drawText('1.', { x: 35, y: 690, size: 10, font: font })
+          page.drawText(`Monthly subscription (${qty2} active companies)`, { x: 60, y: 690, size: 10, font: font })
+          page.drawText(`$${unit2.toFixed(2)}`, { x: 300, y: 690, size: 10, font: font })
+          page.drawText(String(qty2), { x: 360, y: 690, size: 10, font: font })
+          page.drawText(`$${subtotal2.toFixed(2)}`, { x: 410, y: 690, size: 10, font: font })
+          page.drawText(`$${subtotal2.toFixed(2)}`, { x: 500, y: 690, size: 10, font: font })
+          page.drawLine({ start: { x: 30, y: 675 }, end: { x: 565, y: 675 }, color: rgb(0.85,0.85,0.9) })
+          page.drawText('Net total:', { x: 400, y: 650, size: 10, font: font, color: rgb(0.4,0.4,0.4) })
+          page.drawText(`$${subtotal2.toFixed(2)}`, { x: 500, y: 650, size: 11, font: bold, color: rgb(0.1,0.2,0.8) })
+          page.drawText('GST:', { x: 400, y: 633, size: 10, font: font, color: rgb(0.4,0.4,0.4) })
+          page.drawText('$0.00', { x: 500, y: 633, size: 11, font: bold, color: rgb(0.1,0.2,0.8) })
+          page.drawRectangle({ x: 395, y: 600, width: 170, height: 24, color: rgb(0.2,0.3,0.9) })
+          page.drawText('Total:', { x: 405, y: 607, size: 11, font: bold, color: rgb(1,1,1) })
+          page.drawText(`$${subtotal2.toFixed(2)}`, { x: 470, y: 607, size: 11, font: bold, color: rgb(1,1,1) })
+          page.drawText('Payment', { x: 30, y: 570, size: 11, font: bold })
+          page.drawText('Paid via Stripe', { x: 30, y: 555, size: 10, font: font })
+          page.drawText(`Payment Intent: ${pi.id}`, { x: 30, y: 542, size: 9, font: font })
+          const pdfBytes2 = await pdfDoc.save()
+          writeFileSync(filePath, pdfBytes2)
           const relativePath = ['storage', 'invoices', 'paid', inv.userId, fileName].join('/')
           await (prisma as any).invoice.update({
             where: { id: invoiceId },

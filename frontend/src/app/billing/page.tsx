@@ -220,7 +220,7 @@ export default function BillingPage() {
                       <div className="flex items-center gap-2">
                         <Badge variant={inv.status === 'PAID' ? 'default' : 'destructive'}>{inv.status}</Badge>
                         {inv.status === 'PAID' && inv.pdfUrl ? (
-                          <Button size="sm" variant="outline" onClick={() => { try { window.open(inv.pdfUrl!, '_blank') } catch {} }}>
+                          <Button size="sm" variant="outline" onClick={() => { try { const href = new URL(inv.pdfUrl!, window.location.origin).toString(); window.open(href, '_blank') } catch {} }}>
                             Download PDF
                           </Button>
                         ) : null}
