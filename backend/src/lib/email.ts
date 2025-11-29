@@ -12,6 +12,11 @@ const transporter = nodemailer.createTransport({
   },
 })
 
+console.log('📧 Email Service Initialized')
+console.log('SMTP Host:', process.env.SMTP_HOST || 'smtp.ethereal.email')
+console.log('SMTP Port:', process.env.SMTP_PORT || '587')
+console.log('SMTP User:', process.env.SMTP_USER ? '(Set)' : '(Not Set)')
+
 // Generate random token
 export function generateToken(): string {
   return crypto.randomBytes(32).toString('hex')
@@ -47,6 +52,7 @@ export async function sendVerificationEmail(email: string, token: string) {
   }
 
   try {
+    console.log(`📧 Attempting to send verification email to: ${email}`)
     const info = await transporter.sendMail(mailOptions)
     console.log('--------------------------------------------------')
     console.log('📧 Verification Email Sent')
@@ -100,6 +106,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
   }
 
   try {
+    console.log(`📧 Attempting to send password reset email to: ${email}`)
     const info = await transporter.sendMail(mailOptions)
     console.log('--------------------------------------------------')
     console.log('📧 Password Reset Email Sent')

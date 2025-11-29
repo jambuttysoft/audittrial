@@ -30,6 +30,8 @@ export async function POST(request: NextRequest) {
     const origin = request.headers.get('origin');
     const corsHeaders = getCorsHeaders(origin);
 
+    console.log('📝 Registration Request Received')
+
     const body: RegisterRequest = await request.json();
     const {
       email,
@@ -137,7 +139,9 @@ export async function POST(request: NextRequest) {
 
     // Send verification email for non-OAuth users
     if (!isOAuthUser && verificationToken) {
-      await sendVerificationEmail(email, verificationToken);
+      console.log(`📧 Triggering verification email for: ${email}`)
+      const emailResult = await sendVerificationEmail(email, verificationToken);
+      console.log('📧 Verification email result:', emailResult)
     }
 
     // Automatically create a company if user is BUSINESS type or company name is provided

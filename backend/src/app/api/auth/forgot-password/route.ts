@@ -14,6 +14,8 @@ export async function POST(request: NextRequest) {
         const origin = request.headers.get('origin');
         const corsHeaders = getCorsHeaders(origin);
 
+        console.log('📝 Password Reset Request Received')
+
         const { email } = await request.json();
 
         if (!email) {
@@ -50,7 +52,9 @@ export async function POST(request: NextRequest) {
         });
 
         // Send password reset email
-        await sendPasswordResetEmail(email, resetToken);
+        console.log(`📧 Triggering password reset email for: ${email}`)
+        const emailResult = await sendPasswordResetEmail(email, resetToken);
+        console.log('📧 Password reset email result:', emailResult)
 
         return NextResponse.json(
             { message: 'If an account exists with this email, a password reset link has been sent.' },
