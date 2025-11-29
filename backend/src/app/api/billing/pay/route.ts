@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
         success_url: `${baseUrl}/billing?paid=1&invoiceId=${inv.id}&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/billing?cancelled=1&invoiceId=${inv.id}`,
         currency: 'aud',
+        client_reference_id: inv.id,
         ...(customerId ? { customer: customerId } : { customer_email: user?.email || undefined }),
         line_items: [
           {

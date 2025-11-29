@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       switch (event.type) {
         case 'checkout.session.completed': {
           const session = event.data.object as Stripe.Checkout.Session
-          const invoiceId = session.metadata?.invoiceId
+          const invoiceId = session.metadata?.invoiceId || session.client_reference_id || ''
           if (!invoiceId) break
 
           // Persist Stripe customer and default payment method
