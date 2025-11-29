@@ -57,6 +57,8 @@ export async function POST(request: NextRequest) {
               const pi = await stripe.paymentIntents.retrieve(piId)
               const pmId = typeof pi.payment_method === 'string' ? pi.payment_method : (pi.payment_method as any)?.id
               if (pmId && customerId) {
+                try { await stripe.paymentMethods.attach(pmId, { customer: customerId }) } catch {}
+                try { await stripe.customers.update(customerId, { invoice_settings: { default_payment_method: pmId } }) } catch {}
                 const inv = await (prisma as any).invoice.findUnique({ where: { id: invoiceId } })
                 if (inv) {
                   await (prisma as any).user.update({ where: { id: inv.userId }, data: { defaultPaymentMethodId: pmId, autoChargeEnabled: true } })
