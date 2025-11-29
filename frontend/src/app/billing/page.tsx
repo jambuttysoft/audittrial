@@ -49,7 +49,7 @@ export default function BillingPage() {
     if (!user?.id) return
     setIsLoading(true)
     try {
-      const r = await fetch(`${API_BASE}/api/billing/invoices?userId=${user.id}`, { credentials: 'include' })
+      const r = await fetch(`/api/billing/invoices?userId=${user.id}`, { credentials: 'include' })
       const data = await r.json()
       const list: Invoice[] = data?.invoices || []
       setInvoices(list)
@@ -63,7 +63,7 @@ export default function BillingPage() {
   const loadProfile = useCallback(async () => {
     if (!user?.id) return
     try {
-      const r = await fetch(`${API_BASE}/api/profile?userId=${user.id}`, { credentials: 'include' })
+      const r = await fetch(`/api/profile?userId=${user.id}`, { credentials: 'include' })
       const data = await r.json()
       if (data?.profile) setProfile(data.profile as Profile)
     } catch {}
@@ -78,7 +78,7 @@ export default function BillingPage() {
     if (!user?.id) return
     setIsPaying(inv.id)
     try {
-      const r = await fetch(`${API_BASE}/api/billing/pay`, { 
+      const r = await fetch(`/api/billing/pay`, { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -102,7 +102,7 @@ export default function BillingPage() {
   const toggleAutoCharge = async (checked: boolean) => {
     if (!user?.id) return
     try {
-      const r = await fetch(`${API_BASE}/api/profile/update`, {
+      const r = await fetch(`/api/profile/update`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

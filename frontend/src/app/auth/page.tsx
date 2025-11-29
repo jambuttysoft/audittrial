@@ -27,7 +27,7 @@ export default function Page() {
     if (!email || !password || !name) { setError('Please fill in all fields'); return }
     setIsLoading(true)
   try {
-      const resp = await fetch('http://localhost:3645/api/auth/register', {
+      const resp = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
