@@ -124,8 +124,11 @@ export async function POST(request: NextRequest) {
     }
 
     for (const doc of docs) {
+      let stage = 'preflight'
       try {
+        stage = 'ensureContact'
         const contact = await ensureContact(accountingApi, tenantId, doc.vendorName || 'Unknown Supplier', doc.vendorAbn || undefined)
+        stage = 'resolveAccount'
         const accountCode = await resolveExpenseAccountCode(accountingApi, tenantId, doc.expenseCategory || null)
 
         const taxAmountNum = toNum(doc.taxAmount)
@@ -141,6 +144,7 @@ export async function POST(request: NextRequest) {
 
         const dateStr = (doc.purchaseDate ? new Date(doc.purchaseDate) : new Date()).toISOString().slice(0,10)
 
+        stage = 'compose'
         if (exportMode === 'bill') {
           const dueStr = (doc.purchaseDate ? new Date(doc.purchaseDate.getTime() + 14 * 24 * 3600 * 1000) : new Date(Date.now() + 14 * 24 * 3600 * 1000)).toISOString().slice(0,10)
           const invoice = {
@@ -164,6 +168,7 @@ export async function POST(request: NextRequest) {
             const fileNameAttach = doc.originalName || doc.fileName || `receipt-${doc.originalDocumentId}`
             exportRequests.push({ endpoint: 'createInvoices', originalDocumentId: doc.originalDocumentId, body: invPayload, attachment: pathStr ? { fileName: fileNameAttach, path: pathStr } : undefined, audit: { hasGst, taxAmount: taxAmountNum, net: netRounded, gross: grossRounded, used: 'net' } })
           }
+          stage = 'createInvoice'
           const res = await accountingApi.createInvoices(tenantId, invPayload)
           const created = res?.body?.invoices?.[0]
           if (!created) throw new Error('Xero did not return created invoice')
@@ -174,10 +179,12 @@ export async function POST(request: NextRequest) {
               const fileNameAttach = doc.originalName || doc.fileName || `receipt-${doc.originalDocumentId}`
               const bodyStream = createReadStream(pathStr)
               const headers = doc.mimeType ? { headers: { 'Content-Type': doc.mimeType } } : undefined
+              stage = 'attachInvoice'
               await accountingApi.createInvoiceAttachmentByFileName(tenantId, created.invoiceID, fileNameAttach, bodyStream, undefined, true, headers)
             }
           } catch {}
         } else {
+          stage = 'resolveBankAccount'
           const bankAccountID = await resolveBankAccountID()
           if (!bankAccountID) throw new Error('No active bank account found in Xero')
           const bankTransaction = {
@@ -201,6 +208,7 @@ export async function POST(request: NextRequest) {
             const fileNameAttach = doc.originalName || doc.fileName || `receipt-${doc.originalDocumentId}`
             exportRequests.push({ endpoint: 'createBankTransactions', originalDocumentId: doc.originalDocumentId, body: spendPayload, attachment: pathStr ? { fileName: fileNameAttach, path: pathStr } : undefined, audit: { hasGst, taxAmount: taxAmountNum, net: netRounded, gross: grossRounded, used: 'gross' } })
           }
+          stage = 'createSpend'
           const res = await accountingApi.createBankTransactions(tenantId, spendPayload)
           const created = res?.body?.bankTransactions?.[0]
           if (!created) throw new Error('Xero did not return created bank transaction')
@@ -211,6 +219,7 @@ export async function POST(request: NextRequest) {
               const fileNameAttach = doc.originalName || doc.fileName || `receipt-${doc.originalDocumentId}`
               const bodyStream = createReadStream(pathStr)
               const headers = doc.mimeType ? { headers: { 'Content-Type': doc.mimeType } } : undefined
+              stage = 'attachSpend'
               await accountingApi.createBankTransactionAttachmentByFileName(tenantId, created.bankTransactionID, fileNameAttach, bodyStream, undefined, headers)
             }
           } catch {}
@@ -251,8 +260,9 @@ export async function POST(request: NextRequest) {
 
         await prisma.digitizedReady.delete({ where: { id: doc.id } })
       } catch (err: any) {
-        const msg = err?.response?.data?.message || err?.message || 'Unknown error'
-        failures.push({ documentId: doc.originalDocumentId, error: msg })
+        const msg = err?.response?.data?.message || err?.message || String(err) || 'Unknown error'
+        const code = err?.response?.status
+        failures.push({ documentId: doc.originalDocumentId, stage, error: msg, code })
       }
     }
 
@@ -278,7 +288,7 @@ export async function POST(request: NextRequest) {
       const dir = join(process.cwd(), 'storage', 'exports', companyId)
       const fullPath = join(dir, fileName)
       await mkdir(dir, { recursive: true })
-      const payloadToSave = { exportedAt: now.toISOString(), mode: exportMode, tenantId, requests: exportRequests }
+      const payloadToSave = { exportedAt: now.toISOString(), mode: exportMode, tenantId, requests: exportRequests, successes, failures }
       await writeFile(fullPath, Buffer.from(JSON.stringify(payloadToSave, null, 2)))
     } catch {}
 
