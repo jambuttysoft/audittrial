@@ -16,9 +16,10 @@ function serverError(message: string) {
   return NextResponse.json({ success: false, code: 'INTERNAL_ERROR', message, timestamp: new Date().toISOString() }, { status: 500 })
 }
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: any) {
   try {
-    const { id } = params
+    const p = context?.params
+    const { id } = (p && typeof p.then === 'function') ? await p : p
     const ticket = await (prisma as any).ticket.findUnique({
       where: { id },
       include: { replies: { orderBy: { createdAt: 'asc' }, include: { attachments: true } }, attachments: true }

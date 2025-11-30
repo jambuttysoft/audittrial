@@ -12,9 +12,10 @@ function serverError(message: string) {
   return NextResponse.json({ success: false, code: 'INTERNAL_ERROR', message, timestamp: new Date().toISOString() }, { status: 500 })
 }
 
-export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_request: NextRequest, context: any) {
   try {
-    const { id } = params
+    const p = context?.params
+    const { id } = (p && typeof p.then === 'function') ? await p : p
     const att = await (prisma as any).ticketAttachment.findUnique({ where: { id } })
     if (!att) return notFound('Attachment not found')
     const { readFile } = await import('fs/promises')

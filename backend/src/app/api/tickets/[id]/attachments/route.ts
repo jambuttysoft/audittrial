@@ -20,9 +20,10 @@ function serverError(message: string) {
   return NextResponse.json({ success: false, code: 'INTERNAL_ERROR', message, timestamp: new Date().toISOString() }, { status: 500 })
 }
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, context: any) {
   try {
-    const { id } = params
+    const p = context?.params
+    const { id } = (p && typeof p.then === 'function') ? await p : p
     const ticket = await (prisma as any).ticket.findUnique({ where: { id } })
     if (!ticket) return notFound('Ticket not found')
 
@@ -65,4 +66,3 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     return serverError('Failed to upload attachments')
   }
 }
-

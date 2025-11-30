@@ -20,9 +20,10 @@ function serverError(message: string) {
   return NextResponse.json({ success: false, code: 'INTERNAL_ERROR', message, timestamp: new Date().toISOString() }, { status: 500 })
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, context: any) {
   try {
-    const { id } = params
+    const p = context?.params
+    const { id } = (p && typeof p.then === 'function') ? await p : p
     const payload = await request.json()
     const status = String(payload?.status || '').toUpperCase()
     if (!['OPEN', 'CLOSED'].includes(status)) return badRequest('Invalid status')

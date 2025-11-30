@@ -1909,6 +1909,24 @@ function DashboardContent() {
       toast({ title: 'Missing context', description: 'Select a company and sign in', variant: 'destructive' })
       return
     }
+    // Ensure company is linked to user's current Xero tenant before export
+    try {
+      if (xeroStatus.connected && xeroStatus.tenantId && !selectedCompany?.xeroTenantId) {
+        const tenantName = xeroStatus.tenantName || ''
+        const r = await fetch(`/api/xero/select-tenant`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ userId: user.id, companyId: selectedCompany.id, tenantId: xeroStatus.tenantId, tenantName }),
+        })
+        const j = await r.json().catch(() => ({}))
+        if (r.ok && j?.success) {
+          const updated = { ...selectedCompany, xeroTenantId: xeroStatus.tenantId, xeroTenantName: tenantName }
+          setSelectedCompany(updated)
+          setCompanies(prev => prev.map(c => c.id === updated.id ? updated : c))
+        }
+      }
+    } catch {}
     setIsExporting(true)
     try {
       const ids = rows.map((r) => r.original.originalDocumentId).filter(Boolean)
@@ -2035,6 +2053,30 @@ function DashboardContent() {
       setXeroBankAccounts([])
     }
   }, [xeroStatus.connected, loadXeroOrganisations, loadXeroBankAccounts])
+
+  // Auto-link Xero tenant to company if connected and not yet linked
+  useEffect(() => {
+    (async () => {
+      if (!user?.id || !selectedCompany?.id) return
+      if (!xeroStatus.connected || !xeroStatus.tenantId) return
+      if (selectedCompany.xeroTenantId) return
+      try {
+        const tenantName = xeroStatus.tenantName || ''
+        const r = await fetch(`/api/xero/select-tenant`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ userId: user.id, companyId: selectedCompany.id, tenantId: xeroStatus.tenantId, tenantName }),
+        })
+        const j = await r.json().catch(() => ({}))
+        if (r.ok && j?.success) {
+          const updated = { ...selectedCompany, xeroTenantId: xeroStatus.tenantId, xeroTenantName: tenantName }
+          setSelectedCompany(updated)
+          setCompanies(prev => prev.map(c => c.id === updated.id ? updated : c))
+        }
+      } catch {}
+    })()
+  }, [user?.id, selectedCompany?.id, selectedCompany?.xeroTenantId, xeroStatus.connected, xeroStatus.tenantId, xeroStatus.tenantName])
 
   if (isLoading) {
     return (

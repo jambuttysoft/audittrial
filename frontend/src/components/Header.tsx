@@ -10,14 +10,31 @@ export default function Header() {
   }, [])
 
   return (
-    <header className="sticky top-0 z-30 border-b bg-background">
-      <div className="mx-auto max-w-7xl px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center space-x-2 cursor-pointer" onClick={() => { try { window.location.assign('/') } catch {} }}>
-          <div className="brand-logo text-xl font-bold" style={{ color: '#09090b' }}>TRAKYTT</div>
-        </div>
-        <UserMenu user={user || undefined} />
+<header className="sticky top-0 z-30 border-b bg-background">
+  <div className="mx-auto max-w-7xl py-3 flex items-center justify-between">
+    <div
+      className="flex items-center space-x-2 cursor-pointer"
+      onClick={() => {
+        try {
+          window.location.assign('/dashboard')
+        } catch {}
+      }}
+    >
+      <img
+        src="/trlogo.png"          // путь к твоему лого
+        alt="TRAKYTT Logo"
+        className="h-10 w-10"      // размер, при необходимости меняй
+      />
+
+      <div className="brand-logo text-xl font-bold" style={{ color: '#09090b' }}>
+        TRAKYTT
       </div>
-    </header>
+    </div>
+
+    <UserMenu user={user || undefined} />
+  </div>
+</header>
+
   )
 }
 
