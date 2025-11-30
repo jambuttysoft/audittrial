@@ -1858,7 +1858,7 @@ function DashboardContent() {
     setIsTestingXero(true)
     setXeroTestResult(null)
     try {
-      const response = await fetch(`/api/xero/test?userId=${user.id}`, {
+      const response = await fetch(`/api/xero/test?userId=${user.id}&companyId=${selectedCompany?.id}`, {
         credentials: 'include'
       })
       const result = await response.json()
@@ -1992,7 +1992,7 @@ function DashboardContent() {
     setIsTestingXero(true)
     setXeroTestResult(null)
     try {
-      const response = await fetch(`/api/xero/test?userId=${user.id}`, {
+      const response = await fetch(`/api/xero/test?userId=${user.id}&companyId=${selectedCompany?.id}`, {
         credentials: 'include'
       })
       const result = await response.json()

@@ -55,9 +55,11 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
+    const companyId = searchParams.get('companyId')
 
     console.log('=== XERO TEST ENDPOINT DEBUG ===')
     console.log('userId:', userId)
+    console.log('companyId:', companyId)
 
     // Test XeroClient initialization first
     console.log('\n=== TESTING XERO CLIENT INITIALIZATION ===')
@@ -97,15 +99,30 @@ export async function GET(request: NextRequest) {
     console.log('User xeroTenantName:', user?.xeroTenantName)
     console.log('User xeroTokenExpiry:', user?.xeroTokenExpiry)
 
-    if (!user || !user.xeroAccessToken || !user.xeroTenantId) {
-      console.log('ERROR: User not connected to Xero or missing tokens')
-      console.log('Missing:', {
-        user: !user,
-        xeroAccessToken: !user?.xeroAccessToken,
-        xeroTenantId: !user?.xeroTenantId
-      })
+    if (!user || !user.xeroAccessToken) {
       return NextResponse.json(
         { error: 'User not connected to Xero or missing tokens' },
+        { status: 401, headers: corsHeaders }
+      )
+    }
+
+    let company: { xeroTenantId?: string | null; xeroTenantName?: string | null } | null = null
+    if (companyId) {
+      company = await prisma.company.findUnique({ where: { id: companyId }, select: { xeroTenantId: true, xeroTenantName: true } })
+      if (!company || !company.xeroTenantId) {
+        return NextResponse.json(
+          { error: 'Company not linked to Xero tenant' },
+          { status: 400, headers: corsHeaders }
+        )
+      }
+    }
+
+    const effectiveTenantId = company?.xeroTenantId || user.xeroTenantId
+    const effectiveTenantName = company?.xeroTenantName || user.xeroTenantName
+
+    if (!effectiveTenantId) {
+      return NextResponse.json(
+        { error: 'User not connected to Xero or tenant not selected' },
         { status: 401, headers: corsHeaders }
       )
     }
@@ -136,15 +153,15 @@ export async function GET(request: NextRequest) {
 
     // Fetch accounts from Xero
     const accountsResponse = await accountingApi.getAccounts(
-      user.xeroTenantId
+      effectiveTenantId
     )
 
     const accounts = accountsResponse.body.accounts || []
 
     return NextResponse.json({
       success: true,
-      tenantId: user.xeroTenantId,
-      tenantName: user.xeroTenantName,
+      tenantId: effectiveTenantId,
+      tenantName: effectiveTenantName,
       accountsCount: accounts.length,
       accounts: accounts.map(account => ({
         accountID: account.accountID,
