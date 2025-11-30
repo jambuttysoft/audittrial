@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Box } from 'lucide-react'
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google'
-import Header from '@/components/Header'
 
 interface RegisterData {
   email: string
@@ -326,7 +325,6 @@ export default function AuthPage() {
 
   return (
     <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''}>
-      <Header />
       <div className="auth-container">
         <div className="auth-wrapper">
           {/* Left Panel: Info (Dark Side) */}

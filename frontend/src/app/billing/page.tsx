@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import Header from '@/components/Header'
-import Footer from '@/components/Footer'
 
 type Invoice = {
   id: string
@@ -261,7 +260,6 @@ export default function BillingPage() {
         </Button>
       </div>
       </div>
-      <Footer />
     </>
   )
 }

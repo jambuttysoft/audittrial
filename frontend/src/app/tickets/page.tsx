@@ -13,7 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { Plus, FileImage, FileText, FileArchive, FileCode, FileVideo, FileAudio, File } from 'lucide-react'
 import Header from '@/components/Header'
-import Footer from '@/components/Footer'
 
 type Ticket = {
   id: string
@@ -478,7 +477,6 @@ export default function TicketsPage() {
           </div>
         </DialogContent>
       </Dialog>
-      <Footer />
     </>
   )
 }

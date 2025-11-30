@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import Header from '@/components/Header'
-import Footer from '@/components/Footer'
 import { useToast } from '@/hooks/use-toast'
 
 export default function ProfilePage() {
@@ -182,7 +181,6 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
       </div>
-      <Footer />
     </>
   )
 }
