@@ -1,0 +1,294 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { XeroClient } from 'xero-node'
+import { prisma } from '@/lib/prisma'
+import { createReadStream } from 'fs'
+import { join } from 'path'
+import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
+
+function getXeroClient() {
+  const clientId = process.env.XERO_CLIENT_ID
+  const clientSecret = process.env.XERO_CLIENT_SECRET
+  const redirectUri = process.env.XERO_REDIRECT_URI
+  const scopes = process.env.XERO_SCOPES?.split(' ') || []
+  if (!clientId || !clientSecret || !redirectUri) {
+    throw new Error('Missing Xero environment variables')
+  }
+  return new XeroClient({ clientId, clientSecret, redirectUris: [redirectUri], scopes })
+}
+
+async function ensureContact(accountingApi: any, tenantId: string, vendorName: string, vendorAbn?: string | null) {
+  const name = vendorName?.trim()
+  if (!name) throw new Error('Missing vendor name')
+  try {
+    const found = await accountingApi.getContacts(tenantId, undefined, `Name=="${name}"`)
+    const existing = found?.body?.contacts?.[0]
+    if (existing) return existing
+  } catch {}
+  const createRes = await accountingApi.createContacts(tenantId, {
+    contacts: [{
+      name,
+      taxNumber: vendorAbn || undefined,
+      isSupplier: true,
+      isCustomer: false,
+    }]
+  })
+  const created = createRes?.body?.contacts?.[0]
+  if (!created) throw new Error('Failed to create Xero contact')
+  return created
+}
+
+async function resolveExpenseAccountCode(accountingApi: any, tenantId: string, expenseCategory?: string | null) {
+  const res = await accountingApi.getAccounts(tenantId)
+  const accounts = res?.body?.accounts || []
+  // Prefer an EXPENSE account matching category by name
+  const normalized = (expenseCategory || '').toLowerCase()
+  const byName = accounts.find((a: any) => a.status === 'ACTIVE' && a._class === 'EXPENSE' && a.name?.toLowerCase().includes(normalized))
+  if (byName?.code) return byName.code
+  // Fallback: first active EXPENSE account
+  const firstExpense = accounts.find((a: any) => a.status === 'ACTIVE' && a._class === 'EXPENSE' && a.code)
+  if (firstExpense?.code) return firstExpense.code
+  // Last resort: any active account that allows expenses
+  const anyActive = accounts.find((a: any) => a.status === 'ACTIVE' && a.code)
+  return anyActive?.code || '400'
+}
+
+export async function OPTIONS(request: NextRequest) {
+  return handleCorsOptions(request.headers.get('origin') || '')
+}
+
+export async function POST(request: NextRequest) {
+  const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
+  try {
+    const body = await request.json()
+    const { userId, companyId, documentIds, dateRangeStart, dateRangeEnd, mode } = body || {}
+    if (!userId || !companyId) {
+      return NextResponse.json({ error: 'userId and companyId are required' }, { status: 400, headers: corsHeaders })
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+    const company = await prisma.company.findUnique({ where: { id: companyId } })
+    if (!user || !user.xeroAccessToken) {
+      return NextResponse.json({ error: 'Xero not connected for user' }, { status: 401, headers: corsHeaders })
+    }
+    const companyTenantId = (company as any)?.xeroTenantId as string | undefined
+    if (!company || !companyTenantId) {
+      return NextResponse.json({ error: 'Company not linked to Xero tenant' }, { status: 400, headers: corsHeaders })
+    }
+
+    const tokenExpiry = user.xeroTokenExpiry ? new Date(user.xeroTokenExpiry) : null
+    if (tokenExpiry && new Date() >= tokenExpiry) {
+      return NextResponse.json({ error: 'Xero token expired. Please reconnect.' }, { status: 401, headers: corsHeaders })
+    }
+
+    const xero = getXeroClient()
+    await xero.setTokenSet({ access_token: user.xeroAccessToken, refresh_token: user.xeroRefreshToken || undefined, expires_at: tokenExpiry?.getTime() })
+    const accountingApi = xero.accountingApi
+    const tenantId = companyTenantId
+
+    // Load documents from DigitizedReady for this company
+    const where: any = { companyId }
+    if (Array.isArray(documentIds) && documentIds.length > 0) where.originalDocumentId = { in: documentIds }
+    let docs = await prisma.digitizedReady.findMany({ where })
+    // Optional date filter
+    if (dateRangeStart && dateRangeEnd) {
+      const start = new Date(dateRangeStart)
+      const end = new Date(dateRangeEnd)
+      docs = docs.filter(d => d.purchaseDate && d.purchaseDate >= start && d.purchaseDate <= end)
+    }
+    if (!docs.length) {
+      return NextResponse.json({ error: 'No documents to export' }, { status: 400, headers: corsHeaders })
+    }
+
+    const successes: any[] = []
+    const failures: any[] = []
+    const exportRequests: any[] = []
+
+    const exportMode = (mode === 'spend') ? 'spend' : 'bill'
+
+    const resolveBankAccountID = async () => {
+      const selectedId = (company as any)?.xeroBankAccountId as string | undefined
+      if (selectedId) return selectedId
+      const res = await accountingApi.getAccounts(tenantId)
+      const accounts = res?.body?.accounts || []
+      const bank = accounts.find((a: any) => a.status === 'ACTIVE' && a.type === 'BANK' && a.accountID)
+      return bank?.accountID || null
+    }
+
+    const toNum = (v: any) => {
+      if (typeof v === 'number') return v
+      if (typeof v === 'string') {
+        const n = parseFloat(v)
+        return Number.isFinite(n) ? n : 0
+      }
+      return 0
+    }
+
+    for (const doc of docs) {
+      try {
+        const contact = await ensureContact(accountingApi, tenantId, doc.vendorName || 'Unknown Supplier', doc.vendorAbn || undefined)
+        const accountCode = await resolveExpenseAccountCode(accountingApi, tenantId, doc.expenseCategory || null)
+
+        const taxAmountNum = toNum(doc.taxAmount)
+        const totalAmountNum = toNum(doc.totalAmount)
+        const amountExclTaxNum = toNum(doc.amountExclTax)
+        const hasGst = taxAmountNum > 0
+        const taxType = hasGst ? 'INPUT' : 'NONE'
+        const net = amountExclTaxNum || (totalAmountNum ? (totalAmountNum - taxAmountNum) : 0)
+        const gross = totalAmountNum || (amountExclTaxNum ? (amountExclTaxNum + taxAmountNum) : 0)
+        const round2 = (n: number) => Math.round(n * 100) / 100
+        const netRounded = round2(net)
+        const grossRounded = round2(gross)
+
+        const dateStr = (doc.purchaseDate ? new Date(doc.purchaseDate) : new Date()).toISOString().slice(0,10)
+
+        if (exportMode === 'bill') {
+          const dueStr = (doc.purchaseDate ? new Date(doc.purchaseDate.getTime() + 14 * 24 * 3600 * 1000) : new Date(Date.now() + 14 * 24 * 3600 * 1000)).toISOString().slice(0,10)
+          const invoice = {
+            type: 'ACCPAY' as any,
+            contact: { contactID: contact.contactID },
+            date: dateStr,
+            dueDate: dueStr,
+            lineAmountTypes: 'Exclusive' as any,
+            lineItems: [{
+              description: doc.documentType || doc.originalName || 'Expense',
+              quantity: 1,
+              unitAmount: Number(netRounded || 0),
+              accountCode: accountCode,
+              taxType: taxType as any,
+            }],
+            status: 'DRAFT' as any,
+          }
+          const invPayload = { invoices: [invoice] }
+          {
+            const pathStr = doc.filePath ? (doc.filePath.startsWith('/') ? doc.filePath : join(process.cwd(), doc.filePath)) : ''
+            const fileNameAttach = doc.originalName || doc.fileName || `receipt-${doc.originalDocumentId}`
+            exportRequests.push({ endpoint: 'createInvoices', originalDocumentId: doc.originalDocumentId, body: invPayload, attachment: pathStr ? { fileName: fileNameAttach, path: pathStr } : undefined, audit: { hasGst, taxAmount: taxAmountNum, net: netRounded, gross: grossRounded, used: 'net' } })
+          }
+          const res = await accountingApi.createInvoices(tenantId, invPayload)
+          const created = res?.body?.invoices?.[0]
+          if (!created) throw new Error('Xero did not return created invoice')
+          successes.push({ documentId: doc.originalDocumentId, xeroInvoiceId: created.invoiceID })
+          try {
+            const pathStr = doc.filePath ? (doc.filePath.startsWith('/') ? doc.filePath : join(process.cwd(), doc.filePath)) : ''
+            if (pathStr) {
+              const fileNameAttach = doc.originalName || doc.fileName || `receipt-${doc.originalDocumentId}`
+              const bodyStream = createReadStream(pathStr)
+              const headers = doc.mimeType ? { headers: { 'Content-Type': doc.mimeType } } : undefined
+              await accountingApi.createInvoiceAttachmentByFileName(tenantId, created.invoiceID, fileNameAttach, bodyStream, undefined, true, headers)
+            }
+          } catch {}
+        } else {
+          const bankAccountID = await resolveBankAccountID()
+          if (!bankAccountID) throw new Error('No active bank account found in Xero')
+          const bankTransaction = {
+            type: 'SPEND' as any,
+            contact: { contactID: contact.contactID },
+            bankAccount: { accountID: bankAccountID },
+            date: dateStr,
+            lineAmountTypes: 'Inclusive' as any,
+            lineItems: [{
+              description: doc.documentType || doc.originalName || 'Expense',
+              quantity: 1,
+              unitAmount: Number(grossRounded || 0),
+              accountCode: accountCode,
+              taxType: taxType as any,
+            }],
+            status: 'AUTHORISED' as any,
+          }
+          const spendPayload = { bankTransactions: [bankTransaction] }
+          {
+            const pathStr = doc.filePath ? (doc.filePath.startsWith('/') ? doc.filePath : join(process.cwd(), doc.filePath)) : ''
+            const fileNameAttach = doc.originalName || doc.fileName || `receipt-${doc.originalDocumentId}`
+            exportRequests.push({ endpoint: 'createBankTransactions', originalDocumentId: doc.originalDocumentId, body: spendPayload, attachment: pathStr ? { fileName: fileNameAttach, path: pathStr } : undefined, audit: { hasGst, taxAmount: taxAmountNum, net: netRounded, gross: grossRounded, used: 'gross' } })
+          }
+          const res = await accountingApi.createBankTransactions(tenantId, spendPayload)
+          const created = res?.body?.bankTransactions?.[0]
+          if (!created) throw new Error('Xero did not return created bank transaction')
+          successes.push({ documentId: doc.originalDocumentId, xeroBankTransactionId: created.bankTransactionID })
+          try {
+            const pathStr = doc.filePath ? (doc.filePath.startsWith('/') ? doc.filePath : join(process.cwd(), doc.filePath)) : ''
+            if (pathStr) {
+              const fileNameAttach = doc.originalName || doc.fileName || `receipt-${doc.originalDocumentId}`
+              const bodyStream = createReadStream(pathStr)
+              const headers = doc.mimeType ? { headers: { 'Content-Type': doc.mimeType } } : undefined
+              await accountingApi.createBankTransactionAttachmentByFileName(tenantId, created.bankTransactionID, fileNameAttach, bodyStream, undefined, headers)
+            }
+          } catch {}
+        }
+
+        await prisma.digitizedReported.create({
+          data: {
+            originalDigitizedId: doc.id,
+            companyId: doc.companyId,
+            userId: doc.userId,
+            originalDocumentId: doc.originalDocumentId,
+            fileName: doc.fileName,
+            originalName: doc.originalName,
+            filePath: doc.filePath,
+            fileSize: doc.fileSize,
+            mimeType: doc.mimeType,
+            purchaseDate: doc.purchaseDate,
+            vendorName: doc.vendorName,
+            vendorAbn: doc.vendorAbn,
+            vendorAddress: doc.vendorAddress,
+            documentType: doc.documentType,
+            receiptNumber: doc.receiptNumber,
+            paymentType: doc.paymentType,
+            cashOutAmount: doc.cashOutAmount,
+            discountAmount: doc.discountAmount,
+            amountExclTax: doc.amountExclTax,
+            taxAmount: doc.taxAmount,
+            totalAmount: doc.totalAmount,
+            totalPaidAmount: doc.totalPaidAmount,
+            surchargeAmount: doc.surchargeAmount,
+            expenseCategory: doc.expenseCategory,
+            taxStatus: doc.taxStatus,
+            exportedAt: new Date(),
+            exportFileName: exportMode === 'bill' ? `xero-invoice-${new Date().toISOString()}` : `xero-spend-${new Date().toISOString()}`,
+            exportStatus: 'SUCCESS',
+          },
+        })
+
+        await prisma.digitizedReady.delete({ where: { id: doc.id } })
+      } catch (err: any) {
+        const msg = err?.response?.data?.message || err?.message || 'Unknown error'
+        failures.push({ documentId: doc.originalDocumentId, error: msg })
+      }
+    }
+
+    // Write export history summary
+    const now = new Date()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const ts = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`
+    const fileName = `xero-${ts}.json`
+    await prisma.exportHistory.create({
+      data: {
+        companyId,
+        userId,
+        fileName,
+        exportedAt: now,
+        status: failures.length ? 'PARTIAL' : 'SUCCESS',
+        totalRows: successes.length,
+      },
+    })
+
+    try {
+      const { mkdir, writeFile } = await import('fs/promises')
+      const { join } = await import('path')
+      const dir = join(process.cwd(), 'storage', 'exports', companyId)
+      const fullPath = join(dir, fileName)
+      await mkdir(dir, { recursive: true })
+      const payloadToSave = { exportedAt: now.toISOString(), mode: exportMode, tenantId, requests: exportRequests }
+      await writeFile(fullPath, Buffer.from(JSON.stringify(payloadToSave, null, 2)))
+    } catch {}
+
+    return NextResponse.json({ success: true, summary: { successes, failures } }, { headers: corsHeaders })
+  } catch (error: any) {
+    if (error?.response) {
+      const status = error.response.status || 500
+      const message = error.response.data?.message || error.message
+      return NextResponse.json({ error: `Xero API error: ${message}` }, { status, headers: corsHeaders })
+    }
+    return NextResponse.json({ error: 'Failed to export to Xero', details: error.message }, { status: 500, headers: corsHeaders })
+  }
+}

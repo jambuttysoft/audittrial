@@ -51,8 +51,8 @@ model User {
   isDeleted Boolean  @default(false)
   
   // Xero integration fields
-  xeroAccessToken    String?   // Xero OAuth access token
-  xeroRefreshToken   String?   // Xero OAuth refresh token
+  xeroAccessToken    String?   @db.Text
+  xeroRefreshToken   String?   @db.Text
   xeroTokenExpiry    DateTime? // When the access token expires
   xeroTenantId       String?   // Xero tenant/organisation ID
   xeroTenantName     String?   // Xero organisation name
@@ -87,6 +87,12 @@ model Company {
   // Business information
   abn         String?  // Australian Business Number
   industry    String?
+  
+  // Xero organisation mapping (per company)
+  xeroTenantId   String?
+  xeroTenantName String?
+  xeroBankAccountId String?
+  xeroBankAccountName String?
   
   // Status
   isActive    Boolean  @default(true)

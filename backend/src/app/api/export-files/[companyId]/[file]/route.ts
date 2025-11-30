@@ -22,14 +22,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ comp
     }
     const buffer = await readFile(fullPath)
     const headers = new Headers(corsHeaders)
-    headers.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    const isJson = file.toLowerCase().endsWith('.json')
+    headers.set('Content-Type', isJson ? 'application/json' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     headers.set('Content-Length', buffer.length.toString())
     headers.set('Content-Disposition', `attachment; filename="${file}"`)
     headers.set('Cross-Origin-Resource-Policy', 'cross-origin')
-    const ab = new ArrayBuffer(buffer.byteLength)
-    new Uint8Array(ab).set(buffer)
-    const blob = new Blob([ab], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-    return new NextResponse(blob as any, { status: 200, headers })
+    return new NextResponse(buffer as any, { status: 200, headers })
   } catch (error) {
     return NextResponse.json({ error: 'Failed to download file' }, { status: 500, headers: corsHeaders })
   }

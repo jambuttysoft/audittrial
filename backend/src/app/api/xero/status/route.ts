@@ -45,21 +45,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const isConnected = !!(user.xeroAccessToken && user.xeroTenantId);
-    const isTokenExpired = user.xeroTokenExpiry ? new Date() > user.xeroTokenExpiry : true;
-    
+    const isConnected = !!user.xeroAccessToken
+    const isTokenExpired = user.xeroTokenExpiry ? new Date() > user.xeroTokenExpiry : false
+
     return NextResponse.json(
       {
-        isConnected,
-        isTokenExpired,
+        connected: isConnected,
         tenantName: user.xeroTenantName,
+        tenantId: user.xeroTenantId,
+        tokenExpiry: user.xeroTokenExpiry || null,
+        isTokenExpired,
         connectedAt: user.xeroConnectedAt,
-        needsReconnection: isConnected && isTokenExpired
+        needsReconnection: isTokenExpired,
       },
-      {
-        headers: getCorsHeaders(request.headers.get('origin') || '')
-      }
-    );
+      { headers: getCorsHeaders(request.headers.get('origin') || '') }
+    )
   } catch (error) {
     console.error('Xero status check error:', error);
     return NextResponse.json(

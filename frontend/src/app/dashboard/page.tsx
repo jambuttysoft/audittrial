@@ -51,6 +51,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import UserMenu from '@/components/UserMenu'
 import { useRef } from 'react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 // Component for truncated text with tooltip
 function TruncatedCell({ text, maxWidth = '150px' }: { text: string; maxWidth?: string }) {
@@ -102,6 +103,10 @@ interface Company {
   documentsCount: number
   createdAt: string
   updatedAt: string
+  xeroTenantId?: string
+  xeroTenantName?: string
+  xeroBankAccountId?: string
+  xeroBankAccountName?: string
 }
 
 interface DocumentData {
@@ -243,6 +248,9 @@ function DashboardContent() {
   const [isTestingXero, setIsTestingXero] = useState(false)
   const [showXeroAccountsModal, setShowXeroAccountsModal] = useState(false)
   const [xeroAccounts, setXeroAccounts] = useState<any[]>([])
+  const [xeroOrganisations, setXeroOrganisations] = useState<{ tenantId: string; tenantName: string }[]>([])
+  const [xeroExportMode, setXeroExportMode] = useState<'bill' | 'spend'>('bill')
+  const [xeroBankAccounts, setXeroBankAccounts] = useState<{ accountID: string; code?: string; name?: string }[]>([])
   const [isExporting, setIsExporting] = useState(false)
   const [exportHistory, setExportHistory] = useState<any[]>([])
   const [reportedDocuments, setReportedDocuments] = useState<any[]>([])
@@ -1701,6 +1709,64 @@ function DashboardContent() {
     }
   }, [user?.id])
 
+  const loadXeroOrganisations = useCallback(async () => {
+    if (!user?.id) return
+    try {
+      const r = await fetch(`/api/xero/organisations?userId=${user.id}`, { credentials: 'include' })
+      const j = await r.json()
+      if (r.ok) {
+        const tenants = (j.tenants || []) as { tenantId: string; tenantName: string }[]
+        setXeroOrganisations(tenants)
+      } else {
+        const msg = j.error || 'Failed to load Xero organisations'
+        toast({ title: 'Xero Error', description: msg, variant: 'destructive' })
+      }
+    } catch (e) {
+      toast({ title: 'Network Error', description: 'Unable to fetch organisations', variant: 'destructive' })
+    }
+  }, [user?.id, toast])
+
+  const loadXeroBankAccounts = useCallback(async () => {
+    if (!user?.id || !selectedCompany?.id) return
+    try {
+      const r = await fetch(`/api/xero/bank-accounts?userId=${user.id}&companyId=${selectedCompany.id}`, { credentials: 'include' })
+      const j = await r.json()
+      if (r.ok) {
+        setXeroBankAccounts(j.accounts || [])
+      } else {
+        const msg = j.error || 'Failed to load bank accounts'
+        toast({ title: 'Xero Error', description: msg, variant: 'destructive' })
+      }
+    } catch (e) {
+      toast({ title: 'Network Error', description: 'Unable to fetch bank accounts', variant: 'destructive' })
+    }
+  }, [user?.id, selectedCompany?.id, toast])
+
+  const handleSelectXeroBankAccount = useCallback(async (accountId: string) => {
+    if (!user?.id || !selectedCompany?.id) return
+    const accountName = xeroBankAccounts.find(a => a.accountID === accountId)?.name || ''
+    try {
+      const r = await fetch(`/api/xero/select-bank-account`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ userId: user.id, companyId: selectedCompany.id, accountId, accountName }),
+      })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok || !j?.success) {
+        throw new Error(j?.error || 'Failed to save bank account')
+      }
+      if (selectedCompany) {
+        const updated = { ...selectedCompany, xeroBankAccountId: accountId, xeroBankAccountName: accountName }
+        setSelectedCompany(updated)
+        setCompanies(prev => prev.map(c => c.id === updated.id ? updated : c))
+      }
+      toast({ title: 'Bank Account Selected', description: accountName || accountId })
+    } catch (e: any) {
+      toast({ title: 'Xero Error', description: e?.message || 'Failed to select bank account', variant: 'destructive' })
+    }
+  }, [user?.id, selectedCompany, xeroBankAccounts, toast])
+
   const handleXeroConnect = async () => {
     if (!user?.id) return
     
@@ -1711,7 +1777,21 @@ function DashboardContent() {
       })
       if (response.ok) {
         const { consentUrl } = await response.json()
-        window.open(consentUrl, '_blank', 'width=600,height=700')
+        const popup = window.open(consentUrl, '_blank', 'width=600,height=700')
+        const onMessage = async (event: MessageEvent) => {
+          const data: any = event?.data
+          if (!data || data.type !== 'xero-auth') return
+          if (data.status === 'success') {
+            await checkXeroStatus()
+            toast({ title: 'Xero Connected!', description: 'Authorization completed' })
+          } else {
+            toast({ title: 'Xero Authorization Error', description: String(data.message || 'Authorization failed'), variant: 'destructive' })
+          }
+          try { popup && !popup.closed && popup.close() } catch {}
+          try { clearInterval(pollInterval) } catch {}
+          window.removeEventListener('message', onMessage)
+        }
+        window.addEventListener('message', onMessage)
         
         // Poll for connection status
         const pollInterval = setInterval(async () => {
@@ -1722,11 +1802,13 @@ function DashboardContent() {
               title: 'Xero Connected!',
               description: `Successfully connected to ${xeroStatus.tenantName}`,
             })
+            window.removeEventListener('message', onMessage)
+            try { popup && !popup.closed && popup.close() } catch {}
           }
         }, 2000)
         
         // Stop polling after 2 minutes
-        setTimeout(() => clearInterval(pollInterval), 120000)
+        setTimeout(() => { clearInterval(pollInterval); window.removeEventListener('message', onMessage) }, 120000)
       }
     } catch (error) {
       console.error('Error connecting to Xero:', error)
@@ -1822,6 +1904,69 @@ function DashboardContent() {
     }
   }
 
+  const exportReadyRowsToXero = async (rows: any[]) => {
+    if (!user?.id || !selectedCompany?.id) {
+      toast({ title: 'Missing context', description: 'Select a company and sign in', variant: 'destructive' })
+      return
+    }
+    setIsExporting(true)
+    try {
+      const ids = rows.map((r) => r.original.originalDocumentId).filter(Boolean)
+      const payload: any = { userId: user.id, companyId: selectedCompany.id, documentIds: ids, mode: xeroExportMode }
+      if (dateRangeStart && dateRangeEnd) {
+        payload.dateRangeStart = dateRangeStart
+        payload.dateRangeEnd = dateRangeEnd
+      }
+      const res = await fetch('/api/xero/export/ready', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      })
+      const j = await res.json()
+      if (!res.ok || !j?.success) {
+        throw new Error(j?.error || 'Export failed')
+      }
+      const s = j.summary || {}
+      const ok = (s.successes || []).length
+      const bad = (s.failures || []).length
+      toast({ title: 'Export Completed', description: `Success: ${ok}, Failed: ${bad}` })
+      if (selectedCompany?.id) {
+        await loadReadyDocuments(selectedCompany.id)
+        await loadExportHistory(selectedCompany.id)
+      }
+    } catch (e: any) {
+      toast({ title: 'Xero Export Error', description: e?.message || 'Unknown error', variant: 'destructive' })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const handleSelectXeroTenant = async (tenantId: string) => {
+    if (!user?.id) return
+    try {
+      const tenantName = xeroOrganisations.find(t => t.tenantId === tenantId)?.tenantName || ''
+      const r = await fetch(`/api/xero/select-tenant`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ userId: user.id, companyId: selectedCompany?.id, tenantId, tenantName }),
+      })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok || !j?.success) {
+        throw new Error(j?.error || 'Failed to save selection')
+      }
+      setXeroStatus(prev => ({ ...prev, tenantId, tenantName }))
+      if (selectedCompany) {
+        setSelectedCompany({ ...selectedCompany, xeroTenantId: tenantId, xeroTenantName: tenantName })
+        setCompanies(prev => prev.map(c => c.id === selectedCompany.id ? { ...c, xeroTenantId: tenantId, xeroTenantName: tenantName } : c))
+      }
+      toast({ title: 'Organisation Selected', description: tenantName || tenantId })
+    } catch (e: any) {
+      toast({ title: 'Xero Error', description: e?.message || 'Failed to select organisation', variant: 'destructive' })
+    }
+  }
+
   // Fetch Xero accounts using SDK
   const handleGetXeroAccounts = async () => {
     if (!user?.id) return
@@ -1880,6 +2025,16 @@ function DashboardContent() {
       checkXeroStatus()
     }
   }, [user?.id, checkXeroStatus])
+
+  useEffect(() => {
+    if (xeroStatus.connected) {
+      loadXeroOrganisations()
+      loadXeroBankAccounts()
+    } else {
+      setXeroOrganisations([])
+      setXeroBankAccounts([])
+    }
+  }, [xeroStatus.connected, loadXeroOrganisations, loadXeroBankAccounts])
 
   if (isLoading) {
     return (
@@ -2344,20 +2499,50 @@ function DashboardContent() {
                 ]
                 const key = user?.id ? `ready_columns_visibility:${user.id}` : undefined
                 return (
-                  <DataTable 
-                    columns={columns} 
-                    data={dataForTable} 
-                    defaultVisibleColumnIds={defaultVisible} 
-                    storageKey={key}
-                    onRowCountChange={setReadyVisibleCount}
-                    bulkActions={(rows, clearSelection) => (
-                      <>
-                        <Button size="sm" onClick={() => { if (!rows.length) { toast({ title: 'Nothing selected', description: 'Please select at least one row', variant: 'destructive' }) ; return } ; exportReadyRowsToExcel(rows).then(() => clearSelection()) }}>
-                          {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Export to Excel'}
-                        </Button>
-                      </>
-                    )}
-                  />
+                <DataTable 
+                  columns={columns} 
+                  data={dataForTable} 
+                  defaultVisibleColumnIds={defaultVisible} 
+                  storageKey={key}
+                  onRowCountChange={setReadyVisibleCount}
+                  bulkActions={(rows, clearSelection) => (
+                    <>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs text-muted-foreground">Xero export mode</Label>
+                      <Select value={xeroExportMode} onValueChange={(v) => setXeroExportMode(v as 'bill' | 'spend')}>
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="bill">Bills (ACCPAY)</SelectItem>
+                          <SelectItem value="spend">Spend Money</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {xeroExportMode === 'spend' && xeroStatus.connected && selectedCompany?.id ? (
+                        <>
+                          <Label className="text-xs text-muted-foreground">Bank account</Label>
+                          <Select value={selectedCompany?.xeroBankAccountId || undefined} onValueChange={handleSelectXeroBankAccount}>
+                            <SelectTrigger className="w-[240px]">
+                              <SelectValue placeholder="Choose bank account" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {xeroBankAccounts.map(a => (
+                                <SelectItem key={a.accountID} value={a.accountID}>{a.name || a.accountID}{a.code ? ` (${a.code})` : ''}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </>
+                      ) : null}
+                    </div>
+                      <Button size="sm" onClick={() => { if (!rows.length) { toast({ title: 'Nothing selected', description: 'Please select at least one row', variant: 'destructive' }) ; return } ; exportReadyRowsToExcel(rows).then(() => clearSelection()) }}>
+                        {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Export to Excel'}
+                      </Button>
+                      <Button size="sm" variant="default" onClick={() => { if (!rows.length) { toast({ title: 'Nothing selected', description: 'Please select at least one row', variant: 'destructive' }); return } ; exportReadyRowsToXero(rows).then(() => clearSelection()) }}>
+                        {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Export to Xero'}
+                      </Button>
+                    </>
+                  )}
+                />
                 )
               })()}
             </CardContent>
@@ -2406,6 +2591,22 @@ function DashboardContent() {
                       </div>
                     )}
                   </div>
+
+                  {xeroOrganisations.length > 0 && (
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Select Organisation</Label>
+                      <Select defaultValue={selectedCompany?.xeroTenantId || xeroStatus.tenantId} onValueChange={handleSelectXeroTenant}>
+                        <SelectTrigger className="w-full md:w-[360px]">
+                          <SelectValue placeholder="Choose organisation" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {xeroOrganisations.map((t) => (
+                            <SelectItem key={t.tenantId} value={t.tenantId}>{t.tenantName}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   <div className="flex gap-2 flex-wrap">
                     <Button onClick={handleXeroDisconnect} variant="outline" size="sm">

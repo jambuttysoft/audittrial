@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { XeroClient } from 'xero-node';
+import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
 
 // Initialize Xero client using environment variables
-const getXeroClient = () => {
+const getXeroClient = (state?: string) => {
   const client_id: string = process.env.XERO_CLIENT_ID!;
   const client_secret: string = process.env.XERO_CLIENT_SECRET!;
   const redirectUrl: string = process.env.XERO_REDIRECT_URI!;
@@ -26,6 +27,7 @@ const getXeroClient = () => {
     clientSecret: client_secret,
     redirectUris: [redirectUrl],
     scopes: scopes.split(' '),
+    state,
   };
   
   console.log('XeroClient auth config:', {
@@ -45,14 +47,7 @@ const getXeroClient = () => {
 
 // Handle CORS preflight requests
 export async function OPTIONS(request: NextRequest) {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': 'http://localhost:3646',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  });
+  return handleCorsOptions(request.headers.get('origin') || '')
 }
 
 export async function GET(request: NextRequest) {
@@ -63,14 +58,7 @@ export async function GET(request: NextRequest) {
     if (!userId) {
       return NextResponse.json(
         { error: 'User ID is required' },
-        { 
-          status: 400,
-          headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3111',
-            'Access-Control-Allow-Methods': 'GET, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
-          }
-        }
+        { status: 400, headers: getCorsHeaders(request.headers.get('origin') || '') }
       );
     }
 
@@ -78,45 +66,24 @@ export async function GET(request: NextRequest) {
     if (!process.env.XERO_CLIENT_ID || !process.env.XERO_CLIENT_SECRET || !process.env.XERO_REDIRECT_URI) {
       return NextResponse.json(
         { error: 'Xero configuration is missing. Please check environment variables.' },
-        { 
-          status: 500,
-          headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:3111',
-            'Access-Control-Allow-Methods': 'GET, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
-          }
-        }
+        { status: 500, headers: getCorsHeaders(request.headers.get('origin') || '') }
       );
     }
 
-    const xero = getXeroClient();
+    const xero = getXeroClient(`userId=${userId}`);
     
-    // Build consent URL with user ID in state
+    // Build consent URL (includes state from config)
     const consentUrl = await xero.buildConsentUrl();
-    const urlWithUserId = `${consentUrl}&state=${encodeURIComponent(`userId=${userId}`)}`;
     
     return NextResponse.json(
-      { authUrl: urlWithUserId },
-      {
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-          'Access-Control-Allow-Methods': 'GET, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        }
-      }
+      { consentUrl },
+      { headers: getCorsHeaders(request.headers.get('origin') || '') }
     );
   } catch (error) {
     console.error('Xero auth error:', error);
     return NextResponse.json(
       { error: 'Failed to generate Xero authorization URL' },
-      { 
-        status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:3111',
-          'Access-Control-Allow-Methods': 'GET, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        }
-      }
+      { status: 500, headers: getCorsHeaders(request.headers.get('origin') || '') }
     );
   }
 }

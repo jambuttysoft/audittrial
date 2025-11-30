@@ -5,7 +5,7 @@ import { jwtDecode } from 'jwt-decode';
 import { XeroAccessToken, XeroIdToken, TokenSet } from 'xero-node';
 
 // Initialize Xero client using environment variables
-const getXeroClient = () => {
+const getXeroClient = (state?: string) => {
   const client_id: string = process.env.XERO_CLIENT_ID!;
   const client_secret: string = process.env.XERO_CLIENT_SECRET!;
   const redirectUrl: string = process.env.XERO_REDIRECT_URI!;
@@ -29,6 +29,7 @@ const getXeroClient = () => {
     clientSecret: client_secret,
     redirectUris: [redirectUrl],
     scopes: scopes.split(' '),
+    state,
   };
   
   console.log('XeroClient callback config:', {
@@ -54,25 +55,25 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get('error');
     
     // Handle authorization errors
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3646'
     if (error) {
       const errorDescription = searchParams.get('error_description') || 'Authorization failed';
-      return NextResponse.redirect(
-        `http://localhost:3111/dashboard?xero_error=${encodeURIComponent(errorDescription)}`
-      );
+      const html = `<!doctype html><html><head><meta charset="utf-8"/></head><body><script>(function(){var d={type:'xero-auth',status:'error',message:${JSON.stringify(errorDescription)}};try{window.opener&&window.opener.postMessage(d,'*')}catch(e){}window.close();setTimeout(function(){document.body.innerText='You can close this window.'},100)})();</script></body></html>`;
+      return new NextResponse(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
     
     if (!code || !state) {
-      return NextResponse.redirect(
-        `http://localhost:3111/dashboard?xero_error=${encodeURIComponent('Missing authorization code or state')}`
-      );
+      const msg = 'Missing authorization code or state';
+      const html = `<!doctype html><html><head><meta charset="utf-8"/></head><body><script>(function(){var d={type:'xero-auth',status:'error',message:${JSON.stringify(msg)}};try{window.opener&&window.opener.postMessage(d,'*')}catch(e){}window.close();setTimeout(function(){document.body.innerText='You can close this window.'},100)})();</script></body></html>`;
+      return new NextResponse(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
     
     // Extract user ID from state
     const userIdMatch = state.match(/userId=([^&]+)/);
     if (!userIdMatch) {
-      return NextResponse.redirect(
-        `http://localhost:3111/dashboard?xero_error=${encodeURIComponent('Invalid state parameter')}`
-      );
+      const msg = 'Invalid state parameter';
+      const html = `<!doctype html><html><head><meta charset="utf-8"/></head><body><script>(function(){var d={type:'xero-auth',status:'error',message:${JSON.stringify(msg)}};try{window.opener&&window.opener.postMessage(d,'*')}catch(e){}window.close();setTimeout(function(){document.body.innerText='You can close this window.'},100)})();</script></body></html>`;
+      return new NextResponse(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
     
     const userId = decodeURIComponent(userIdMatch[1]);
@@ -88,9 +89,9 @@ export async function GET(request: NextRequest) {
     });
     
     if (!user) {
-      return NextResponse.redirect(
-        `http://localhost:3111/dashboard?xero_error=${encodeURIComponent('User not found')}`
-      );
+      const msg = 'User not found';
+      const html = `<!doctype html><html><head><meta charset="utf-8"/></head><body><script>(function(){var d={type:'xero-auth',status:'error',message:${JSON.stringify(msg)}};try{window.opener&&window.opener.postMessage(d,'*')}catch(e){}window.close();setTimeout(function(){document.body.innerText='You can close this window.'},100)})();</script></body></html>`;
+      return new NextResponse(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
     
     console.log('=== XERO CALLBACK PROCESS DEBUG ===');
@@ -99,9 +100,12 @@ export async function GET(request: NextRequest) {
     console.log('State:', state);
     console.log('User ID:', userId);
     
-    const xero = getXeroClient();
+    const xero = getXeroClient(state || undefined);
     
-    // Exchange code for tokens (following the Express.js pattern)
+    // Ensure client is initialized before callback
+    await xero.initialize();
+    
+    // Exchange code for tokens
     console.log('Exchanging code for tokens...');
     const tokenSet: TokenSet = await xero.apiCallback(request.url);
     console.log('Token exchange successful, tokenSet keys:', Object.keys(tokenSet));
@@ -122,18 +126,18 @@ export async function GET(request: NextRequest) {
     console.log('Access token sub:', decodedAccessToken.sub);
     
     if (!tokenSet.access_token || !tokenSet.refresh_token) {
-      return NextResponse.redirect(
-        `http://localhost:3111/dashboard?xero_error=${encodeURIComponent('Failed to obtain tokens')}`
-      );
+      const msg = 'Failed to obtain tokens';
+      const html = `<!doctype html><html><head><meta charset="utf-8"/></head><body><script>(function(){var d={type:'xero-auth',status:'error',message:${JSON.stringify(msg)}};try{window.opener&&window.opener.postMessage(d,'*')}catch(e){}window.close();setTimeout(function(){document.body.innerText='You can close this window.'},100)})();</script></body></html>`;
+      return new NextResponse(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
     
     // XeroClient is sorting tenants behind the scenes so that most recent / active connection is at index 0
     const activeTenant = xero.tenants[0];
     
     if (!activeTenant) {
-      return NextResponse.redirect(
-        `http://localhost:3111/dashboard?xero_error=${encodeURIComponent('No active Xero organisation found')}`
-      );
+      const msg = 'No active Xero organisation found';
+      const html = `<!doctype html><html><head><meta charset="utf-8"/></head><body><script>(function(){var d={type:'xero-auth',status:'error',message:${JSON.stringify(msg)}};try{window.opener&&window.opener.postMessage(d,'*')}catch(e){}window.close();setTimeout(function(){document.body.innerText='You can close this window.'},100)})();</script></body></html>`;
+      return new NextResponse(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
     
     // Calculate token expiry
@@ -163,15 +167,13 @@ export async function GET(request: NextRequest) {
     };
     console.log(authData);
     
-    // Redirect back to dashboard with success message
-    return NextResponse.redirect(
-      `http://localhost:3111/dashboard?xero_success=${encodeURIComponent('Xero connected successfully')}`
-    );
+    const html = `<!doctype html><html><head><meta charset=\"utf-8\"/></head><body><script>(function(){var d={type:'xero-auth',status:'success',message:'Xero connected successfully'};try{window.opener&&window.opener.postMessage(d,'*')}catch(e){}window.close();setTimeout(function(){document.body.innerText='You can close this window.'},100)})();</script></body></html>`;
+    return new NextResponse(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Xero callback error:', error);
-    return NextResponse.redirect(
-      `http://localhost:3111/dashboard?xero_error=${encodeURIComponent('Failed to connect to Xero')}`
-    );
+    const msg = error?.message || 'Failed to connect to Xero';
+    const html = `<!doctype html><html><head><meta charset="utf-8"/></head><body><script>(function(){var d={type:'xero-auth',status:'error',message:${JSON.stringify(msg)}};try{window.opener&&window.opener.postMessage(d,'*')}catch(e){}window.close();setTimeout(function(){document.body.innerText='You can close this window.'},100)})();</script></body></html>`;
+    return new NextResponse(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
 }
