@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Box } from 'lucide-react'
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google'
+import Header from '@/components/Header'
 
 interface RegisterData {
   email: string
@@ -325,6 +326,7 @@ export default function AuthPage() {
 
   return (
     <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''}>
+      <Header />
       <div className="auth-container">
         <div className="auth-wrapper">
           {/* Left Panel: Info (Dark Side) */}
@@ -695,6 +697,14 @@ export default function AuthPage() {
             </div>
           )}
         </div>
+      </div>
+      <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 1000 }}>
+        <button className="btn btn-primary" style={{ borderRadius: 9999, padding: '12px 16px' }} onClick={() => { try { window.location.assign('/tickets') } catch {} }}>
+          <div style={{ lineHeight: 1.2, textAlign: 'left' }}>
+            <div>Need Halp ?</div>
+            <div>Have sugession ?</div>
+          </div>
+        </button>
       </div>
     </GoogleOAuthProvider >
   )

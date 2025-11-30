@@ -227,3 +227,35 @@ export async function sendInvoicePaidEmail(params: {
     return { success: false, error }
   }
 }
+
+export async function sendTicketCreatedEmail(params: { to: string; subject: string; body: string; ticketId: string }) {
+  const { to, subject, body, ticketId } = params
+  const mailOptions = {
+    from: process.env.SMTP_FROM || 'Support <noreply@trakytt.com>',
+    to,
+    subject: `New ticket #${ticketId}: ${subject}`,
+    html: `<div style="font-family: Arial, sans-serif; max-width: 640px; margin:0 auto;"><h2 style="color:#0f172a;">Ticket created</h2><p><strong>Subject:</strong> ${subject}</p><p><strong>Description:</strong></p><pre style="white-space:pre-wrap;font-family:inherit;">${body}</pre><p style="margin-top:12px;color:#334155;">You will be notified of new replies.</p></div>`
+  } as any
+  try {
+    await transporter.sendMail(mailOptions)
+    return { success: true }
+  } catch (error) {
+    return { success: false, error }
+  }
+}
+
+export async function sendTicketReplyEmail(params: { to: string; ticketId: string; replyBody: string }) {
+  const { to, ticketId, replyBody } = params
+  const mailOptions = {
+    from: process.env.SMTP_FROM || 'Support <noreply@trakytt.com>',
+    to,
+    subject: `New reply on ticket #${ticketId}`,
+    html: `<div style="font-family: Arial, sans-serif; max-width: 640px; margin:0 auto;"><h2 style="color:#0f172a;">New reply received</h2><p><strong>Ticket:</strong> #${ticketId}</p><p><strong>Reply:</strong></p><pre style="white-space:pre-wrap;font-family:inherit;">${replyBody}</pre></div>`
+  } as any
+  try {
+    await transporter.sendMail(mailOptions)
+    return { success: true }
+  } catch (error) {
+    return { success: false, error }
+  }
+}

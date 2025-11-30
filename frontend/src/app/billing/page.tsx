@@ -7,7 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
-import UserMenu from '@/components/UserMenu'
+import Header from '@/components/Header'
+import Footer from '@/components/Footer'
 
 type Invoice = {
   id: string
@@ -123,15 +124,9 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between mb-2">
-        <div className="text-xl font-semibold tracking-wide cursor-pointer" onClick={() => { try { window.location.href = '/dashboard' } catch {} }}>
-          TRAKYYT
-        </div>
-        <div className="flex items-center space-x-4">
-          <UserMenu user={{ name: user?.name, email: user?.email }} onLogout={handleLogout} />
-        </div>
-      </div>
+    <>
+      <Header />
+      <div className="container mx-auto p-6 space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Current Billing</CardTitle>
@@ -257,6 +252,16 @@ export default function BillingPage() {
           <p className="text-sm text-muted-foreground">Stripe integration pending. You’ll be able to add and manage cards here.</p>
         </CardContent>
       </Card>
-    </div>
+      <div className="fixed bottom-6 right-6 z-50">
+        <Button className="rounded-full px-4 py-3 shadow-lg" variant="default" onClick={() => { try { window.location.assign('/tickets') } catch {} }}>
+          <div className="text-sm leading-tight text-left">
+            <div>Need Halp ?</div>
+            <div>Have sugession ?</div>
+          </div>
+        </Button>
+      </div>
+      </div>
+      <Footer />
+    </>
   )
 }

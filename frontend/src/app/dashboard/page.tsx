@@ -3883,6 +3883,14 @@ function DashboardContent() {
         </DialogContent>
       </Dialog>
       
+      <div className="fixed bottom-6 right-6 z-50">
+        <Button className="rounded-full px-4 py-3 shadow-lg" variant="default" onClick={() => { try { window.location.assign('/tickets') } catch {} }}>
+          <div className="text-sm leading-tight text-left">
+            <div>Need Halp ?</div>
+            <div>Have sugession ?</div>
+          </div>
+        </Button>
+      </div>
       <Toaster />
     </div>
   )

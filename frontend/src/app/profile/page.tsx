@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import UserMenu from '@/components/UserMenu'
+import Header from '@/components/Header'
+import Footer from '@/components/Footer'
 import { useToast } from '@/hooks/use-toast'
 
 export default function ProfilePage() {
@@ -117,15 +118,9 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between mb-2">
-        <div className="text-xl font-semibold tracking-wide cursor-pointer" onClick={() => { try { window.location.href = '/dashboard' } catch {} }}>
-          TRAKYYT
-        </div>
-        <div className="flex items-center space-x-4">
-          <UserMenu user={{ name: user?.name, email: user?.email }} />
-        </div>
-      </div>
+    <>
+      <Header />
+      <div className="container mx-auto p-6 space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Profile</CardTitle>
@@ -186,6 +181,8 @@ export default function ProfilePage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+      <Footer />
+    </>
   )
 }
