@@ -7,13 +7,17 @@ const getXeroClient = (state?: string) => {
   const client_id: string = process.env.XERO_CLIENT_ID!;
   const client_secret: string = process.env.XERO_CLIENT_SECRET!;
   const redirectUrl: string = process.env.XERO_REDIRECT_URI!;
-  const scopes: string = process.env.XERO_SCOPES || 'openid profile email accounting.settings accounting.reports.read accounting.journals.read accounting.contacts accounting.attachments accounting.transactions offline_access';
+  const envScopes: string = process.env.XERO_SCOPES || '';
+  const base = envScopes ? envScopes.split(' ') : [];
+  const required = ['openid','profile','email','offline_access','accounting.settings','accounting.transactions','accounting.contacts','accounting.attachments'];
+  const set = new Set<string>([...base, ...required]);
+  const scopes = Array.from(set);
 
   console.log('=== XERO AUTH CLIENT INITIALIZATION DEBUG ===');
   console.log('client_id:', client_id ? `${client_id.substring(0, 8)}...` : 'MISSING');
   console.log('client_secret:', client_secret ? `${client_secret.substring(0, 8)}...` : 'MISSING');
   console.log('redirectUrl:', redirectUrl);
-  console.log('scopes:', scopes.split(' '));
+  console.log('scopes:', scopes);
   console.log('XERO_SCOPES env var:', process.env.XERO_SCOPES);
 
   if (!client_id || !client_secret || !redirectUrl) {
@@ -26,7 +30,7 @@ const getXeroClient = (state?: string) => {
     clientId: client_id,
     clientSecret: client_secret,
     redirectUris: [redirectUrl],
-    scopes: scopes.split(' '),
+    scopes,
     state,
   };
   

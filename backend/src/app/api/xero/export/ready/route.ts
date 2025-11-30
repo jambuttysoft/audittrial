@@ -9,7 +9,9 @@ function getXeroClient() {
   const clientId = process.env.XERO_CLIENT_ID
   const clientSecret = process.env.XERO_CLIENT_SECRET
   const redirectUri = process.env.XERO_REDIRECT_URI
-  const scopes = process.env.XERO_SCOPES?.split(' ') || []
+  const envScopes = process.env.XERO_SCOPES?.split(' ') || []
+  const required = ['openid','profile','email','offline_access','accounting.settings','accounting.transactions','accounting.contacts','accounting.attachments']
+  const scopes = Array.from(new Set([...envScopes, ...required]))
   if (!clientId || !clientSecret || !redirectUri) {
     throw new Error('Missing Xero environment variables')
   }
@@ -55,6 +57,10 @@ async function ensureContact(accountingApi: any, tenantId: string, vendorName: s
     if (!created) throw new Error('Failed to create Xero contact')
     return created
   } catch (err: any) {
+    const hdr = err?.response?.headers?.['www-authenticate'] || err?.response?.headers?.wwwAuthenticate
+    if (typeof hdr === 'string' && hdr.toLowerCase().includes('insufficient_scope')) {
+      throw new Error('Insufficient Xero scope: reconnect and grant accounting.contacts and accounting.attachments')
+    }
     throw new Error(getErrMsg(err))
   }
 }
