@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
 import { generateToken, sendVerificationEmail } from '@/lib/email'
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 const LAST_SEND_WINDOW_MS = 5 * 60 * 1000
 const lastSendMap = new Map<string, number>()
 const ipLastMap = new Map<string, number>()

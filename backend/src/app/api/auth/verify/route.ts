@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCorsHeaders, handleCorsOptions } from '@/lib/cors';
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 // Handle CORS preflight requests
 export async function OPTIONS(request: NextRequest) {
     const origin = request.headers.get('origin');
