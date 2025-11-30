@@ -16,6 +16,24 @@ function getXeroClient() {
   return new XeroClient({ clientId, clientSecret, redirectUris: [redirectUri], scopes })
 }
 
+function getErrMsg(e: any) {
+  const r = e?.response
+  const d = r?.data
+  if (typeof d === 'string') return d
+  if (d?.message) return d.message
+  const elements = d?.Elements || d?.elements
+  if (Array.isArray(elements) && elements.length) {
+    const v = elements[0]?.ValidationErrors || elements[0]?.validationErrors
+    if (Array.isArray(v) && v.length) {
+      const msgs = v.map((x: any) => x?.Message || x?.message).filter(Boolean)
+      if (msgs.length) return msgs.join('; ')
+    }
+  }
+  const m = e?.message || e?.toString?.()
+  if (m && m !== '[object Object]') return m
+  try { return JSON.stringify(d || e) } catch { return 'Unknown error' }
+}
+
 async function ensureContact(accountingApi: any, tenantId: string, vendorName: string, vendorAbn?: string | null) {
   const name = vendorName?.trim()
   if (!name) throw new Error('Missing vendor name')
@@ -24,17 +42,21 @@ async function ensureContact(accountingApi: any, tenantId: string, vendorName: s
     const existing = found?.body?.contacts?.[0]
     if (existing) return existing
   } catch {}
-  const createRes = await accountingApi.createContacts(tenantId, {
-    contacts: [{
-      name,
-      taxNumber: vendorAbn || undefined,
-      isSupplier: true,
-      isCustomer: false,
-    }]
-  })
-  const created = createRes?.body?.contacts?.[0]
-  if (!created) throw new Error('Failed to create Xero contact')
-  return created
+  try {
+    const createRes = await accountingApi.createContacts(tenantId, {
+      contacts: [{
+        name,
+        taxNumber: vendorAbn || undefined,
+        isSupplier: true,
+        isCustomer: false,
+      }]
+    })
+    const created = createRes?.body?.contacts?.[0]
+    if (!created) throw new Error('Failed to create Xero contact')
+    return created
+  } catch (err: any) {
+    throw new Error(getErrMsg(err))
+  }
 }
 
 async function resolveExpenseAccountCode(accountingApi: any, tenantId: string, expenseCategory?: string | null) {
@@ -260,9 +282,9 @@ export async function POST(request: NextRequest) {
 
         await prisma.digitizedReady.delete({ where: { id: doc.id } })
       } catch (err: any) {
-        const msg = err?.response?.data?.message || err?.message || String(err) || 'Unknown error'
+        const msg = getErrMsg(err)
         const code = err?.response?.status
-        failures.push({ documentId: doc.originalDocumentId, stage, error: msg, code })
+        failures.push({ documentId: doc.originalDocumentId, stage, error: msg, code, tenantId, vendorName: doc.vendorName || null })
       }
     }
 
