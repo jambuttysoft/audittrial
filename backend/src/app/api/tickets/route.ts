@@ -57,6 +57,20 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
+    const type = searchParams.get('type')
+    const userId = searchParams.get('userId') || ''
+    const mine = (searchParams.get('mine') || '').toLowerCase() === 'true'
+    const unassigned = (searchParams.get('unassigned') || '').toLowerCase() === 'true'
+    const assignedToMe = (searchParams.get('assignedToMe') || '').toLowerCase() === 'true'
+    const assigneeId = searchParams.get('assigneeId') || ''
+    const ownerId = searchParams.get('ownerId') || ''
+    const claimedParam = searchParams.get('claimed') || ''
+    const hasAttachmentsParam = (searchParams.get('hasAttachments') || '').toLowerCase()
+    const hasRepliesParam = (searchParams.get('hasReplies') || '').toLowerCase()
+    const q = searchParams.get('q') || ''
+    const from = searchParams.get('from') || ''
+    const to = searchParams.get('to') || ''
+    const sort = searchParams.get('sort') || 'createdAt_desc'
     const limitParam = Number(searchParams.get('limit') || 20)
     const offsetParam = Number(searchParams.get('offset') || 0)
     const limit = Math.min(Math.max(limitParam, 1), 100)
@@ -64,9 +78,48 @@ export async function GET(request: NextRequest) {
 
     const where: any = {}
     if (status) where.status = String(status).toUpperCase()
+    if (type) where.type = String(type)
+    if (unassigned) where.assigneeId = null
+    if (assignedToMe && userId) where.assigneeId = String(userId)
+    if (assigneeId) where.assigneeId = String(assigneeId)
+    if (ownerId) where.userId = String(ownerId)
+    if (claimedParam) {
+      const val = claimedParam.toLowerCase()
+      if (val === 'true') where.assigneeId = { not: null }
+      if (val === 'false') where.assigneeId = null
+    }
+    if (hasAttachmentsParam === 'true') where.attachments = { some: {} }
+    if (hasAttachmentsParam === 'false') where.attachments = { none: {} }
+    if (hasRepliesParam === 'true') where.replies = { some: {} }
+    if (hasRepliesParam === 'false') where.replies = { none: {} }
+    if (q) {
+      where.OR = [
+        { subject: { contains: q, mode: 'insensitive' } },
+        { body: { contains: q, mode: 'insensitive' } },
+      ]
+    }
+    if (from || to) {
+      where.createdAt = {}
+      if (from) where.createdAt.gte = new Date(from)
+      if (to) where.createdAt.lte = new Date(to)
+    }
 
+    // Authorization: staff can list all; users can list only their own when mine=true
+    if (mine) {
+      if (!userId) return badRequest('userId required for mine=true', [{ field: 'userId', message: 'Required' }], corsHeaders, requestId)
+      where.userId = String(userId)
+    } else {
+      const actorId = userId
+      if (!actorId) return badRequest('userId required for staff listing', [{ field: 'userId', message: 'Required' }], corsHeaders, requestId)
+      const actor = await (prisma as any).user.findUnique({ where: { id: actorId }, select: { role: true } })
+      if (!actor || (actor.role !== 'ADMIN' && actor.role !== 'SUPPORT')) {
+        return badRequest('Insufficient permissions', [{ field: 'role', message: 'ADMIN or SUPPORT required' }], corsHeaders, requestId)
+      }
+    }
+
+    const orderBy = sort === 'createdAt_asc' ? { createdAt: 'asc' } : { createdAt: 'desc' }
     const [tickets, total] = await Promise.all([
-      (prisma as any).ticket.findMany({ where, orderBy: { createdAt: 'desc' }, skip: offset, take: limit }),
+      (prisma as any).ticket.findMany({ where, orderBy, skip: offset, take: limit }),
       (prisma as any).ticket.count({ where })
     ])
 

@@ -29,43 +29,45 @@ export async function OPTIONS(request: NextRequest) {
   return handleCorsOptions(request.headers.get('origin'))
 }
 
-export async function PATCH(request: NextRequest, context: any) {
+export async function POST(request: NextRequest, context: any) {
   const corsHeaders = getCorsHeaders(request.headers.get('origin'))
   const requestId = request.headers.get('x-request-id') || `req_${Math.random().toString(36).slice(2)}`
   try {
     const p = context?.params
     const { id } = (p && typeof p.then === 'function') ? await p : p
     const body = await request.json()
-    const { userId, status } = body || {}
-    if (!userId || !status) {
+    const { userId, content } = body || {}
+    if (!userId || !content) {
       return badRequest('Required fields missing', [
         { field: 'userId', message: 'Required' },
-        { field: 'status', message: 'Required' },
+        { field: 'content', message: 'Required' },
       ], corsHeaders, requestId)
     }
-
-    const allowed = new Set(['OPEN','IN_PROGRESS','RESOLVED','CLOSED','REOPENED'])
-    const nextStatus = String(status).toUpperCase()
-    if (!allowed.has(nextStatus)) return badRequest('Invalid status', [{ field: 'status', message: 'Invalid value' }], corsHeaders, requestId)
 
     const ticket = await prisma.ticket.findUnique({ where: { id: String(id) }, select: { id: true, userId: true } })
     if (!ticket) return notFound('Ticket not found', corsHeaders, requestId)
 
-    const actor = await prisma.user.findUnique({ where: { id: String(userId) }, select: { role: true, id: true } })
+    const actor = await prisma.user.findUnique({ where: { id: String(userId) }, select: { role: true } })
     if (!actor) return forbidden('User not found or inactive', corsHeaders, requestId)
 
     const isStaff = actor.role === 'ADMIN' || actor.role === 'SUPPORT'
-    if (!isStaff) {
-      const ownerOnlyAllowed = new Set(['CLOSED','REOPENED'])
-      if (!ownerOnlyAllowed.has(nextStatus)) return forbidden('Insufficient permissions', corsHeaders, requestId)
-      if (ticket.userId !== String(userId)) return forbidden('Only ticket owner can change status', corsHeaders, requestId)
+    if (!isStaff && ticket.userId !== String(userId)) {
+      return forbidden('Only ticket owner can reply', corsHeaders, requestId)
     }
 
-    const updated = await prisma.ticket.update({ where: { id: String(id) }, data: { status: nextStatus as any } })
-    return ok({ ticket: updated }, 200, corsHeaders, requestId)
+    const reply = await prisma.ticketReply.create({
+      data: { ticketId: String(id), userId: String(userId), body: String(content) },
+    })
+
+    // If staff replied, mark ticket as in progress
+    if (isStaff) {
+      await prisma.ticket.update({ where: { id: String(id) }, data: { status: 'IN_PROGRESS' } })
+    }
+
+    return ok({ reply }, 201, corsHeaders, requestId)
   } catch (error: any) {
-    console.error('PATCH /api/tickets/[id]/status error', { message: error?.message, stack: error?.stack })
-    return serverError('Failed to update status', corsHeaders, requestId)
+    console.error('POST /api/tickets/[id]/reply error', { message: error?.message, stack: error?.stack })
+    return serverError('Failed to add reply', corsHeaders, requestId)
   }
 }
 

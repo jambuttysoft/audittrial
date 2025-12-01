@@ -80,6 +80,16 @@ async function resolveExpenseAccountCode(accountingApi: any, tenantId: string, e
   return anyActive?.code || '400'
 }
 
+async function resolveCashOutAccountCode(accountingApi: any, tenantId: string) {
+  const res = await accountingApi.getAccounts(tenantId)
+  const accounts = res?.body?.accounts || []
+  const names = ['cash', 'petty cash', 'cash on hand']
+  const byName = accounts.find((a: any) => a.status === 'ACTIVE' && a.code && names.some(n => (a.name || '').toLowerCase().includes(n)))
+  if (byName?.code) return byName.code
+  const expense = accounts.find((a: any) => a.status === 'ACTIVE' && a._class === 'EXPENSE' && a.code)
+  return expense?.code || '400'
+}
+
 export async function OPTIONS(request: NextRequest) {
   return handleCorsOptions(request.headers.get('origin') || '')
 }
@@ -88,7 +98,7 @@ export async function POST(request: NextRequest) {
   const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
   try {
     const body = await request.json()
-    const { userId, companyId, documentIds, dateRangeStart, dateRangeEnd, mode } = body || {}
+    const { userId, companyId, documentIds, dateRangeStart, dateRangeEnd, mode, taxMode } = body || {}
     if (!userId || !companyId) {
       return NextResponse.json({ error: 'userId and companyId are required' }, { status: 400, headers: corsHeaders })
     }
@@ -151,6 +161,26 @@ export async function POST(request: NextRequest) {
       return 0
     }
 
+    const region = (company as any)?.taxRegion as string | undefined
+    const getTaxTypeByRegion = (isTaxable: boolean) => {
+      const r = (region || 'AU').toUpperCase()
+      if (!isTaxable) return 'NONE'
+      switch (r) {
+        case 'AU':
+        case 'NZ':
+        case 'UK':
+        case 'EU':
+        case 'CA':
+        case 'US':
+          return 'INPUT'
+        default:
+          return 'INPUT'
+      }
+    }
+    const taxModeOverride = typeof taxMode === 'string' ? taxMode.toLowerCase() : ''
+    const isOverrideExclusive = taxModeOverride === 'exclusive'
+    const isOverrideInclusive = taxModeOverride === 'inclusive'
+
     for (const doc of docs) {
       let stage = 'preflight'
       try {
@@ -162,39 +192,64 @@ export async function POST(request: NextRequest) {
         const taxAmountNum = toNum(doc.taxAmount)
         const totalAmountNum = toNum(doc.totalAmount)
         const amountExclTaxNum = toNum(doc.amountExclTax)
+        const discountAmountNum = toNum((doc as any).discountAmount)
+        const cashOutAmountNum = toNum((doc as any).cashOutAmount)
         const hasGst = taxAmountNum > 0
-        const taxType = hasGst ? 'INPUT' : 'NONE'
+        const taxType = getTaxTypeByRegion(hasGst) as any
         const net = amountExclTaxNum || (totalAmountNum ? (totalAmountNum - taxAmountNum) : 0)
         const gross = totalAmountNum || (amountExclTaxNum ? (amountExclTaxNum + taxAmountNum) : 0)
         const round2 = (n: number) => Math.round(n * 100) / 100
         const netRounded = round2(net)
         const grossRounded = round2(gross)
+        const taxRate = amountExclTaxNum > 0 ? taxAmountNum / amountExclTaxNum : 0
+        const discountExclusive = round2(discountAmountNum && taxRate > 0 ? (discountAmountNum / (1 + taxRate)) : discountAmountNum)
 
         const dateStr = (doc.purchaseDate ? new Date(doc.purchaseDate) : new Date()).toISOString().slice(0,10)
 
         stage = 'compose'
         if (exportMode === 'bill') {
           const dueStr = (doc.purchaseDate ? new Date(doc.purchaseDate.getTime() + 14 * 24 * 3600 * 1000) : new Date(Date.now() + 14 * 24 * 3600 * 1000)).toISOString().slice(0,10)
+          const lineAmountTypesBill = isOverrideExclusive ? 'Exclusive' : (isOverrideInclusive ? 'Inclusive' : (amountExclTaxNum ? 'Exclusive' : 'Inclusive'))
+          const mainUnit = lineAmountTypesBill === 'Exclusive' ? Number(netRounded || 0) : Number(grossRounded || 0)
           const invoice = {
             type: 'ACCPAY' as any,
             contact: { contactID: contact.contactID },
             date: dateStr,
             dueDate: dueStr,
-            lineAmountTypes: 'Exclusive' as any,
+            lineAmountTypes: lineAmountTypesBill as any,
             lineItems: [{
               description: doc.documentType || doc.originalName || 'Expense',
               quantity: 1,
-              unitAmount: Number(netRounded || 0),
+              unitAmount: mainUnit,
               accountCode: accountCode,
               taxType: taxType as any,
             }],
             status: 'DRAFT' as any,
           }
+          if (cashOutAmountNum > 0) {
+            invoice.lineItems.push({
+              description: 'Cash Out',
+              quantity: 1,
+              unitAmount: Number(-round2(cashOutAmountNum)),
+              accountCode: await resolveCashOutAccountCode(accountingApi, tenantId),
+              taxType: 'NONE' as any,
+            })
+          }
+          if (discountAmountNum > 0) {
+            const discUnit = lineAmountTypesBill === 'Exclusive' ? Number(-discountExclusive) : Number(-round2(discountAmountNum))
+            invoice.lineItems.push({
+              description: 'Discount',
+              quantity: 1,
+              unitAmount: discUnit,
+              accountCode: accountCode,
+              taxType: getTaxTypeByRegion(hasGst) as any,
+            })
+          }
           const invPayload = { invoices: [invoice] }
           {
             const pathStr = doc.filePath ? (doc.filePath.startsWith('/') ? doc.filePath : join(process.cwd(), doc.filePath)) : ''
             const fileNameAttach = doc.originalName || doc.fileName || `receipt-${doc.originalDocumentId}`
-            exportRequests.push({ endpoint: 'createInvoices', originalDocumentId: doc.originalDocumentId, body: invPayload, attachment: pathStr ? { fileName: fileNameAttach, path: pathStr } : undefined, audit: { hasGst, taxAmount: taxAmountNum, net: netRounded, gross: grossRounded, used: 'net' } })
+            exportRequests.push({ endpoint: 'createInvoices', originalDocumentId: doc.originalDocumentId, body: invPayload, attachment: pathStr ? { fileName: fileNameAttach, path: pathStr } : undefined, audit: { hasGst, taxAmount: taxAmountNum, net: netRounded, gross: grossRounded, lineAmountTypes: lineAmountTypesBill, discount: discountAmountNum, cashOut: cashOutAmountNum, region } })
           }
           stage = 'createInvoice'
           const res = await accountingApi.createInvoices(tenantId, invPayload)
@@ -230,11 +285,29 @@ export async function POST(request: NextRequest) {
             }],
             status: 'AUTHORISED' as any,
           }
+          if (cashOutAmountNum > 0) {
+            bankTransaction.lineItems.push({
+              description: 'Cash Out',
+              quantity: 1,
+              unitAmount: Number(-round2(cashOutAmountNum)),
+              accountCode: await resolveCashOutAccountCode(accountingApi, tenantId),
+              taxType: 'NONE' as any,
+            })
+          }
+          if (discountAmountNum > 0) {
+            bankTransaction.lineItems.push({
+              description: 'Discount',
+              quantity: 1,
+              unitAmount: Number(-round2(discountAmountNum)),
+              accountCode: accountCode,
+              taxType: getTaxTypeByRegion(hasGst) as any,
+            })
+          }
           const spendPayload = { bankTransactions: [bankTransaction] }
           {
             const pathStr = doc.filePath ? (doc.filePath.startsWith('/') ? doc.filePath : join(process.cwd(), doc.filePath)) : ''
             const fileNameAttach = doc.originalName || doc.fileName || `receipt-${doc.originalDocumentId}`
-            exportRequests.push({ endpoint: 'createBankTransactions', originalDocumentId: doc.originalDocumentId, body: spendPayload, attachment: pathStr ? { fileName: fileNameAttach, path: pathStr } : undefined, audit: { hasGst, taxAmount: taxAmountNum, net: netRounded, gross: grossRounded, used: 'gross' } })
+            exportRequests.push({ endpoint: 'createBankTransactions', originalDocumentId: doc.originalDocumentId, body: spendPayload, attachment: pathStr ? { fileName: fileNameAttach, path: pathStr } : undefined, audit: { hasGst, taxAmount: taxAmountNum, net: netRounded, gross: grossRounded, lineAmountTypes: 'Inclusive', discount: discountAmountNum, cashOut: cashOutAmountNum, region } })
           }
           stage = 'createSpend'
           const res = await accountingApi.createBankTransactions(tenantId, spendPayload)

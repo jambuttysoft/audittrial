@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
         password: true,
         name: true,
         userType: true,
+        role: true,
         isOAuthUser: true,
         oauthProvider: true,
         oauthId: true,
@@ -162,7 +163,8 @@ export async function POST(request: NextRequest) {
       {
         userId: user.id,
         email: user.email,
-        userType: user.userType
+        userType: user.userType,
+        role: user.role,
       },
       process.env.JWT_SECRET || 'fallback-secret-key',
       { expiresIn: '7d' }
@@ -178,6 +180,7 @@ export async function POST(request: NextRequest) {
           email: user.email,
           name: user.name,
           userType: user.userType,
+          role: user.role,
           isOAuthUser: user.isOAuthUser,
         },
         token,
