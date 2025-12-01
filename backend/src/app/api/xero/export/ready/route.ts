@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
         stage = 'compose'
         if (exportMode === 'bill') {
           const dueStr = (doc.purchaseDate ? new Date(doc.purchaseDate.getTime() + 14 * 24 * 3600 * 1000) : new Date(Date.now() + 14 * 24 * 3600 * 1000)).toISOString().slice(0,10)
-          const lineAmountTypesBill = isOverrideExclusive ? 'Exclusive' : (isOverrideInclusive ? 'Inclusive' : (amountExclTaxNum ? 'Exclusive' : 'Inclusive'))
+          const lineAmountTypesBill = isOverrideExclusive ? 'Exclusive' : (isOverrideInclusive ? 'Inclusive' : (totalAmountNum ? 'Inclusive' : (amountExclTaxNum ? 'Exclusive' : 'Inclusive')))
           const mainUnit = lineAmountTypesBill === 'Exclusive' ? Number(netRounded || 0) : Number(grossRounded || 0)
           const invoice = {
             type: 'ACCPAY' as any,
@@ -223,6 +223,7 @@ export async function POST(request: NextRequest) {
               unitAmount: mainUnit,
               accountCode: accountCode,
               taxType: taxType as any,
+              taxAmount: lineAmountTypesBill === 'Inclusive' ? Number(round2(taxAmountNum)) : undefined,
             }],
             status: 'DRAFT' as any,
           }
@@ -233,6 +234,7 @@ export async function POST(request: NextRequest) {
               unitAmount: Number(-round2(cashOutAmountNum)),
               accountCode: await resolveCashOutAccountCode(accountingApi, tenantId),
               taxType: 'NONE' as any,
+              taxAmount: 0
             })
           }
           if (discountAmountNum > 0) {
@@ -243,6 +245,7 @@ export async function POST(request: NextRequest) {
               unitAmount: discUnit,
               accountCode: accountCode,
               taxType: getTaxTypeByRegion(hasGst) as any,
+              taxAmount: 0
             })
           }
           const invPayload = { invoices: [invoice] }
