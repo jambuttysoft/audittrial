@@ -1,7 +1,7 @@
 "use client"
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ChevronDown, LogOut, User } from 'lucide-react'
 
 type Props = {
@@ -21,6 +21,7 @@ export default function UserMenu({ user, onLogout }: Props) {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="flex items-center space-x-2 text-left">
           <Avatar className="h-8 w-8">
+            <AvatarImage src={user?.avatar || '/trlogo.png'} alt="avatar" />
             <AvatarFallback>
               {user?.name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
             </AvatarFallback>
@@ -52,4 +53,3 @@ export default function UserMenu({ user, onLogout }: Props) {
     </DropdownMenu>
   )
 }
-

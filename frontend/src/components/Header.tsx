@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import UserMenu from '@/components/UserMenu'
+import Image from 'next/image'
+import { useUserProfile } from '@/hooks/use-user-profile'
 
 export default function Header() {
-  const [user, setUser] = useState<{ id: string; email?: string; name?: string } | null>(null)
-  useEffect(() => {
-    try { const raw = localStorage.getItem('user'); if (raw) setUser(JSON.parse(raw)) } catch {}
-  }, [])
+  const { user } = useUserProfile()
 
   return (
 <header className="sticky top-0 z-30 border-b bg-background">
@@ -20,11 +19,7 @@ export default function Header() {
         } catch {}
       }}
     >
-      <img
-        src="/trlogo.png"          // путь к твоему лого
-        alt="TRAKYTT Logo"
-        className="h-10 w-10"      // размер, при необходимости меняй
-      />
+      <Image src="/trlogo.png" alt="TRAKYTT Logo" width={40} height={40} className="h-10 w-10" />
 
       <div className="brand-logo text-xl font-bold" style={{ color: '#09090b' }}>
         TRAKYTT
@@ -37,4 +32,3 @@ export default function Header() {
 
   )
 }
-

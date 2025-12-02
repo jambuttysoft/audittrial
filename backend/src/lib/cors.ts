@@ -1,9 +1,16 @@
 // CORS utility for handling cross-origin requests
 
-const ALLOWED_ORIGINS = [
-  'http://localhost:3646',
-  'https://auditrail.trakit.biz'
-]
+const ENV_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean)
+const ALLOWED_ORIGINS = ENV_ORIGINS.length
+  ? ENV_ORIGINS
+  : [
+      'http://localhost:3646',
+      'http://localhost:3645',
+      'https://auditrail.trakit.biz',
+    ]
 
 export function getCorsHeaders(origin?: string | null): Record<string, string> {
   // Check if the origin is in our allowed list
@@ -13,9 +20,16 @@ export function getCorsHeaders(origin?: string | null): Record<string, string> {
 
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Credentials': 'true'
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Request-Id, Accept',
+    'Access-Control-Allow-Credentials': 'true',
+    'Vary': 'Origin',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'X-XSS-Protection': '1; mode=block',
+    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+    'Content-Security-Policy': "default-src 'self'",
+    'Referrer-Policy': 'strict-origin-when-cross-origin'
   }
 }
 
@@ -36,5 +50,13 @@ export function createCorsResponse(data?: any, status: number = 200, origin?: st
 }
 
 export function handleCorsOptions(origin?: string | null) {
-  return createCorsResponse(null, 200, origin)
+  const headers = getCorsHeaders(origin)
+  return new Response(null, {
+    status: 204,
+    headers: {
+      ...headers,
+      'Access-Control-Max-Age': '600',
+      'Content-Length': '0'
+    }
+  })
 }

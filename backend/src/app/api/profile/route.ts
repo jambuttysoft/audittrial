@@ -2,43 +2,47 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 export async function OPTIONS(request: NextRequest) {
   return handleCorsOptions(request.headers.get('origin') || '')
 }
 
 export async function GET(request: NextRequest) {
+  const origin = request.headers.get('origin') || ''
+  const corsHeaders = getCorsHeaders(origin)
   try {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
     if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400, headers: getCorsHeaders(request.headers.get('origin') || '') })
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400, headers: corsHeaders })
     }
-    const user = await prisma.user.findUnique({ where: { id: userId } })
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        userType: true,
+        phone: true,
+        address: true,
+        website: true,
+        avatar: true,
+        company: true,
+        abn: true,
+        services: true,
+        isVisibleToClients: true,
+        acceptsJobOffers: true,
+        autoChargeEnabled: true,
+      },
+    })
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404, headers: getCorsHeaders(request.headers.get('origin') || '') })
+      return NextResponse.json({ error: 'User not found' }, { status: 404, headers: corsHeaders })
     }
-    const data = {
-      // @ts-ignore - abn field added manually
-      abn: (user as any).abn,
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      userType: user.userType,
-      phone: user.phone,
-      address: user.address,
-      website: user.website,
-      avatar: user.avatar,
-      company: user.company,
-      services: user.services,
-      isVisibleToClients: user.isVisibleToClients,
-      acceptsJobOffers: user.acceptsJobOffers,
-      autoChargeEnabled: (user as any).autoChargeEnabled || false,
-      stripeCustomerId: (user as any).stripeCustomerId || null,
-      defaultPaymentMethodId: (user as any).defaultPaymentMethodId || null,
-    }
-    // @ts-ignore - abn field may not be in type
-    return NextResponse.json({ success: true, profile: data }, { headers: getCorsHeaders(request.headers.get('origin') || '') })
+    return NextResponse.json({ success: true, profile: user }, { headers: corsHeaders })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to load profile' }, { status: 500, headers: getCorsHeaders(request.headers.get('origin') || '') })
+    return NextResponse.json({ error: 'Failed to get profile' }, { status: 500, headers: corsHeaders })
   }
 }
+

@@ -43,6 +43,7 @@ import { DataTable } from '@/components/ui/data-table'
 import { ColumnDef } from '@tanstack/react-table'
 import { Toaster } from '@/components/ui/toaster'
 import { useToast } from '@/hooks/use-toast'
+import { useUserProfile } from '@/hooks/use-user-profile'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -88,6 +89,13 @@ interface UserData {
   isActive: boolean
   createdAt: string
 }
+
+type UserLike = {
+  id: string
+  email?: string
+  name?: string
+  userType?: 'INDIVIDUAL' | 'BUSINESS'
+} & Partial<UserData>
 
 interface Company {
   id: string
@@ -202,7 +210,7 @@ function DashboardContent() {
     const endStr = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}`
     return { startStr, endStr }
   }
-  const [user, setUser] = useState<UserData | null>(null)
+  const { user } = useUserProfile()
   const [isLoading, setIsLoading] = useState(true)
   const [documents, setDocuments] = useState<DocumentData[]>([])
   const [digitizedDocuments, setDigitizedDocuments] = useState<DigitizedData[]>([])
@@ -339,7 +347,7 @@ function DashboardContent() {
   }, [])
 
 
-  const loadCompanies = useCallback(async (userData: UserData) => {
+  const loadCompanies = useCallback(async (userData: UserLike) => {
     try {
       const response = await fetch(`/api/companies?userId=${userData.id}`, {
         credentials: 'include'
@@ -362,7 +370,7 @@ function DashboardContent() {
     }
   }, [])
 
-  const loadDashboardData = useCallback(async (userData: UserData) => {
+  const loadDashboardData = useCallback(async (userData: UserLike) => {
     try {
       await loadCompanies(userData)
     } catch (error) {
@@ -373,20 +381,12 @@ function DashboardContent() {
   }, [loadCompanies])
 
   useEffect(() => {
-    const userData = localStorage.getItem('user')
-    if (!userData) {
+    if (!user) {
       router.push('/auth')
       return
     }
-    try {
-      const parsedUser = JSON.parse(userData)
-      setUser(parsedUser)
-      loadDashboardData(parsedUser)
-    } catch (error) {
-      console.error('Error parsing user data:', error)
-      router.push('/auth')
-    }
-  }, [router, loadDashboardData])
+    loadDashboardData(user)
+  }, [user, router, loadDashboardData])
 
   // Handle company parameter from URL and auto-refresh data
   const loadCompanyDocuments = useCallback(async (companyId: string) => {
@@ -2160,7 +2160,7 @@ function DashboardContent() {
         </div>
 
         {/* User Profile Dropdown */}
-        <UserMenu user={{ name: user?.name, email: user?.email }} onLogout={handleLogout} />
+        <UserMenu user={{ name: user?.name, email: user?.email, avatar: user?.avatar }} onLogout={handleLogout} />
       </div>
 
       {/* Main content */}

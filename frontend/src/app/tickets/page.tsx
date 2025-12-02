@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { Plus, FileImage, FileText, FileArchive, FileCode, FileVideo, FileAudio, File } from 'lucide-react'
 import Header from '@/components/Header'
+import Image from 'next/image'
 
 type Ticket = {
   id: string
@@ -341,7 +342,7 @@ export default function TicketsPage() {
                               <a href={url} target="_blank" rel="noreferrer" className="block">
                                 <div className="border rounded-md p-2 flex items-center justify-center h-[72px] bg-muted">
                                   {isImage ? (
-                                    <img src={url} alt={a.fileName} className="max-h-[64px] max-w-[80px] object-contain" />
+                                    <Image src={url} alt={a.fileName} width={80} height={64} className="object-contain" />
                                   ) : (
                                     <Icon className="h-8 w-8" />
                                   )}
@@ -377,7 +378,7 @@ export default function TicketsPage() {
                                         <a href={url} target="_blank" rel="noreferrer" className="block">
                                           <div className="border rounded-md p-2 flex items-center justify-center h-[72px] bg-muted">
                                             {isImage ? (
-                                              <img src={url} alt={a.fileName} className="max-h-[64px] max-w-[80px] object-contain" />
+                                              <Image src={url} alt={a.fileName} width={80} height={64} className="object-contain" />
                                             ) : (
                                               <Icon className="h-8 w-8" />
                                             )}
