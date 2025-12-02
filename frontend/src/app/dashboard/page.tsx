@@ -44,7 +44,9 @@ import { ColumnDef } from '@tanstack/react-table'
 import { Toaster } from '@/components/ui/toaster'
 import { useToast } from '@/hooks/use-toast'
 import { useUserProfile } from '@/hooks/use-user-profile'
+import SupportButton from '@/components/SupportButton'
 import { Input } from '@/components/ui/input'
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput, InputGroupText } from '@/components/ui/input-group'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog'
@@ -53,6 +55,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import UserMenu from '@/components/UserMenu'
 import { useRef } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Info } from 'lucide-react'
 
 // Component for truncated text with tooltip
 function TruncatedCell({ text, maxWidth = '150px' }: { text: string; maxWidth?: string }) {
@@ -211,6 +214,8 @@ function DashboardContent() {
     return { startStr, endStr }
   }
   const { user } = useUserProfile()
+  const [companyEditErrors, setCompanyEditErrors] = useState<Record<string, string>>({})
+  const [isAbnValidatedEditing, setIsAbnValidatedEditing] = useState<boolean>(false)
   const [isLoading, setIsLoading] = useState(true)
   const [documents, setDocuments] = useState<DocumentData[]>([])
   const [digitizedDocuments, setDigitizedDocuments] = useState<DigitizedData[]>([])
@@ -285,6 +290,8 @@ function DashboardContent() {
     industry: ''
   })
   const [isCreatingCompany, setIsCreatingCompany] = useState(false)
+  const [isAbnValidatedNew, setIsAbnValidatedNew] = useState(false)
+  const [newCompanyErrors, setNewCompanyErrors] = useState<{ abn?: string; email?: string }>({})
 
   // File upload states
   const [isUploading, setIsUploading] = useState(false)
@@ -382,7 +389,7 @@ function DashboardContent() {
 
   useEffect(() => {
     if (!user) {
-      router.push('/auth')
+      router.push('/')
       return
     }
     loadDashboardData(user)
@@ -1046,6 +1053,31 @@ function DashboardContent() {
     if (!editedCompany || !user?.id) return
 
     try {
+      const abnDigits = (editedCompany.abn || '').replace(/[^\d]/g, '')
+      if (!validateAbnChecksum(abnDigits)) {
+        setCompanyEditErrors((prev) => ({ ...prev, abn: 'Invalid ABN checksum' }))
+        toast({ title: 'Validation error', description: 'ABN is invalid', variant: 'destructive' })
+        return
+      }
+      const mailInput = (editedCompany.email || '').trim()
+      if (mailInput) {
+        const okMail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mailInput)
+        if (!okMail) {
+          setCompanyEditErrors((prev) => ({ ...prev, email: 'Invalid email format' }))
+          toast({ title: 'Validation error', description: 'Email must be valid', variant: 'destructive' })
+          return
+        }
+      }
+      const webInput = (editedCompany.website || '').trim()
+      let website = webInput ? (webInput.startsWith('http') ? webInput : 'https://' + webInput.replace(/^www\./, '')) : ''
+      if (website) {
+        const ok = /^(https?:\/\/)[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:\/\?#\[\]@!$&'()*+,;=.]*$/.test(website)
+        if (!ok) {
+          setCompanyEditErrors((prev) => ({ ...prev, website: 'Invalid website URL' }))
+          toast({ title: 'Validation error', description: 'Website must be a valid URL', variant: 'destructive' })
+          return
+        }
+      }
       const response = await fetch(`/api/companies/${editedCompany.id}?userId=${user.id}`, {
         method: 'PUT',
         headers: {
@@ -1058,7 +1090,7 @@ function DashboardContent() {
           email: editedCompany.email,
           phone: editedCompany.phone,
           address: editedCompany.address,
-          website: editedCompany.website,
+          website,
           abn: editedCompany.abn,
           industry: editedCompany.industry,
         }),
@@ -1097,6 +1129,77 @@ function DashboardContent() {
     return [a, b, c, e].filter(Boolean).join(' ')
   }
 
+  const validateAbnChecksum = (abnDigits: string) => {
+    const clean = abnDigits.replace(/[^\d]/g, '')
+    if (!/^\d{11}$/.test(clean)) return false
+    const weights = [10, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19]
+    const nums = clean.split('').map((d) => parseInt(d, 10))
+    nums[0] = nums[0] - 1
+    const sum = nums.reduce((acc, n, i) => acc + n * weights[i], 0)
+    return sum % 89 === 0
+  }
+
+  const stripToDomain = (url: string) => {
+    const v = (url || '').trim()
+    if (!v) return ''
+    const withoutScheme = v.replace(/^https?:\/\//i, '').replace(/^www\./i, '')
+    const domain = withoutScheme.split('/')[0]
+    return domain
+  }
+
+  const sanitizeDomainInput = (s: string) => {
+    return (s || '').replace(/[^a-zA-Z0-9.-]/g, '').replace(/\s+/g, '')
+  }
+
+  const hasExistingCompanyData = (c: Company | null) => {
+    return !!(c && (c.name || c.industry || c.email || c.phone || c.website || c.address || c.description))
+  }
+
+  const handleEditedCompanyAbnBlur = async (abn: string) => {
+    const clean = abn.replace(/[^\d]/g, '')
+    const ok = validateAbnChecksum(clean)
+    if (!ok) {
+      setCompanyEditErrors((prev) => ({ ...prev, abn: 'Invalid ABN checksum' }))
+      setIsAbnValidatedEditing(false)
+      return
+    }
+    setCompanyEditErrors((prev) => ({ ...prev, abn: '' }))
+    setIsAbnValidatedEditing(true)
+    try {
+      const r = await fetch(`/api/vendors?abn=${clean}`, { credentials: 'include' })
+      if (!r.ok) return
+      const data = await r.json()
+      const businessNameFirst = Array.isArray(data.BusinessName) ? String((data.BusinessName[0] || '')).trim() : ''
+      const name = businessNameFirst || (data.EntityName || '')
+      const addr = [data.AddressState || '', data.AddressPostcode || ''].join(' ').trim()
+      setEditedCompany((prev) => prev ? { ...prev, name, address: prev.address || addr, abn: formatAbnInput(clean) } : prev)
+    } catch {}
+  }
+
+  const handleEditedCompanyPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let digits = e.target.value.replace(/[^\d]/g, '')
+    if (digits.startsWith('61')) digits = digits.slice(2)
+    if (digits.startsWith('0')) digits = digits.slice(1)
+    let formatted = '+61'
+    if (digits.length > 0) {
+      formatted += ' '
+      const first = digits[0]
+      if (first === '4') {
+        const a = digits.slice(0, 1)
+        const b = digits.slice(1, 4)
+        const c = digits.slice(4, 7)
+        const d = digits.slice(7, 10)
+        formatted += a + (b ? ' ' + b : '') + (c ? ' ' + c : '') + (d ? ' ' + d : '')
+      } else {
+        const a = digits.slice(0, 1)
+        const b = digits.slice(1, 5)
+        const c = digits.slice(5, 9)
+        formatted += a + (b ? ' ' + b : '') + (c ? ' ' + c : '')
+      }
+    }
+    setEditedCompany((prev) => prev ? { ...prev, phone: formatted.trim() } : prev)
+  }
+
   const handleCompanyPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let digits = e.target.value.replace(/[^\d]/g, '')
     if (digits.startsWith('61')) digits = digits.slice(2)
@@ -1123,19 +1226,31 @@ function DashboardContent() {
 
   const handleCompanyAbnBlur = async (abn: string) => {
     const clean = abn.replace(/[^\d]/g, '')
-    if (!/^\d{11}$/.test(clean)) return
+    if (!/^\d{11}$/.test(clean)) {
+      setNewCompanyErrors(prev => ({ ...prev, abn: 'ABN must contain 11 digits' }))
+      setIsAbnValidatedNew(false)
+      return
+    }
+    if (!validateAbnChecksum(clean)) {
+      setNewCompanyErrors(prev => ({ ...prev, abn: 'Invalid ABN checksum' }))
+      setIsAbnValidatedNew(false)
+      return
+    }
     try {
       const r = await fetch(`/api/vendors?abn=${clean}`, { credentials: 'include' })
       if (!r.ok) return
       const data = await r.json()
-      const name = data.EntityName || (Array.isArray(data.BusinessName) ? (data.BusinessName[0] || '') : '')
+      const businessNameFirst = Array.isArray(data.BusinessName) ? String((data.BusinessName[0] || '')).trim() : ''
+      const name = businessNameFirst || (data.EntityName || '')
       const addr = [data.AddressState || '', data.AddressPostcode || ''].join(' ').trim()
       setNewCompanyData(prev => ({
         ...prev,
-        name: prev.name || name,
+        name,
         address: prev.address || addr,
         abn: formatAbnInput(clean)
       }))
+      setNewCompanyErrors(prev => ({ ...prev, abn: '' }))
+      setIsAbnValidatedNew(true)
     } catch { }
   }
 
@@ -1145,6 +1260,18 @@ function DashboardContent() {
 
     setIsCreatingCompany(true)
     try {
+      const mailInput = (newCompanyData.email || '').trim()
+      if (mailInput) {
+        const okMail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mailInput)
+        if (!okMail) {
+          setNewCompanyErrors(prev => ({ ...prev, email: 'Invalid email format' }))
+          toast({ title: 'Validation error', description: 'Email must be valid', variant: 'destructive' })
+          setIsCreatingCompany(false)
+          return
+        }
+      }
+      const webInput = (newCompanyData.website || '').trim()
+      const websiteNormalized = webInput ? (webInput.startsWith('http') ? webInput : 'https://' + webInput.replace(/^www\./, '')) : ''
       const response = await fetch('/api/companies', {
         method: 'POST',
         headers: {
@@ -1153,6 +1280,7 @@ function DashboardContent() {
         credentials: 'include',
         body: JSON.stringify({
           ...newCompanyData,
+          website: websiteNormalized,
           abn: newCompanyData.abn.replace(/[^\d]/g, ''),
           userId: user.id
         }),
@@ -1206,7 +1334,7 @@ function DashboardContent() {
     try {
       if (selectedCompany?.id) localStorage.setItem('lastCompanyId', String(selectedCompany.id))
     } catch { }
-    localStorage.removeItem('user')
+    try { localStorage.removeItem('user') } catch {}
     window.location.href = '/'
   }
 
@@ -1427,7 +1555,7 @@ function DashboardContent() {
       setBulkDigitizeTotal(docs.length)
       setBulkDigitizeSuccess(0)
       setBulkDigitizeError(0)
-      localStorage.setItem('bulkDigitizeProgress', JSON.stringify({ status: 'active', start: startTs, total: docs.length, processed: 0, success: 0, error: 0 }))
+      try { localStorage.setItem('bulkDigitizeProgress', JSON.stringify({ status: 'active', start: startTs, total: docs.length, processed: 0, success: 0, error: 0 })) } catch {}
       if (docs.length === 0) {
         toast({ title: 'Digitize', description: 'No eligible documents selected', variant: 'destructive' })
         setIsBulkDigitizing(false)
@@ -1439,7 +1567,7 @@ function DashboardContent() {
                 const next = p + 1
                 const s = bulkDigitizeSuccess + 1
                 setBulkDigitizeSuccess(s)
-                localStorage.setItem('bulkDigitizeProgress', JSON.stringify({ status: 'active', start: startTs, total: docs.length, processed: next, success: s, error: bulkDigitizeError }))
+                try { localStorage.setItem('bulkDigitizeProgress', JSON.stringify({ status: 'active', start: startTs, total: docs.length, processed: next, success: s, error: bulkDigitizeError })) } catch {}
                 return next
               })
             })
@@ -1448,7 +1576,7 @@ function DashboardContent() {
                 const next = p + 1
                 const e = bulkDigitizeError + 1
                 setBulkDigitizeError(e)
-                localStorage.setItem('bulkDigitizeProgress', JSON.stringify({ status: 'active', start: startTs, total: docs.length, processed: next, success: bulkDigitizeSuccess, error: e }))
+                try { localStorage.setItem('bulkDigitizeProgress', JSON.stringify({ status: 'active', start: startTs, total: docs.length, processed: next, success: bulkDigitizeSuccess, error: e })) } catch {}
                 return next
               })
             })
@@ -1466,7 +1594,7 @@ function DashboardContent() {
     } finally {
       setIsBulkDigitizing(false)
       setBulkDigitizeStart(null)
-      localStorage.setItem('bulkDigitizeProgress', JSON.stringify({ status: 'completed', start: null, total: bulkDigitizeTotal, processed: bulkDigitizeProcessed, success: bulkDigitizeSuccess, error: bulkDigitizeError }))
+      try { localStorage.setItem('bulkDigitizeProgress', JSON.stringify({ status: 'completed', start: null, total: bulkDigitizeTotal, processed: bulkDigitizeProcessed, success: bulkDigitizeSuccess, error: bulkDigitizeError })) } catch {}
     }
   }
 
@@ -3083,8 +3211,14 @@ function DashboardContent() {
                 </div>
                 <Button
                   onClick={() => {
-                    setIsEditingCompany(!isEditingCompany)
-                    setEditedCompany(selectedCompany)
+                    const nextEditing = !isEditingCompany
+                    setIsEditingCompany(nextEditing)
+                    if (nextEditing) {
+                      const w = stripToDomain(selectedCompany.website || '')
+                      setEditedCompany({ ...selectedCompany, website: w })
+                    } else {
+                      setEditedCompany(null)
+                    }
                   }}
                   variant="outline"
                   size="sm"
@@ -3096,14 +3230,34 @@ function DashboardContent() {
             </CardHeader>
             <CardContent className="space-y-6">
               {isEditingCompany ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="abn">ABN *</Label>
+                      <Input
+                        id="abn"
+                        value={editedCompany?.abn || ''}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/[^\d]/g, '')
+                          setEditedCompany(prev => prev ? { ...prev, abn: formatAbnInput(digits) } : null)
+                          setIsAbnValidatedEditing(false)
+                        }}
+                        onBlur={(e) => handleEditedCompanyAbnBlur(e.target.value)}
+                        inputMode="numeric"
+                        required
+                      />
+                      {companyEditErrors.abn ? (
+                        <div className="text-xs text-red-600">{companyEditErrors.abn}</div>
+                      ) : null}
+                    </div>
                     <div className="space-y-2">
                       <Label htmlFor="name">Company Name</Label>
                       <Input
                         id="name"
                         value={editedCompany?.name || ''}
                         onChange={(e) => setEditedCompany(prev => prev ? { ...prev, name: e.target.value } : null)}
+                        disabled={!(isAbnValidatedEditing || hasExistingCompanyData(editedCompany))}
+                        placeholder={!isAbnValidatedEditing ? 'Fill valid ABN first' : ''}
                       />
                     </div>
                     <div className="space-y-2">
@@ -3112,69 +3266,118 @@ function DashboardContent() {
                         id="industry"
                         value={editedCompany?.industry || ''}
                         onChange={(e) => setEditedCompany(prev => prev ? { ...prev, industry: e.target.value } : null)}
+                        disabled={!(isAbnValidatedEditing || hasExistingCompanyData(editedCompany))}
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={editedCompany?.description || ''}
-                      onChange={(e) => setEditedCompany(prev => prev ? { ...prev, description: e.target.value } : null)}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={editedCompany?.email || ''}
-                        onChange={(e) => setEditedCompany(prev => prev ? { ...prev, email: e.target.value } : null)}
-                      />
+                      <InputGroup>
+                        <InputGroupInput
+                          id="email"
+                          type="email"
+                          value={editedCompany?.email || ''}
+                          onChange={(e) => setEditedCompany(prev => prev ? { ...prev, email: e.target.value } : null)}
+                          onBlur={(e) => {
+                            const v = e.target.value.trim()
+                            if (v) {
+                              const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
+                              setCompanyEditErrors((prev) => ({ ...prev, email: ok ? '' : 'Invalid email format' }))
+                            } else {
+                              setCompanyEditErrors((prev) => ({ ...prev, email: '' }))
+                            }
+                          }}
+                          disabled={!(isAbnValidatedEditing || hasExistingCompanyData(editedCompany))}
+                          className="!pl-1"
+                        />
+                      </InputGroup>
+                      {companyEditErrors.email ? (
+                        <div className="text-xs text-red-600">{companyEditErrors.email}</div>
+                      ) : null}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="phone">Phone</Label>
                       <Input
                         id="phone"
                         value={editedCompany?.phone || ''}
-                        onChange={(e) => setEditedCompany(prev => prev ? { ...prev, phone: e.target.value } : null)}
+                        onChange={handleEditedCompanyPhoneChange}
+                        inputMode="tel"
+                        disabled={!(isAbnValidatedEditing || hasExistingCompanyData(editedCompany))}
                       />
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="website">Website</Label>
-                      <Input
-                        id="website"
-                        value={editedCompany?.website || ''}
-                        onChange={(e) => setEditedCompany(prev => prev ? { ...prev, website: e.target.value } : null)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="abn">ABN</Label>
-                      <Input
-                        id="abn"
-                        value={editedCompany?.abn || ''}
-                        onChange={(e) => setEditedCompany(prev => prev ? { ...prev, abn: e.target.value } : null)}
-                      />
+                      <InputGroup>
+                        <InputGroupInput
+                          id="website"
+                          value={editedCompany?.website || ''}
+                          onChange={(e) => setEditedCompany(prev => prev ? { ...prev, website: sanitizeDomainInput(e.target.value) } : null)}
+                          onBlur={(e) => {
+                            const v = e.target.value.trim()
+                            if (v) {
+                              const full = (v.startsWith('http') ? v : 'https://' + v.replace(/^www\./, ''))
+                              const ok = /^(https?:\/\/)[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:\/\?#\[\]@!$&'()*+,;=.]*$/.test(full)
+                              setCompanyEditErrors((prev) => ({ ...prev, website: ok ? '' : 'Invalid website URL' }))
+                            } else {
+                              setCompanyEditErrors((prev) => ({ ...prev, website: '' }))
+                            }
+                          }}
+                          disabled={!(isAbnValidatedEditing || hasExistingCompanyData(editedCompany))}
+                          className="!pl-1"
+                        />
+                        <InputGroupAddon align="inline-end" className="pointer-events-auto">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <InputGroupButton className="rounded-full" size="icon">
+                                  <Info className="h-3 w-3" />
+                                </InputGroupButton>
+                              </TooltipTrigger>
+                              <TooltipContent>Enter URL without https:// or WWW only name like example.com</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </InputGroupAddon>
+                      </InputGroup>
+                      {companyEditErrors.website ? (
+                        <div className="text-xs text-red-600">{companyEditErrors.website}</div>
+                      ) : null}
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Address</Label>
-                    <Textarea
-                      id="address"
-                      value={editedCompany?.address || ''}
-                      onChange={(e) => setEditedCompany(prev => prev ? { ...prev, address: e.target.value } : null)}
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="address">Address</Label>
+                      <Textarea
+                        id="address"
+                        value={editedCompany?.address || ''}
+                        onChange={(e) => setEditedCompany(prev => prev ? { ...prev, address: e.target.value } : null)}
+                        disabled={!(isAbnValidatedEditing || hasExistingCompanyData(editedCompany))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        value={editedCompany?.description || ''}
+                        onChange={(e) => setEditedCompany(prev => prev ? { ...prev, description: e.target.value } : null)}
+                        disabled={!(isAbnValidatedEditing || hasExistingCompanyData(editedCompany))}
+                        rows={4}
+                      />
+                    </div>
                   </div>
 
                   <div className="flex space-x-2">
-                    <Button onClick={handleCompanyUpdate}>
+                    <Button onClick={async () => {
+                      const abnDigits = (editedCompany?.abn || '').replace(/[^\d]/g, '')
+                      if (!validateAbnChecksum(abnDigits)) {
+                        setCompanyEditErrors((prev) => ({ ...prev, abn: 'Invalid ABN checksum' }))
+                        toast({ title: 'Validation error', description: 'Please provide a valid ABN', variant: 'destructive' })
+                        return
+                      }
+                      await handleCompanyUpdate()
+                    }}>
                       Save Changes
                     </Button>
                     <Button
@@ -3182,6 +3385,8 @@ function DashboardContent() {
                       onClick={() => {
                         setIsEditingCompany(false)
                         setEditedCompany(null)
+                        setCompanyEditErrors({})
+                        setIsAbnValidatedEditing(false)
                       }}
                     >
                       Cancel
@@ -3459,6 +3664,8 @@ function DashboardContent() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <SupportButton />
 
       {/* Enhanced modal window for displaying images after digitization */}
       <Dialog open={isImageModalOpen} onOpenChange={(open) => {
@@ -3805,101 +4012,140 @@ function DashboardContent() {
       {/* Add Company Modal */}
       <Dialog open={isAddCompanyModalOpen} onOpenChange={setIsAddCompanyModalOpen}>
         <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Create New Company</DialogTitle>
-            <DialogDescription>Enter details to create a new company</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleCreateCompany} className="space-y-4">
+      <DialogHeader>
+        <DialogTitle>Create New Company</DialogTitle>
+        <DialogDescription>Enter details to create a new company</DialogDescription>
+      </DialogHeader>
+      <form onSubmit={handleCreateCompany} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="company-abn">ABN *</Label>
+          <Input
+            id="company-abn"
+            value={newCompanyData.abn}
+            onChange={(e) => {
+              const digits = e.target.value.replace(/[^\d]/g, '')
+              setNewCompanyData({ ...newCompanyData, abn: formatAbnInput(digits) })
+            }}
+            onBlur={(e) => handleCompanyAbnBlur(e.target.value)}
+            required
+            inputMode="numeric"
+          />
+          {newCompanyErrors.abn ? (
+            <div className="text-sm text-destructive">{newCompanyErrors.abn}</div>
+          ) : null}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="company-name">Company Name *</Label>
+            <Input
+              id="company-name"
+              value={newCompanyData.name}
+              disabled
+              readOnly
+              placeholder="Auto-filled from ABN"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="company-industry">Industry</Label>
+            <Input
+              id="company-industry"
+              value={newCompanyData.industry}
+              onChange={(e) => setNewCompanyData({ ...newCompanyData, industry: e.target.value })}
+              disabled={!isAbnValidatedNew}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="company-description">Description</Label>
+          <Textarea
+            id="company-description"
+            value={newCompanyData.description}
+            onChange={(e) => setNewCompanyData({ ...newCompanyData, description: e.target.value })}
+            rows={3}
+            disabled={!isAbnValidatedNew}
+          />
+        </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="company-abn">ABN *</Label>
-              <Input
-                id="company-abn"
-                value={newCompanyData.abn}
-                onChange={(e) => {
-                  const digits = e.target.value.replace(/[^\d]/g, '')
-                  setNewCompanyData({ ...newCompanyData, abn: formatAbnInput(digits) })
-                }}
-                onBlur={(e) => handleCompanyAbnBlur(e.target.value)}
-                required
-                inputMode="numeric"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="company-name">Company Name *</Label>
-                <Input
-                  id="company-name"
-                  value={newCompanyData.name}
-                  disabled
-                  readOnly
-                  placeholder="Auto-filled from ABN"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="company-industry">Industry</Label>
-                <Input
-                  id="company-industry"
-                  value={newCompanyData.industry}
-                  onChange={(e) => setNewCompanyData({ ...newCompanyData, industry: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="company-description">Description</Label>
-              <Textarea
-                id="company-description"
-                value={newCompanyData.description}
-                onChange={(e) => setNewCompanyData({ ...newCompanyData, description: e.target.value })}
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="company-email">Email</Label>
-                <Input
+              <Label htmlFor="company-email">Email</Label>
+              <InputGroup>
+                <InputGroupInput
                   id="company-email"
                   type="email"
                   value={newCompanyData.email}
                   onChange={(e) => setNewCompanyData({ ...newCompanyData, email: e.target.value })}
+                  onBlur={(e) => {
+                    const v = e.target.value.trim()
+                    if (v) {
+                      const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
+                      setNewCompanyErrors(prev => ({ ...prev, email: ok ? '' : 'Invalid email format' }))
+                    } else {
+                      setNewCompanyErrors(prev => ({ ...prev, email: '' }))
+                    }
+                  }}
+                  disabled={!isAbnValidatedNew}
+                  className="!pl-1"
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="company-phone">Phone *</Label>
-                <Input
-                  id="company-phone"
-                  value={newCompanyData.phone}
-                  onChange={handleCompanyPhoneChange}
-                  inputMode="tel"
-                  required
-                />
-              </div>
+              </InputGroup>
+              {newCompanyErrors.email ? (
+                <div className="text-sm text-destructive">{newCompanyErrors.email}</div>
+              ) : null}
             </div>
+          <div className="space-y-2">
+            <Label htmlFor="company-phone">Phone *</Label>
+            <Input
+              id="company-phone"
+              value={newCompanyData.phone}
+              onChange={handleCompanyPhoneChange}
+              inputMode="tel"
+              required
+              disabled={!isAbnValidatedNew}
+            />
+          </div>
+        </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="company-website">Website</Label>
-                <Input
+        <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="company-website">Website</Label>
+              <InputGroup>
+                <InputGroupInput
                   id="company-website"
                   value={newCompanyData.website}
-                  onChange={(e) => setNewCompanyData({ ...newCompanyData, website: e.target.value })}
+                  onChange={(e) => setNewCompanyData({ ...newCompanyData, website: sanitizeDomainInput(e.target.value) })}
+                  disabled={!isAbnValidatedNew}
+                  className="!pl-1"
                 />
-              </div>
-              <div className="space-y-2"></div>
+                <InputGroupAddon align="inline-end" className="pointer-events-auto">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <InputGroupButton className="rounded-full" size="icon">
+                          <Info className="h-3 w-3" />
+                        </InputGroupButton>
+                      </TooltipTrigger>
+                      <TooltipContent>Enter URL without https:// or WWW only name like example.com</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </InputGroupAddon>
+              </InputGroup>
             </div>
+          <div className="space-y-2"></div>
+        </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="company-address">Address *</Label>
-              <Input
-                id="company-address"
-                value={newCompanyData.address}
-                onChange={(e) => setNewCompanyData({ ...newCompanyData, address: e.target.value })}
-                required
-              />
-            </div>
+        <div className="space-y-2">
+          <Label htmlFor="company-address">Address *</Label>
+          <Input
+            id="company-address"
+            value={newCompanyData.address}
+            onChange={(e) => setNewCompanyData({ ...newCompanyData, address: e.target.value })}
+            required
+            disabled={!isAbnValidatedNew}
+          />
+        </div>
 
             <div className="flex justify-end space-x-2">
               <Button type="button" variant="outline" onClick={handleCloseModal}>

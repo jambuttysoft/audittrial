@@ -29,7 +29,7 @@ const readUser = (): UserProfile | null => {
 }
 
 export function useUserProfile() {
-  const [user, setUser] = useState<UserProfile | null>(null)
+  const [user, setUser] = useState<UserProfile | null>(() => readUser())
 
   useEffect(() => {
     setUser(readUser())
@@ -54,4 +54,3 @@ export function useUserProfile() {
 
   return { user, updateLocalUser }
 }
-

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ChevronDown, LogOut, User } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 type Props = {
   user?: { name?: string; email?: string; avatar?: string }
@@ -10,6 +11,14 @@ type Props = {
 }
 
 export default function UserMenu({ user, onLogout }: Props) {
+  const [mounted, setMounted] = useState(false)
+  const [initial, setInitial] = useState('U')
+
+  useEffect(() => {
+    setMounted(true)
+    const i = (user?.name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U')
+    setInitial(i)
+  }, [user])
   const handleLogout = () => {
     if (onLogout) return onLogout()
     try { localStorage.removeItem('user') } catch {}
@@ -23,12 +32,12 @@ export default function UserMenu({ user, onLogout }: Props) {
           <Avatar className="h-8 w-8">
             <AvatarImage src={user?.avatar || '/trlogo.png'} alt="avatar" />
             <AvatarFallback>
-              {user?.name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
+              {initial}
             </AvatarFallback>
           </Avatar>
           <div className="hidden md:block text-left">
-            <div className="text-sm font-medium">{user?.name || (user?.email ? user.email.split('@')[0] : '')}</div>
-            <div className="text-xs text-muted-foreground">{user?.email}</div>
+            <div className="text-sm font-medium">{mounted ? (user?.name || (user?.email ? user.email.split('@')[0] : '')) : ''}</div>
+            <div className="text-xs text-muted-foreground">{mounted ? (user?.email || '') : ''}</div>
           </div>
           <ChevronDown className="h-4 w-4" />
         </Button>

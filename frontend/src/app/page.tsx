@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, Box } from 'lucide-react'
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google'
 
@@ -23,8 +23,10 @@ interface LoginData {
   password: string
 }
 
-export default function AuthPage() {
+function AuthPageClient() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login')
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -57,6 +59,14 @@ export default function AuthPage() {
     acceptsTerms: false
   })
 
+  useEffect(() => {
+    try {
+      const tab = (searchParams.get('tab') || '').toLowerCase()
+      if (tab === 'register') setActiveTab('register')
+      else if (tab === 'login') setActiveTab('login')
+    } catch {}
+  }, [searchParams])
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -78,7 +88,7 @@ export default function AuthPage() {
 
       if (response.ok) {
         setSuccess('Successful login! Redirecting...')
-        localStorage.setItem('user', JSON.stringify(data.user))
+        try { localStorage.setItem('user', JSON.stringify(data.user)) } catch {}
         setTimeout(() => {
           router.push('/dashboard')
         }, 1000)
@@ -161,7 +171,7 @@ export default function AuthPage() {
 
       if (response.ok) {
         setSuccess('Login successful! Redirecting...')
-        localStorage.setItem('user', JSON.stringify(data.user))
+        try { localStorage.setItem('user', JSON.stringify(data.user)) } catch {}
         setTimeout(() => {
           router.push('/dashboard')
         }, 1000)
@@ -324,7 +334,7 @@ export default function AuthPage() {
   }
 
   return (
-    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''}>
+    <GoogleOAuthProvider clientId={googleClientId}>
       <div className="auth-container">
         <div className="auth-wrapper">
           {/* Left Panel: Info (Dark Side) */}
@@ -435,6 +445,7 @@ export default function AuthPage() {
                     type="email"
                     id="login-email"
                     placeholder="m@example.com"
+                    autoComplete="email"
                     required
                     value={loginData.email}
                     onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
@@ -445,6 +456,7 @@ export default function AuthPage() {
                   <input
                     type="password"
                     id="login-password"
+                    autoComplete="current-password"
                     required
                     value={loginData.password}
                     onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
@@ -459,17 +471,19 @@ export default function AuthPage() {
                 <a onClick={() => { setShowForgotPassword(true); setError(''); }}>Forgot password?</a>
               </div>
 
-              <div className="auth-divider">
-                <span>Or continue with</span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={() => setLoginError('Google login failed')}
-                  useOneTap
-                />
-              </div>
+              {googleClientId && (
+                <>
+                  <div className="auth-divider">
+                    <span>Or continue with</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={() => setLoginError('Google login failed')}
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="auth-switch">
                 Don&apos;t have an account? <a onClick={() => { setActiveTab('register'); setLoginError(''); setRegisterError(''); }}>Sign up</a>
@@ -498,6 +512,7 @@ export default function AuthPage() {
                       type="text"
                       id="register-name"
                       placeholder="John Doe"
+                      autoComplete="name"
                       required
                       value={registerData.name}
                       onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
@@ -509,6 +524,7 @@ export default function AuthPage() {
                       type="email"
                       id="register-email"
                       placeholder="m@example.com"
+                      autoComplete="email"
                       required
                       value={registerData.email}
                       onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
@@ -520,6 +536,7 @@ export default function AuthPage() {
                     <input
                       type="password"
                       id="register-password"
+                      autoComplete="new-password"
                       required
                       value={registerData.password}
                       onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
@@ -530,6 +547,7 @@ export default function AuthPage() {
                     <input
                       type="password"
                       id="register-confirm"
+                      autoComplete="new-password"
                       required
                       value={registerData.confirmPassword}
                       onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
@@ -553,6 +571,7 @@ export default function AuthPage() {
                       type="tel"
                       id="register-phone"
                       placeholder="04XX XXX XXX"
+                      autoComplete="tel"
                       value={registerData.phone}
                       onChange={handlePhoneChange}
                     />
@@ -598,16 +617,19 @@ export default function AuthPage() {
                 </button>
               </form>
 
-              <div className="auth-divider">
-                <span>Or continue with</span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={() => setError('Google login failed')}
-                />
-              </div>
+              {googleClientId && (
+                <>
+                  <div className="auth-divider">
+                    <span>Or continue with</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={() => setError('Google login failed')}
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="auth-switch">
                 Already have an account? <a onClick={() => { setActiveTab('login'); setRegisterError(''); setLoginError(''); }}>Sign in</a>
@@ -705,5 +727,13 @@ export default function AuthPage() {
         </button>
       </div>
     </GoogleOAuthProvider >
+  )
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-16 w-16 border-b-2 border-gray-900"></div></div>}>
+      <AuthPageClient />
+    </Suspense>
   )
 }

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import Header from '@/components/Header'
+import SupportButton from '@/components/SupportButton'
 
 type Invoice = {
   id: string
@@ -118,7 +119,7 @@ export default function BillingPage() {
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('user')
+    try { localStorage.removeItem('user') } catch {}
     window.location.href = '/'
   }
 
@@ -251,6 +252,7 @@ export default function BillingPage() {
           <p className="text-sm text-muted-foreground">Stripe integration pending. You’ll be able to add and manage cards here.</p>
         </CardContent>
       </Card>
+      <SupportButton />
       </div>
     </>
   )
