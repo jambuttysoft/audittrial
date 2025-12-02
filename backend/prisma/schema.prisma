@@ -41,6 +41,7 @@ model User {
   
   // Professional information
   company   String?  // Company name if business
+  abn      String?  // Australian Business Number for business users
   services  String?  // Description of services offered
   
   // Visibility settings

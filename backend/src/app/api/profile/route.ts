@@ -18,6 +18,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404, headers: getCorsHeaders(request.headers.get('origin') || '') })
     }
     const data = {
+      // @ts-ignore - abn field added manually
+      abn: (user as any).abn,
       id: user.id,
       email: user.email,
       name: user.name,
@@ -34,6 +36,7 @@ export async function GET(request: NextRequest) {
       stripeCustomerId: (user as any).stripeCustomerId || null,
       defaultPaymentMethodId: (user as any).defaultPaymentMethodId || null,
     }
+    // @ts-ignore - abn field may not be in type
     return NextResponse.json({ success: true, profile: data }, { headers: getCorsHeaders(request.headers.get('origin') || '') })
   } catch (error) {
     return NextResponse.json({ error: 'Failed to load profile' }, { status: 500, headers: getCorsHeaders(request.headers.get('origin') || '') })

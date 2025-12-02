@@ -10,7 +10,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const cors = getCorsHeaders(request.headers.get('origin') || '')
     const body = await request.json()
-    const { userId, name, userType, phone, address, website, avatar, company, services, isVisibleToClients, acceptsJobOffers, autoChargeEnabled } = body
+    const { userId, name, userType, phone, address, website, avatar, company, services, isVisibleToClients, acceptsJobOffers, autoChargeEnabled, abn } = body
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400, headers: cors })
     }
@@ -25,7 +25,7 @@ export async function PATCH(request: NextRequest) {
     if (typeof services !== 'undefined') data.services = services
     if (typeof isVisibleToClients !== 'undefined') data.isVisibleToClients = !!isVisibleToClients
     if (typeof acceptsJobOffers !== 'undefined') data.acceptsJobOffers = !!acceptsJobOffers
-    if (typeof autoChargeEnabled !== 'undefined') data.autoChargeEnabled = !!autoChargeEnabled
+    if (typeof abn !== 'undefined') data.abn = abn
     const user = await prisma.user.update({ where: { id: userId }, data })
     const profile = {
       id: user.id,
