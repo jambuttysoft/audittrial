@@ -8,9 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from "@/components/ui/badge"
 import * as XLSX from 'xlsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
-  FileText, 
-  Building, 
+import {
+  FileText,
+  Building,
   Users,
   TrendingUp,
   Download,
@@ -59,8 +59,8 @@ function TruncatedCell({ text, maxWidth = '150px' }: { text: string; maxWidth?: 
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div 
-            className="truncate cursor-help" 
+          <div
+            className="truncate cursor-help"
             style={{ maxWidth }}
           >
             {text}
@@ -235,7 +235,7 @@ function DashboardContent() {
   const [bulkDigitizeTotal, setBulkDigitizeTotal] = useState(0)
   const [bulkDigitizeSuccess, setBulkDigitizeSuccess] = useState(0)
   const [bulkDigitizeError, setBulkDigitizeError] = useState(0)
-  
+
   // Xero integration state
   const [xeroStatus, setXeroStatus] = useState<{
     connected: boolean
@@ -263,7 +263,7 @@ function DashboardContent() {
   const [selectedDocumentForEdit, setSelectedDocumentForEdit] = useState<DigitizedData | null>(null)
   const [editForm, setEditForm] = useState<any>(null)
   const [editErrors, setEditErrors] = useState<Record<string, string>>({})
-  
+
   // Company management states
   const [isAddCompanyModalOpen, setIsAddCompanyModalOpen] = useState(false)
   const [newCompanyData, setNewCompanyData] = useState({
@@ -277,14 +277,14 @@ function DashboardContent() {
     industry: ''
   })
   const [isCreatingCompany, setIsCreatingCompany] = useState(false)
-  
+
   // File upload states
   const [isUploading, setIsUploading] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
-  
+
   // Image zoom states
   const [imageZoom, setImageZoom] = useState(1)
-  
+
   // Delete confirmation modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null)
@@ -335,7 +335,7 @@ function DashboardContent() {
           setBulkDigitizeError(data.error || 0)
         }
       }
-    } catch {}
+    } catch { }
   }, [])
 
 
@@ -502,14 +502,14 @@ function DashboardContent() {
             return
           }
         }
-      } catch {}
+      } catch { }
       setSelectedCompany(company)
       try {
         const url = new URL(window.location.href)
         url.searchParams.set('company', String(company.id))
         window.history.replaceState(null, '', url.toString())
-      } catch {}
-      try { localStorage.setItem('lastCompanyId', String(company.id)) } catch {}
+      } catch { }
+      try { localStorage.setItem('lastCompanyId', String(company.id)) } catch { }
       await Promise.all([
         loadCompanyDocuments(company.id),
         loadDigitizedDocuments(company.id),
@@ -558,7 +558,7 @@ function DashboardContent() {
     }
   }, [searchParams, companies, selectedCompany, loadCompanyDocuments, loadDigitizedDocuments, loadReviewDocuments, loadReadyDocuments])
 
-  
+
 
   useEffect(() => {
     const onPopstate = () => {
@@ -569,7 +569,7 @@ function DashboardContent() {
         if (selectedCompany?.id && String(selectedCompany.id) === companyId) return
         const company = companies.find(c => String(c.id) === companyId)
         if (company) handleCompanyChange(company)
-      } catch {}
+      } catch { }
     }
     window.addEventListener('popstate', onPopstate)
     return () => window.removeEventListener('popstate', onPopstate)
@@ -603,13 +603,13 @@ function DashboardContent() {
     return () => clearInterval(interval)
   }, [user, selectedCompany?.id, loadCompanies, loadCompanyDocuments, loadDigitizedDocuments])
 
-  
 
-  
 
-  
 
-  
+
+
+
+
 
   const handleBulkDeleteSelected = async (rows: any[]) => {
     if (!selectedCompany?.id || !user?.id) {
@@ -619,7 +619,7 @@ function DashboardContent() {
     try {
       const ids = rows.map((r) => r.original.id).filter(Boolean)
       const results = await Promise.all(ids.map(async (id) => {
-        const resp = await fetch(`/api/digitized?id=${id}&userId=${user.id}` , { method: 'DELETE', credentials: 'include', headers: { 'Content-Type': 'application/json' } })
+        const resp = await fetch(`/api/digitized?id=${id}&userId=${user.id}`, { method: 'DELETE', credentials: 'include', headers: { 'Content-Type': 'application/json' } })
         return resp.ok
       }))
       const successCount = results.filter(Boolean).length
@@ -690,7 +690,7 @@ function DashboardContent() {
     if (Object.keys(errs).length > 0) {
       console.group('Validation errors')
       Object.entries(errs).forEach(([id, messages]) => {
-        console.log(`Row ${id}:`) 
+        console.log(`Row ${id}:`)
         messages.forEach((m) => console.log(' -', m))
       })
       console.groupEnd()
@@ -801,14 +801,14 @@ function DashboardContent() {
           const name = data.EntityName || (Array.isArray(data.BusinessName) ? (data.BusinessName[0] || '') : '')
           setVendorInfo(prev => ({ ...prev, [abn]: { status: data.AbnStatus || '', name, gst: data.Gst || '' } }))
           const addr = [data.AddressState || '', data.AddressPostcode || ''].join(' ').trim()
-          setEditForm((prev: any) => prev ? { 
-            ...prev, 
+          setEditForm((prev: any) => prev ? {
+            ...prev,
             vendorName: prev.vendorName || name,
             vendorAddress: prev.vendorAddress || addr
           } : prev)
         }
       }
-    } catch {}
+    } catch { }
   }
 
   const handleEditSave = async () => {
@@ -816,7 +816,7 @@ function DashboardContent() {
     try {
       const abn = editForm.vendorAbn
       if (abn) await fetchVendorInfoForAbn(abn)
-    } catch {}
+    } catch { }
     const errs = validateEditForm(editForm)
     setEditErrors(errs)
     if (Object.keys(errs).length > 0) {
@@ -985,7 +985,7 @@ function DashboardContent() {
           })
         }
       }
-    } catch {}
+    } catch { }
   }, [user?.id])
 
   const fetchExportHistory = async () => {
@@ -1011,7 +1011,7 @@ function DashboardContent() {
           })
         }
       }
-    } catch {}
+    } catch { }
   }
 
   const downloadExportFile = (fileName: string) => {
@@ -1038,7 +1038,7 @@ function DashboardContent() {
         const data = await r.json()
         const name = data.EntityName || (Array.isArray(data.BusinessName) ? (data.BusinessName[0] || '') : '')
         setVendorInfo(prev => ({ ...prev, [abn]: { status: data.AbnStatus || '', name, gst: data.Gst || '' } }))
-      } catch {}
+      } catch { }
     }))
   }, [digitizedDocuments, reviewDocuments, readyDocuments, vendorInfo])
 
@@ -1136,7 +1136,7 @@ function DashboardContent() {
         address: prev.address || addr,
         abn: formatAbnInput(clean)
       }))
-    } catch {}
+    } catch { }
   }
 
   const handleCreateCompany = async (e: React.FormEvent) => {
@@ -1165,7 +1165,7 @@ function DashboardContent() {
           toast({ title: 'Error', description: 'Invalid response while creating company', variant: 'destructive' })
           return
         }
-        try { localStorage.setItem('lastCompanyId', String(newCompany.id)) } catch {}
+        try { localStorage.setItem('lastCompanyId', String(newCompany.id)) } catch { }
         window.location.href = `/dashboard?company=${newCompany.id}`
         return
       } else {
@@ -1205,7 +1205,7 @@ function DashboardContent() {
   const handleLogout = () => {
     try {
       if (selectedCompany?.id) localStorage.setItem('lastCompanyId', String(selectedCompany.id))
-    } catch {}
+    } catch { }
     localStorage.removeItem('user')
     window.location.href = '/'
   }
@@ -1260,7 +1260,7 @@ function DashboardContent() {
   const validateFile = (file: File): string | null => {
     const allowedTypes = [
       'image/jpeg',
-      'image/png', 
+      'image/png',
       'image/gif',
       'image/webp',
       'application/pdf',
@@ -1268,29 +1268,29 @@ function DashboardContent() {
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     ]
-    
+
     if (!allowedTypes.includes(file.type)) {
       return `File type ${file.type} is not supported. Please upload images, PDFs, or text documents.`
     }
-    
+
     const maxSize = 10 * 1024 * 1024 // 10MB
     if (file.size > maxSize) {
       return `File size must be less than 10MB. Current size: ${formatFileSize(file.size)}`
     }
-    
+
     return null
   }
 
   // Document actions
   const digitizeDocument = async (documentId: string) => {
     if (!user?.id) return
-    
+
     // Add document to digitizing set
     setDigitizingDocuments(prev => new Set(prev).add(documentId))
-    
+
     try {
       console.log(`Starting digitization for document ${documentId}...`)
-      
+
       const response = await fetch(`/api/documents/${documentId}/digitize?userId=${user.id}`, {
         method: 'POST',
         headers: {
@@ -1300,7 +1300,7 @@ function DashboardContent() {
       })
 
       console.log(`Digitization response status: ${response.status}`)
-      
+
       if (!response.ok) {
         let errorData
         try {
@@ -1308,9 +1308,9 @@ function DashboardContent() {
         } catch {
           errorData = { error: 'Unknown error occurred' }
         }
-        
+
         console.error(`Digitization failed with status ${response.status}:`, errorData)
-        
+
         // Handle different error types
         if (response.status === 503 && errorData.retryable) {
           toast({
@@ -1337,10 +1337,10 @@ function DashboardContent() {
             variant: 'destructive'
           })
         }
-        
+
         throw new Error(errorData.error || `Failed to digitize document: ${response.status}`)
       }
-      
+
       const result = await response.json()
       console.log('Digitization result:', result)
 
@@ -1376,7 +1376,7 @@ function DashboardContent() {
 
   const confirmDelete = async () => {
     if (!documentToDelete) return
-    
+
     try {
       const response = await fetch(`/api/documents/${documentToDelete}?userId=${user?.id}`, {
         method: 'DELETE',
@@ -1507,7 +1507,7 @@ function DashboardContent() {
 
   const confirmDeleteDigitized = async () => {
     if (!digitizedDocumentToDelete) return
-    
+
     try {
       const response = await fetch(`/api/digitized?id=${digitizedDocumentToDelete}&userId=${user?.id}`, {
         method: 'DELETE',
@@ -1617,12 +1617,12 @@ function DashboardContent() {
   const checkAbnDetails = async (abn: string) => {
     setIsLoadingAbn(true)
     setAbnData(null)
-    
+
     try {
       const response = await fetch(`/api/vendors?abn=${abn}`, {
         credentials: 'include'
       })
-      
+
       if (response.ok) {
         const data = await response.json()
         setAbnData(data)
@@ -1654,7 +1654,7 @@ function DashboardContent() {
       'ERROR': { label: 'Error', variant: 'destructive' as const },
       'DELETED': { label: 'Deleted', variant: 'outline' as const }
     }
-    
+
     const config = statusConfig[status as keyof typeof statusConfig] || { label: status, variant: 'secondary' as const }
     return <Badge variant={config.variant}>{config.label}</Badge>
   }
@@ -1679,7 +1679,7 @@ function DashboardContent() {
     if (!abn) return '-'
     const digits = abn.replace(/\D/g, '')
     if (digits.length !== 11) return abn
-    return `${digits.slice(0,2)} ${digits.slice(2,5)} ${digits.slice(5,8)} ${digits.slice(8,11)}`
+    return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5, 8)} ${digits.slice(8, 11)}`
   }
 
   const formatGstPretty = (dateString?: string) => {
@@ -1687,7 +1687,7 @@ function DashboardContent() {
     const d = new Date(dateString)
     if (isNaN(d.getTime())) return ''
     const day = String(d.getDate()).padStart(2, '0')
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     const month = months[d.getMonth()]
     const year = d.getFullYear()
     return `${day} ${month} ${year}`
@@ -1718,8 +1718,13 @@ function DashboardContent() {
         const tenants = (j.tenants || []) as { tenantId: string; tenantName: string }[]
         setXeroOrganisations(tenants)
       } else {
-        const msg = j.error || 'Failed to load Xero organisations'
-        toast({ title: 'Xero Error', description: msg, variant: 'destructive' })
+        if (j.disconnected) {
+          setXeroStatus({ connected: false })
+          toast({ title: 'Xero Disconnected', description: 'Your Xero session has expired. Please reconnect.', variant: 'default' })
+        } else {
+          const msg = j.error || 'Failed to load Xero organisations'
+          toast({ title: 'Xero Error', description: msg, variant: 'destructive' })
+        }
       }
     } catch (e) {
       toast({ title: 'Network Error', description: 'Unable to fetch organisations', variant: 'destructive' })
@@ -1734,8 +1739,13 @@ function DashboardContent() {
       if (r.ok) {
         setXeroBankAccounts(j.accounts || [])
       } else {
-        const msg = j.error || 'Failed to load bank accounts'
-        toast({ title: 'Xero Error', description: msg, variant: 'destructive' })
+        if (j.disconnected) {
+          setXeroStatus({ connected: false })
+          toast({ title: 'Xero Disconnected', description: 'Your Xero session has expired. Please reconnect.', variant: 'default' })
+        } else {
+          const msg = j.error || 'Failed to load bank accounts'
+          toast({ title: 'Xero Error', description: msg, variant: 'destructive' })
+        }
       }
     } catch (e) {
       toast({ title: 'Network Error', description: 'Unable to fetch bank accounts', variant: 'destructive' })
@@ -1769,7 +1779,7 @@ function DashboardContent() {
 
   const handleXeroConnect = async () => {
     if (!user?.id) return
-    
+
     setIsLoadingXero(true)
     try {
       const response = await fetch(`/api/xero/auth?userId=${user.id}`, {
@@ -1787,12 +1797,12 @@ function DashboardContent() {
           } else {
             toast({ title: 'Xero Authorization Error', description: String(data.message || 'Authorization failed'), variant: 'destructive' })
           }
-          try { popup && !popup.closed && popup.close() } catch {}
-          try { clearInterval(pollInterval) } catch {}
+          try { popup && !popup.closed && popup.close() } catch { }
+          try { clearInterval(pollInterval) } catch { }
           window.removeEventListener('message', onMessage)
         }
         window.addEventListener('message', onMessage)
-        
+
         // Poll for connection status
         const pollInterval = setInterval(async () => {
           await checkXeroStatus()
@@ -1803,10 +1813,10 @@ function DashboardContent() {
               description: `Successfully connected to ${xeroStatus.tenantName}`,
             })
             window.removeEventListener('message', onMessage)
-            try { popup && !popup.closed && popup.close() } catch {}
+            try { popup && !popup.closed && popup.close() } catch { }
           }
         }, 2000)
-        
+
         // Stop polling after 2 minutes
         setTimeout(() => { clearInterval(pollInterval); window.removeEventListener('message', onMessage) }, 120000)
       }
@@ -1824,14 +1834,14 @@ function DashboardContent() {
 
   const handleXeroDisconnect = async () => {
     if (!user?.id) return
-    
+
     setIsLoadingXero(true)
     try {
       const response = await fetch(`/api/xero/status?userId=${user.id}`, {
         method: 'DELETE',
         credentials: 'include',
       })
-      
+
       if (response.ok) {
         setXeroStatus({ connected: false })
         setXeroTestResult(null)
@@ -1854,7 +1864,7 @@ function DashboardContent() {
 
   const handleXeroTest = async () => {
     if (!user?.id) return
-    
+
     setIsTestingXero(true)
     setXeroTestResult(null)
     try {
@@ -1862,7 +1872,7 @@ function DashboardContent() {
         credentials: 'include'
       })
       const result = await response.json()
-      
+
       if (response.ok) {
         setXeroTestResult(result)
         toast({
@@ -1871,7 +1881,7 @@ function DashboardContent() {
         })
       } else {
         const errorMessage = result.error || 'Failed to fetch accounts from Xero'
-        
+
         // If token expired or unauthorized, update Xero status to disconnected
         if (response.status === 401 || errorMessage.includes('expired') || errorMessage.includes('Unauthorized')) {
           setXeroStatus({ connected: false })
@@ -1883,7 +1893,7 @@ function DashboardContent() {
           })
           return // Stop further attempts
         }
-        
+
         setXeroTestResult({ error: errorMessage })
         toast({
           title: 'Xero Test Failed',
@@ -1926,7 +1936,7 @@ function DashboardContent() {
           setCompanies(prev => prev.map(c => c.id === updated.id ? updated : c))
         }
       }
-    } catch {}
+    } catch { }
     setIsExporting(true)
     try {
       const ids = rows.map((r) => r.original.originalDocumentId).filter(Boolean)
@@ -1988,7 +1998,7 @@ function DashboardContent() {
   // Fetch Xero accounts using SDK
   const handleGetXeroAccounts = async () => {
     if (!user?.id) return
-    
+
     setIsTestingXero(true)
     setXeroTestResult(null)
     try {
@@ -1996,7 +2006,7 @@ function DashboardContent() {
         credentials: 'include'
       })
       const result = await response.json()
-      
+
       if (response.ok) {
         setXeroTestResult(result)
         setShowXeroAccountsModal(true)
@@ -2006,7 +2016,7 @@ function DashboardContent() {
         })
       } else {
         const errorMessage = result.error || 'Failed to fetch accounts from Xero'
-        
+
         // If token expired or unauthorized, update Xero status to disconnected
         if (response.status === 401 || errorMessage.includes('expired') || errorMessage.includes('Unauthorized')) {
           setXeroStatus({ connected: false })
@@ -2018,7 +2028,7 @@ function DashboardContent() {
           })
           return
         }
-        
+
         toast({
           title: 'Failed to Get Accounts',
           description: errorMessage,
@@ -2074,7 +2084,7 @@ function DashboardContent() {
           setSelectedCompany(updated)
           setCompanies(prev => prev.map(c => c.id === updated.id ? updated : c))
         }
-      } catch {}
+      } catch { }
     })()
   }, [user?.id, selectedCompany?.id, selectedCompany?.xeroTenantId, xeroStatus.connected, xeroStatus.tenantId, xeroStatus.tenantName])
 
@@ -2148,11 +2158,11 @@ function DashboardContent() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        
+
         {/* User Profile Dropdown */}
         <UserMenu user={{ name: user?.name, email: user?.email }} onLogout={handleLogout} />
       </div>
-      
+
       {/* Main content */}
       <Tabs defaultValue="documents" className="space-y-4">
         <TabsList>
@@ -2175,7 +2185,7 @@ function DashboardContent() {
           <TabsTrigger value="review">Deleted</TabsTrigger>
           <TabsTrigger value="profile">Profile</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="documents" className="space-y-4">
           {/* Documents Table */}
           <Card>
@@ -2196,8 +2206,8 @@ function DashboardContent() {
                     onChange={handleFileSelect}
                     className="hidden"
                   />
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => fileInputRef.current?.click()}
                     size="sm"
                   >
@@ -2251,11 +2261,13 @@ function DashboardContent() {
                   },
                   { accessorKey: 'fileSize', header: 'Size', cell: ({ row }) => formatFileSize((row.original as DocumentData).fileSize) },
                   { accessorKey: 'uploadDate', header: 'Upload Date', cell: ({ row }) => formatDate((row.original as DocumentData).uploadDate) },
-                  { accessorKey: 'status', header: 'Status', cell: ({ row }) => {
-                    const doc = row.original as DocumentData
-                    const variant = doc.status === 'DIGITIZED' ? 'default' : doc.status === 'PROCESSING' ? 'secondary' : doc.status === 'ERROR' ? 'destructive' : 'outline'
-                    return (<Badge variant={variant as any}>{doc.status}</Badge>)
-                  } },
+                  {
+                    accessorKey: 'status', header: 'Status', cell: ({ row }) => {
+                      const doc = row.original as DocumentData
+                      const variant = doc.status === 'DIGITIZED' ? 'default' : doc.status === 'PROCESSING' ? 'secondary' : doc.status === 'ERROR' ? 'destructive' : 'outline'
+                      return (<Badge variant={variant as any}>{doc.status}</Badge>)
+                    }
+                  },
                   {
                     id: 'actions',
                     header: 'Actions',
@@ -2349,10 +2361,10 @@ function DashboardContent() {
                 const key = user?.id ? `documents_columns_visibility:${user.id}` : undefined
                 return (
                   <TooltipProvider>
-                    <DataTable 
-                      columns={columns} 
-                      data={documents} 
-                      defaultVisibleColumnIds={defaultVisible} 
+                    <DataTable
+                      columns={columns}
+                      data={documents}
+                      defaultVisibleColumnIds={defaultVisible}
                       storageKey={key}
                       bulkActions={(rows, clearSelection) => (
                         <>
@@ -2381,7 +2393,7 @@ function DashboardContent() {
           </Card>
         </TabsContent>
 
-        
+
 
         <TabsContent value="ready" className="space-y-4">
           <Card>
@@ -2390,10 +2402,10 @@ function DashboardContent() {
                 <div>
                   <CardTitle>Validated for Tax Report</CardTitle>
                   <CardDescription>
-                     {readyVisibleCount} Source Documents Validated for Tax Reporting
+                    {readyVisibleCount} Source Documents Validated for Tax Reporting
                   </CardDescription>
                 </div>
-                
+
               </div>
             </CardHeader>
             <CardContent>
@@ -2459,80 +2471,86 @@ function DashboardContent() {
                 }
                 const columns: ColumnDef<DigitizedData>[] = [
                   { accessorKey: 'purchaseDate', header: 'Purchase Date', cell: ({ row }) => <TruncatedCell text={row.original.purchaseDate ? formatDate(row.original.purchaseDate) : '-'} /> },
-                  { accessorKey: 'vendorName', header: 'Vendor Name', cell: ({ row }) => {
-                    const doc = row.original
-                    const abn = doc.vendorAbn || ''
-                    const name = vendorInfo[abn]?.name || doc.vendorName || '-'
-                    const onClick = () => {
-                      if (!user?.id) {
-                        toast({ title: 'Not signed in', description: 'Please sign in to view images.', variant: 'destructive' })
-                        return
-                      }
-                      const imageId = doc.originalDocumentId || (doc as any).id
-                      const docForModal = { ...doc, id: imageId, status: 'DIGITIZED' as const, uploadDate: doc.createdAt, transactionDate: doc.purchaseDate, vendor: doc.vendorName, abn: doc.vendorAbn, gstAmount: doc.taxAmount, paymentMethod: doc.paymentType, receiptData: (doc as any).extractedData }
-                      setSelectedDocumentForImage(docForModal)
-                      setIsImageModalOpen(true)
-                    }
-                    return <span className="cursor-pointer" onClick={onClick}>{name}</span>
-                  } },
-                  { accessorKey: 'vendorAbn', header: 'Vendor ABN', size: 220, meta: { headerClassName: 'whitespace-nowrap', cellClassName: 'whitespace-nowrap' }, cell: ({ row }) => {
-                    const doc = row.original
-                    const abn = doc.vendorAbn || ''
-                    const status = vendorInfo[abn]?.status
-                    const cls = status === 'Active' ? 'text-green-600 font-medium' : status ? 'text-red-600 font-medium' : ''
-                    const onClick = () => {
-                      if (abn) {
+                  {
+                    accessorKey: 'vendorName', header: 'Vendor Name', cell: ({ row }) => {
+                      const doc = row.original
+                      const abn = doc.vendorAbn || ''
+                      const name = vendorInfo[abn]?.name || doc.vendorName || '-'
+                      const onClick = () => {
+                        if (!user?.id) {
+                          toast({ title: 'Not signed in', description: 'Please sign in to view images.', variant: 'destructive' })
+                          return
+                        }
                         const imageId = doc.originalDocumentId || (doc as any).id
                         const docForModal = { ...doc, id: imageId, status: 'DIGITIZED' as const, uploadDate: doc.createdAt, transactionDate: doc.purchaseDate, vendor: doc.vendorName, abn: doc.vendorAbn, gstAmount: doc.taxAmount, paymentMethod: doc.paymentType, receiptData: (doc as any).extractedData }
-                        setSelectedDocumentForAbn(docForModal)
-                        setIsAbnModalOpen(true)
-                        checkAbnDetails(abn)
-                      } else {
-                        toast({ title: 'ABN not found', description: 'The document does not contain an ABN for verification', variant: 'destructive' })
+                        setSelectedDocumentForImage(docForModal)
+                        setIsImageModalOpen(true)
                       }
+                      return <span className="cursor-pointer" onClick={onClick}>{name}</span>
                     }
-                    return <span className={cls + ' cursor-pointer underline'} onClick={onClick}>{formatAbn(abn) || '-'}</span>
-                  } },
+                  },
+                  {
+                    accessorKey: 'vendorAbn', header: 'Vendor ABN', size: 220, meta: { headerClassName: 'whitespace-nowrap', cellClassName: 'whitespace-nowrap' }, cell: ({ row }) => {
+                      const doc = row.original
+                      const abn = doc.vendorAbn || ''
+                      const status = vendorInfo[abn]?.status
+                      const cls = status === 'Active' ? 'text-green-600 font-medium' : status ? 'text-red-600 font-medium' : ''
+                      const onClick = () => {
+                        if (abn) {
+                          const imageId = doc.originalDocumentId || (doc as any).id
+                          const docForModal = { ...doc, id: imageId, status: 'DIGITIZED' as const, uploadDate: doc.createdAt, transactionDate: doc.purchaseDate, vendor: doc.vendorName, abn: doc.vendorAbn, gstAmount: doc.taxAmount, paymentMethod: doc.paymentType, receiptData: (doc as any).extractedData }
+                          setSelectedDocumentForAbn(docForModal)
+                          setIsAbnModalOpen(true)
+                          checkAbnDetails(abn)
+                        } else {
+                          toast({ title: 'ABN not found', description: 'The document does not contain an ABN for verification', variant: 'destructive' })
+                        }
+                      }
+                      return <span className={cls + ' cursor-pointer underline'} onClick={onClick}>{formatAbn(abn) || '-'}</span>
+                    }
+                  },
                   { accessorKey: 'cashOutAmount', header: 'Cash Out', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.cashOutAmount === 'number' ? row.original.cashOutAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'discountAmount', header: 'Discount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.discountAmount === 'number' ? row.original.discountAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'surchargeAmount', header: 'Card Surcharge', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.surchargeAmount === 'number' ? row.original.surchargeAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'taxAmount', header: 'Tax Amount (GST)', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.taxAmount === 'number' ? row.original.taxAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'totalAmount', header: 'Total Amount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalAmount === 'number' ? row.original.totalAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'totalPaidAmount', header: 'Total Transaction', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalPaidAmount === 'number' ? row.original.totalPaidAmount : 0).toFixed(2)} /> },
-                  { accessorKey: 'gstStatus', header: 'GST Status', cell: ({ row }) => {
-                    const doc = row.original
-                    const abn = doc.vendorAbn || ''
-                    const gst = vendorInfo[abn]?.gst
-                    const isRegistered = !!gst
-                    const text = isRegistered ? 'Registered' : 'Not Registered'
-                    const cls = isRegistered ? 'text-green-600 font-medium' : 'text-red-600 font-medium'
-                    const tip = isRegistered ? `Registered from ${formatGstPretty(gst)}` : ''
-                    const onClick = () => {
-                      if (abn) {
-                        const imageId = doc.originalDocumentId || (doc as any).id
-                        const docForModal = { ...doc, id: imageId, status: 'DIGITIZED' as const, uploadDate: doc.createdAt, transactionDate: doc.purchaseDate, vendor: doc.vendorName, abn: doc.vendorAbn, gstAmount: doc.taxAmount, paymentMethod: doc.paymentType, receiptData: (doc as any).extractedData }
-                        setSelectedDocumentForAbn(docForModal)
-                        setIsAbnModalOpen(true)
-                        checkAbnDetails(abn)
-                      } else {
-                        toast({ title: 'ABN not found', description: 'The document does not contain an ABN for verification', variant: 'destructive' })
+                  {
+                    accessorKey: 'gstStatus', header: 'GST Status', cell: ({ row }) => {
+                      const doc = row.original
+                      const abn = doc.vendorAbn || ''
+                      const gst = vendorInfo[abn]?.gst
+                      const isRegistered = !!gst
+                      const text = isRegistered ? 'Registered' : 'Not Registered'
+                      const cls = isRegistered ? 'text-green-600 font-medium' : 'text-red-600 font-medium'
+                      const tip = isRegistered ? `Registered from ${formatGstPretty(gst)}` : ''
+                      const onClick = () => {
+                        if (abn) {
+                          const imageId = doc.originalDocumentId || (doc as any).id
+                          const docForModal = { ...doc, id: imageId, status: 'DIGITIZED' as const, uploadDate: doc.createdAt, transactionDate: doc.purchaseDate, vendor: doc.vendorName, abn: doc.vendorAbn, gstAmount: doc.taxAmount, paymentMethod: doc.paymentType, receiptData: (doc as any).extractedData }
+                          setSelectedDocumentForAbn(docForModal)
+                          setIsAbnModalOpen(true)
+                          checkAbnDetails(abn)
+                        } else {
+                          toast({ title: 'ABN not found', description: 'The document does not contain an ABN for verification', variant: 'destructive' })
+                        }
                       }
+                      return (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className={cls + ' cursor-pointer underline'} onClick={onClick}>{text}</span>
+                            </TooltipTrigger>
+                            {isRegistered && (
+                              <TooltipContent>
+                                <p>{tip}</p>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
+                        </TooltipProvider>
+                      )
                     }
-                    return (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className={cls + ' cursor-pointer underline'} onClick={onClick}>{text}</span>
-                          </TooltipTrigger>
-                          {isRegistered && (
-                            <TooltipContent>
-                              <p>{tip}</p>
-                            </TooltipContent>
-                          )}
-                        </Tooltip>
-                      </TooltipProvider>
-                    )
-                  } },
+                  },
                 ]
                 const defaultVisible = [
                   'purchaseDate', 'vendorName', 'vendorAbn',
@@ -2541,50 +2559,50 @@ function DashboardContent() {
                 ]
                 const key = user?.id ? `ready_columns_visibility:${user.id}` : undefined
                 return (
-                <DataTable 
-                  columns={columns} 
-                  data={dataForTable} 
-                  defaultVisibleColumnIds={defaultVisible} 
-                  storageKey={key}
-                  onRowCountChange={setReadyVisibleCount}
-                  bulkActions={(rows, clearSelection) => (
-                    <>
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs text-muted-foreground">Xero export mode</Label>
-                      <Select value={xeroExportMode} onValueChange={(v) => setXeroExportMode(v as 'bill' | 'spend')}>
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="bill">Bills (ACCPAY)</SelectItem>
-                          <SelectItem value="spend">Spend Money</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {xeroExportMode === 'spend' && xeroStatus.connected && selectedCompany?.id ? (
-                        <>
-                          <Label className="text-xs text-muted-foreground">Bank account</Label>
-                          <Select value={selectedCompany?.xeroBankAccountId || undefined} onValueChange={handleSelectXeroBankAccount}>
-                            <SelectTrigger className="w-[240px]">
-                              <SelectValue placeholder="Choose bank account" />
+                  <DataTable
+                    columns={columns}
+                    data={dataForTable}
+                    defaultVisibleColumnIds={defaultVisible}
+                    storageKey={key}
+                    onRowCountChange={setReadyVisibleCount}
+                    bulkActions={(rows, clearSelection) => (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs text-muted-foreground">Xero export mode</Label>
+                          <Select value={xeroExportMode} onValueChange={(v) => setXeroExportMode(v as 'bill' | 'spend')}>
+                            <SelectTrigger className="w-[180px]">
+                              <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {xeroBankAccounts.map(a => (
-                                <SelectItem key={a.accountID} value={a.accountID}>{a.name || a.accountID}{a.code ? ` (${a.code})` : ''}</SelectItem>
-                              ))}
+                              <SelectItem value="bill">Bills (ACCPAY)</SelectItem>
+                              <SelectItem value="spend">Spend Money</SelectItem>
                             </SelectContent>
                           </Select>
-                        </>
-                      ) : null}
-                    </div>
-                      <Button size="sm" onClick={() => { if (!rows.length) { toast({ title: 'Nothing selected', description: 'Please select at least one row', variant: 'destructive' }) ; return } ; exportReadyRowsToExcel(rows).then(() => clearSelection()) }}>
-                        {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Export to Excel'}
-                      </Button>
-                      <Button size="sm" variant="default" onClick={() => { if (!rows.length) { toast({ title: 'Nothing selected', description: 'Please select at least one row', variant: 'destructive' }); return } ; exportReadyRowsToXero(rows).then(() => clearSelection()) }}>
-                        {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Export to Xero'}
-                      </Button>
-                    </>
-                  )}
-                />
+                          {xeroExportMode === 'spend' && xeroStatus.connected && selectedCompany?.id ? (
+                            <>
+                              <Label className="text-xs text-muted-foreground">Bank account</Label>
+                              <Select value={selectedCompany?.xeroBankAccountId || undefined} onValueChange={handleSelectXeroBankAccount}>
+                                <SelectTrigger className="w-[240px]">
+                                  <SelectValue placeholder="Choose bank account" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {xeroBankAccounts.map(a => (
+                                    <SelectItem key={a.accountID} value={a.accountID}>{a.name || a.accountID}{a.code ? ` (${a.code})` : ''}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </>
+                          ) : null}
+                        </div>
+                        <Button size="sm" onClick={() => { if (!rows.length) { toast({ title: 'Nothing selected', description: 'Please select at least one row', variant: 'destructive' }); return }; exportReadyRowsToExcel(rows).then(() => clearSelection()) }}>
+                          {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Export to Excel'}
+                        </Button>
+                        <Button size="sm" variant="default" onClick={() => { if (!rows.length) { toast({ title: 'Nothing selected', description: 'Please select at least one row', variant: 'destructive' }); return }; exportReadyRowsToXero(rows).then(() => clearSelection()) }}>
+                          {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Export to Xero'}
+                        </Button>
+                      </>
+                    )}
+                  />
                 )
               })()}
             </CardContent>
@@ -2739,15 +2757,17 @@ function DashboardContent() {
                   { accessorKey: 'fileName', header: 'File Name', cell: ({ row }) => <TruncatedCell text={row.original.fileName} /> },
                   { accessorKey: 'status', header: 'Status', cell: ({ row }) => <Badge variant={row.original.status === 'SUCCESS' ? 'default' : 'destructive'}>{row.original.status}</Badge> },
                   { accessorKey: 'totalRows', header: 'Rows', cell: ({ row }) => <TruncatedCell text={String(row.original.totalRows || 0)} /> },
-                  { id: 'actions', header: 'Actions', cell: ({ row }) => (
-                    <Button size="sm" variant="outline" onClick={() => downloadExportFile(row.original.fileName)}>Download</Button>
-                  ) },
+                  {
+                    id: 'actions', header: 'Actions', cell: ({ row }) => (
+                      <Button size="sm" variant="outline" onClick={() => downloadExportFile(row.original.fileName)}>Download</Button>
+                    )
+                  },
                 ]
                 const key = user?.id ? `export_history_columns_visibility:${user.id}` : undefined
                 return (
-                  <DataTable 
-                    columns={columns} 
-                    data={exportHistory} 
+                  <DataTable
+                    columns={columns}
+                    data={exportHistory}
                     storageKey={key}
                     onRowCountChange={(n) => setExportHistoryVisibleCount(n)}
                   />
@@ -2769,59 +2789,65 @@ function DashboardContent() {
               {(() => {
                 const columns: ColumnDef<DigitizedData>[] = [
                   { accessorKey: 'purchaseDate', header: 'Purchase Date', cell: ({ row }) => <TruncatedCell text={row.original.purchaseDate ? formatDate(row.original.purchaseDate) : '-'} /> },
-                  { accessorKey: 'vendorName', header: 'Vendor Name', cell: ({ row }) => {
-                    const doc = row.original
-                    const abn = doc.vendorAbn || ''
-                    const name = vendorInfo[abn]?.name || doc.vendorName || '-'
-                    const onClick = () => {
-                      if (!user?.id) {
-                        toast({ title: 'Not signed in', description: 'Please sign in to view images.', variant: 'destructive' })
-                        return
+                  {
+                    accessorKey: 'vendorName', header: 'Vendor Name', cell: ({ row }) => {
+                      const doc = row.original
+                      const abn = doc.vendorAbn || ''
+                      const name = vendorInfo[abn]?.name || doc.vendorName || '-'
+                      const onClick = () => {
+                        if (!user?.id) {
+                          toast({ title: 'Not signed in', description: 'Please sign in to view images.', variant: 'destructive' })
+                          return
+                        }
+                        const imageId = doc.originalDocumentId || (doc as any).id
+                        const docForModal = { ...doc, id: imageId, status: 'DIGITIZED' as const, uploadDate: doc.createdAt, transactionDate: doc.purchaseDate, vendor: doc.vendorName, abn: doc.vendorAbn, gstAmount: doc.taxAmount, paymentMethod: doc.paymentType, receiptData: (doc as any).extractedData }
+                        setSelectedDocumentForImage(docForModal)
+                        setIsImageModalOpen(true)
                       }
-                      const imageId = doc.originalDocumentId || (doc as any).id
-                      const docForModal = { ...doc, id: imageId, status: 'DIGITIZED' as const, uploadDate: doc.createdAt, transactionDate: doc.purchaseDate, vendor: doc.vendorName, abn: doc.vendorAbn, gstAmount: doc.taxAmount, paymentMethod: doc.paymentType, receiptData: (doc as any).extractedData }
-                      setSelectedDocumentForImage(docForModal)
-                      setIsImageModalOpen(true)
+                      return <span className="cursor-pointer" onClick={onClick}>{name}</span>
                     }
-                    return <span className="cursor-pointer" onClick={onClick}>{name}</span>
-                  } },
+                  },
                   { accessorKey: 'documentType', header: 'Document Type', cell: ({ row }) => <TruncatedCell text={row.original.documentType || 'Receipt'} /> },
                   { accessorKey: 'receiptNumber', header: 'Receipt/Invoice Number', cell: ({ row }) => <TruncatedCell text={row.original.receiptNumber || '-'} /> },
                   { accessorKey: 'paymentType', header: 'Payment Type', cell: ({ row }) => <TruncatedCell text={row.original.paymentType || '-'} /> },
-                  { accessorKey: 'vendorAbn', header: 'Vendor ABN', size: 180, meta: { headerClassName: 'whitespace-nowrap', cellClassName: 'whitespace-nowrap' }, cell: ({ row }) => {
-                    const abn = row.original.vendorAbn || ''
-                    const status = vendorInfo[abn]?.status
-                    const cls = status === 'Active' ? 'text-green-600 font-medium' : status ? 'text-red-600 font-medium' : ''
-                    return <span className={cls}>{formatAbn(abn) || '-'}</span>
-                  } },
+                  {
+                    accessorKey: 'vendorAbn', header: 'Vendor ABN', size: 180, meta: { headerClassName: 'whitespace-nowrap', cellClassName: 'whitespace-nowrap' }, cell: ({ row }) => {
+                      const abn = row.original.vendorAbn || ''
+                      const status = vendorInfo[abn]?.status
+                      const cls = status === 'Active' ? 'text-green-600 font-medium' : status ? 'text-red-600 font-medium' : ''
+                      return <span className={cls}>{formatAbn(abn) || '-'}</span>
+                    }
+                  },
                   { accessorKey: 'cashOutAmount', header: 'Cash Out', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.cashOutAmount === 'number' ? row.original.cashOutAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'discountAmount', header: 'Discount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.discountAmount === 'number' ? row.original.discountAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'surchargeAmount', header: 'Card Surcharge', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.surchargeAmount === 'number' ? row.original.surchargeAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'taxAmount', header: 'Tax Amount (GST)', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.taxAmount === 'number' ? row.original.taxAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'totalAmount', header: 'Total Amount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalAmount === 'number' ? row.original.totalAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'totalPaidAmount', header: 'Total Transaction', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalPaidAmount === 'number' ? row.original.totalPaidAmount : 0).toFixed(2)} /> },
-                  { accessorKey: 'gstStatus', header: 'GST Status', cell: ({ row }) => {
-                    const abn = row.original.vendorAbn || ''
-                    const gst = vendorInfo[abn]?.gst
-                    const isRegistered = !!gst
-                    const text = isRegistered ? 'Registered' : 'Not Registered'
-                    const cls = isRegistered ? 'text-green-600 font-medium' : 'text-red-600 font-medium'
-                    const tip = isRegistered ? `Registered from ${formatGstPretty(gst)}` : ''
-                    return (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className={cls}>{text}</span>
-                          </TooltipTrigger>
-                          {isRegistered && (
-                            <TooltipContent>
-                              <p>{tip}</p>
-                            </TooltipContent>
-                          )}
-                        </Tooltip>
-                      </TooltipProvider>
-                    )
-                  } },
+                  {
+                    accessorKey: 'gstStatus', header: 'GST Status', cell: ({ row }) => {
+                      const abn = row.original.vendorAbn || ''
+                      const gst = vendorInfo[abn]?.gst
+                      const isRegistered = !!gst
+                      const text = isRegistered ? 'Registered' : 'Not Registered'
+                      const cls = isRegistered ? 'text-green-600 font-medium' : 'text-red-600 font-medium'
+                      const tip = isRegistered ? `Registered from ${formatGstPretty(gst)}` : ''
+                      return (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className={cls}>{text}</span>
+                            </TooltipTrigger>
+                            {isRegistered && (
+                              <TooltipContent>
+                                <p>{tip}</p>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
+                        </TooltipProvider>
+                      )
+                    }
+                  },
                   {
                     id: 'actions',
                     header: 'Actions',
@@ -2867,10 +2893,10 @@ function DashboardContent() {
                 ]
                 const key = user?.id ? `review_columns_visibility:${user.id}` : undefined
                 return (
-                  <DataTable 
-                    columns={columns} 
-                    data={reviewDocuments} 
-                    defaultVisibleColumnIds={defaultVisible} 
+                  <DataTable
+                    columns={columns}
+                    data={reviewDocuments}
+                    defaultVisibleColumnIds={defaultVisible}
                     storageKey={key}
                   />
                 )
@@ -2878,7 +2904,7 @@ function DashboardContent() {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="digitized" className="space-y-4">
           <Card>
             <CardHeader>
@@ -2891,50 +2917,56 @@ function DashboardContent() {
               {(() => {
                 const columns: ColumnDef<DigitizedData>[] = [
                   { accessorKey: 'purchaseDate', header: 'Purchase Date', cell: ({ row }) => <TruncatedCell text={row.original.purchaseDate ? formatDate(row.original.purchaseDate) : '-'} /> },
-                  { accessorKey: 'vendorName', header: 'Vendor Name', cell: ({ row }) => {
-                    const abn = row.original.vendorAbn || ''
-                    const name = vendorInfo[abn]?.name || row.original.vendorName || '-'
-                    return <TruncatedCell text={name} />
-                  } },
-                  { accessorKey: 'vendorAbn', header: 'Vendor ABN', size: 220, meta: { headerClassName: 'whitespace-nowrap', cellClassName: 'whitespace-nowrap' }, cell: ({ row }) => {
-                    const abn = row.original.vendorAbn || ''
-                    const status = vendorInfo[abn]?.status
-                    const cls = status === 'Active' ? 'text-green-600 font-medium' : status ? 'text-red-600 font-medium' : ''
-                    return <span className={cls}>{formatAbn(abn) || '-'}</span>
-                  } },
+                  {
+                    accessorKey: 'vendorName', header: 'Vendor Name', cell: ({ row }) => {
+                      const abn = row.original.vendorAbn || ''
+                      const name = vendorInfo[abn]?.name || row.original.vendorName || '-'
+                      return <TruncatedCell text={name} />
+                    }
+                  },
+                  {
+                    accessorKey: 'vendorAbn', header: 'Vendor ABN', size: 220, meta: { headerClassName: 'whitespace-nowrap', cellClassName: 'whitespace-nowrap' }, cell: ({ row }) => {
+                      const abn = row.original.vendorAbn || ''
+                      const status = vendorInfo[abn]?.status
+                      const cls = status === 'Active' ? 'text-green-600 font-medium' : status ? 'text-red-600 font-medium' : ''
+                      return <span className={cls}>{formatAbn(abn) || '-'}</span>
+                    }
+                  },
                   { accessorKey: 'documentType', header: 'Document Type', cell: ({ row }) => <TruncatedCell text={row.original.documentType || 'Receipt'} /> },
                   { accessorKey: 'receiptNumber', header: 'Receipt/Invoice Number', cell: ({ row }) => <TruncatedCell text={row.original.receiptNumber || '-'} /> },
                   { accessorKey: 'paymentType', header: 'Payment Type', cell: ({ row }) => <TruncatedCell text={row.original.paymentType || '-'} /> },
-                  
+
                   { accessorKey: 'cashOutAmount', header: 'Cash Out', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.cashOutAmount === 'number' ? row.original.cashOutAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'discountAmount', header: 'Discount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.discountAmount === 'number' ? row.original.discountAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'surchargeAmount', header: 'Card Surcharge', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.surchargeAmount === 'number' ? row.original.surchargeAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'taxAmount', header: 'Tax Amount (GST)', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.taxAmount === 'number' ? row.original.taxAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'totalAmount', header: 'Total Amount', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalAmount === 'number' ? row.original.totalAmount : 0).toFixed(2)} /> },
                   { accessorKey: 'totalPaidAmount', header: 'Total Transaction', meta: { headerClassName: 'text-right', cellClassName: 'text-right font-bold' }, cell: ({ row }) => <TruncatedCell text={(typeof row.original.totalPaidAmount === 'number' ? row.original.totalPaidAmount : 0).toFixed(2)} /> },
-                  
-                  { accessorKey: 'gstStatus', header: 'GST Status', cell: ({ row }) => {
-                    const abn = row.original.vendorAbn || ''
-                    const gst = vendorInfo[abn]?.gst
-                    const isRegistered = !!gst
-                    const text = isRegistered ? 'Registered' : 'Not Registered'
-                    const cls = isRegistered ? 'text-green-600 font-medium' : 'text-red-600 font-medium'
-                    const tip = isRegistered ? `Registered from ${formatGstPretty(gst)}` : ''
-                    return (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className={cls}>{text}</span>
-                          </TooltipTrigger>
-                          {isRegistered && (
-                            <TooltipContent>
-                              <p>{tip}</p>
-                            </TooltipContent>
-                          )}
-                        </Tooltip>
-                      </TooltipProvider>
-                    )
-                  } },
+
+                  {
+                    accessorKey: 'gstStatus', header: 'GST Status', cell: ({ row }) => {
+                      const abn = row.original.vendorAbn || ''
+                      const gst = vendorInfo[abn]?.gst
+                      const isRegistered = !!gst
+                      const text = isRegistered ? 'Registered' : 'Not Registered'
+                      const cls = isRegistered ? 'text-green-600 font-medium' : 'text-red-600 font-medium'
+                      const tip = isRegistered ? `Registered from ${formatGstPretty(gst)}` : ''
+                      return (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className={cls}>{text}</span>
+                            </TooltipTrigger>
+                            {isRegistered && (
+                              <TooltipContent>
+                                <p>{tip}</p>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
+                        </TooltipProvider>
+                      )
+                    }
+                  },
                   {
                     id: 'actions',
                     header: 'Actions',
@@ -2993,7 +3025,7 @@ function DashboardContent() {
                             >
                               Check ASIC Validation
                             </DropdownMenuItem>
-               
+
                             <DropdownMenuItem
                               onClick={(e) => {
                                 e.preventDefault()
@@ -3018,15 +3050,15 @@ function DashboardContent() {
                 ]
                 const key = user?.id ? `digitized_columns_visibility:${user.id}` : undefined
                 return (
-                  <DataTable 
-                    columns={columns} 
-                    data={digitizedDocuments} 
-                    defaultVisibleColumnIds={defaultVisible} 
+                  <DataTable
+                    columns={columns}
+                    data={digitizedDocuments}
+                    defaultVisibleColumnIds={defaultVisible}
                     storageKey={key}
                     bulkActions={(rows, clearSelection) => (
                       <>
-                        <Button size="sm" onClick={() => { if (!rows.length) { toast({ title: 'Nothing selected', description: 'Please select at least one row', variant: 'destructive' }) ; return } ; validateSelected(rows).then(() => clearSelection()) }}>Validate</Button>
-                        <Button size="sm" variant="destructive" onClick={() => { if (!rows.length) { toast({ title: 'Nothing selected', description: 'Please select at least one row', variant: 'destructive' }) ; return } ; handleBulkDeleteSelected(rows) }}>Delete</Button>
+                        <Button size="sm" onClick={() => { if (!rows.length) { toast({ title: 'Nothing selected', description: 'Please select at least one row', variant: 'destructive' }); return }; validateSelected(rows).then(() => clearSelection()) }}>Validate</Button>
+                        <Button size="sm" variant="destructive" onClick={() => { if (!rows.length) { toast({ title: 'Nothing selected', description: 'Please select at least one row', variant: 'destructive' }); return }; handleBulkDeleteSelected(rows) }}>Delete</Button>
                       </>
                     )}
                     getRowClassName={(row) => validationErrors[row.original.id] ? 'bg-red-50' : ''}
@@ -3035,10 +3067,10 @@ function DashboardContent() {
               })()}
             </CardContent>
           </Card>
-          
-          
+
+
         </TabsContent>
-        
+
         <TabsContent value="profile" className="space-y-4">
           <Card>
             <CardHeader>
@@ -3049,7 +3081,7 @@ function DashboardContent() {
                     Information about {selectedCompany.name}
                   </CardDescription>
                 </div>
-                <Button 
+                <Button
                   onClick={() => {
                     setIsEditingCompany(!isEditingCompany)
                     setEditedCompany(selectedCompany)
@@ -3071,7 +3103,7 @@ function DashboardContent() {
                       <Input
                         id="name"
                         value={editedCompany?.name || ''}
-                        onChange={(e) => setEditedCompany(prev => prev ? {...prev, name: e.target.value} : null)}
+                        onChange={(e) => setEditedCompany(prev => prev ? { ...prev, name: e.target.value } : null)}
                       />
                     </div>
                     <div className="space-y-2">
@@ -3079,20 +3111,20 @@ function DashboardContent() {
                       <Input
                         id="industry"
                         value={editedCompany?.industry || ''}
-                        onChange={(e) => setEditedCompany(prev => prev ? {...prev, industry: e.target.value} : null)}
+                        onChange={(e) => setEditedCompany(prev => prev ? { ...prev, industry: e.target.value } : null)}
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="description">Description</Label>
                     <Textarea
                       id="description"
                       value={editedCompany?.description || ''}
-                      onChange={(e) => setEditedCompany(prev => prev ? {...prev, description: e.target.value} : null)}
+                      onChange={(e) => setEditedCompany(prev => prev ? { ...prev, description: e.target.value } : null)}
                     />
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
@@ -3100,7 +3132,7 @@ function DashboardContent() {
                         id="email"
                         type="email"
                         value={editedCompany?.email || ''}
-                        onChange={(e) => setEditedCompany(prev => prev ? {...prev, email: e.target.value} : null)}
+                        onChange={(e) => setEditedCompany(prev => prev ? { ...prev, email: e.target.value } : null)}
                       />
                     </div>
                     <div className="space-y-2">
@@ -3108,18 +3140,18 @@ function DashboardContent() {
                       <Input
                         id="phone"
                         value={editedCompany?.phone || ''}
-                        onChange={(e) => setEditedCompany(prev => prev ? {...prev, phone: e.target.value} : null)}
+                        onChange={(e) => setEditedCompany(prev => prev ? { ...prev, phone: e.target.value } : null)}
                       />
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="website">Website</Label>
                       <Input
                         id="website"
                         value={editedCompany?.website || ''}
-                        onChange={(e) => setEditedCompany(prev => prev ? {...prev, website: e.target.value} : null)}
+                        onChange={(e) => setEditedCompany(prev => prev ? { ...prev, website: e.target.value } : null)}
                       />
                     </div>
                     <div className="space-y-2">
@@ -3127,26 +3159,26 @@ function DashboardContent() {
                       <Input
                         id="abn"
                         value={editedCompany?.abn || ''}
-                        onChange={(e) => setEditedCompany(prev => prev ? {...prev, abn: e.target.value} : null)}
+                        onChange={(e) => setEditedCompany(prev => prev ? { ...prev, abn: e.target.value } : null)}
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="address">Address</Label>
                     <Textarea
                       id="address"
                       value={editedCompany?.address || ''}
-                      onChange={(e) => setEditedCompany(prev => prev ? {...prev, address: e.target.value} : null)}
+                      onChange={(e) => setEditedCompany(prev => prev ? { ...prev, address: e.target.value } : null)}
                     />
                   </div>
-                  
+
                   <div className="flex space-x-2">
                     <Button onClick={handleCompanyUpdate}>
                       Save Changes
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={() => {
                         setIsEditingCompany(false)
                         setEditedCompany(null)
@@ -3164,14 +3196,14 @@ function DashboardContent() {
                         <h4 className="text-sm font-medium text-muted-foreground mb-1">Company Name</h4>
                         <p className="text-sm">{selectedCompany.name}</p>
                       </div>
-                      
+
                       {selectedCompany.description && (
                         <div>
                           <h4 className="text-sm font-medium text-muted-foreground mb-1">Description</h4>
                           <p className="text-sm">{selectedCompany.description}</p>
                         </div>
                       )}
-                      
+
                       {selectedCompany.industry && (
                         <div>
                           <h4 className="text-sm font-medium text-muted-foreground mb-1">Industry</h4>
@@ -3179,7 +3211,7 @@ function DashboardContent() {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="space-y-4">
                       {selectedCompany.email && (
                         <div className="flex items-center space-x-2">
@@ -3187,14 +3219,14 @@ function DashboardContent() {
                           <span className="text-sm">{selectedCompany.email}</span>
                         </div>
                       )}
-                      
+
                       {selectedCompany.phone && (
                         <div className="flex items-center space-x-2">
                           <Phone className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">{selectedCompany.phone}</span>
                         </div>
                       )}
-                      
+
                       {selectedCompany.website && (
                         <div className="flex items-center space-x-2">
                           <Globe className="h-4 w-4 text-muted-foreground" />
@@ -3203,14 +3235,14 @@ function DashboardContent() {
                           </a>
                         </div>
                       )}
-                      
+
                       {selectedCompany.address && (
                         <div className="flex items-start space-x-2">
                           <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                           <span className="text-sm">{selectedCompany.address}</span>
                         </div>
                       )}
-                      
+
                       {selectedCompany.abn && (
                         <div>
                           <h4 className="text-sm font-medium text-muted-foreground mb-1">ABN</h4>
@@ -3219,7 +3251,7 @@ function DashboardContent() {
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="border-t pt-4">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                       <div>
@@ -3246,7 +3278,7 @@ function DashboardContent() {
           </Card>
         </TabsContent>
       </Tabs>
-      
+
       {/* Modal for displaying digitization JSON data */}
       <Dialog open={isJsonModalOpen} onOpenChange={setIsJsonModalOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
@@ -3298,7 +3330,7 @@ function DashboardContent() {
             </div>
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2" style={{ height: 'calc(98vh - 80px)' }}>
-            <div 
+            <div
               className="relative bg-black/50 cursor-grab active:cursor-grabbing overflow-hidden"
               onWheel={(e) => { e.preventDefault(); const delta = e.deltaY > 0 ? 0.85 : 1.15; const newZoom = Math.max(0.1, Math.min(8, imageZoom * delta)); setImageZoom(newZoom) }}
               onMouseDown={(e) => { if (imageZoom > 1) { setIsDragging(true); setDragStart({ x: e.clientX - imagePosition.x, y: e.clientY - imagePosition.y }) } }}
@@ -3338,9 +3370,9 @@ function DashboardContent() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="vendorAbn">Vendor ABN</Label>
-                      <Input 
-                        id="vendorAbn" 
-                        value={editForm.vendorAbn} 
+                      <Input
+                        id="vendorAbn"
+                        value={editForm.vendorAbn}
                         onChange={(e) => setEditForm({ ...editForm, vendorAbn: e.target.value })}
                         onBlur={(e) => fetchVendorInfoForAbn(e.target.value)}
                         className={(editForm.vendorAbn && vendorInfo[editForm.vendorAbn]?.status === 'Active') ? 'border-green-600 bg-green-50' : ''}
@@ -3378,7 +3410,7 @@ function DashboardContent() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="cashOutAmount">Cash Out</Label>
-                    <Input id="cashOutAmount" type="number" inputMode="decimal" step="0.01" min="0" value={editForm.cashOutAmount} onChange={(e) => setEditForm({ ...editForm, cashOutAmount: parseFloat(e.target.value) })} />
+                      <Input id="cashOutAmount" type="number" inputMode="decimal" step="0.01" min="0" value={editForm.cashOutAmount} onChange={(e) => setEditForm({ ...editForm, cashOutAmount: parseFloat(e.target.value) })} />
                       {editErrors.cashOutAmount && <div className="text-sm text-destructive">{editErrors.cashOutAmount}</div>}
                     </div>
                     <div className="space-y-2">
@@ -3453,9 +3485,9 @@ function DashboardContent() {
                 <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
                   <span>Zoom: {Math.round(imageZoom * 100)}%</span>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => {
                     setImageZoom(1)
                     setImagePosition({ x: 0, y: 0 })
@@ -3464,23 +3496,23 @@ function DashboardContent() {
                 >
                   Reset
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => {
-                     if (!user?.id) {
-                       toast({
-                         title: 'Not signed in',
-                         description: 'Please sign in to view images.',
-                         variant: 'destructive',
-                       })
-                       return
-                     }
-                     if (selectedDocumentForImage) {
-                       const imageUrl = `/api/files/${selectedDocumentForImage.id}/view?userId=${user?.id}`
-                       window.open(imageUrl, '_blank')
-                     }
-                   }}
+                    if (!user?.id) {
+                      toast({
+                        title: 'Not signed in',
+                        description: 'Please sign in to view images.',
+                        variant: 'destructive',
+                      })
+                      return
+                    }
+                    if (selectedDocumentForImage) {
+                      const imageUrl = `/api/files/${selectedDocumentForImage.id}/view?userId=${user?.id}`
+                      window.open(imageUrl, '_blank')
+                    }
+                  }}
                   className="bg-background/80 hover:bg-background"
                 >
                   Open in New Tab
@@ -3488,8 +3520,8 @@ function DashboardContent() {
               </div>
             </div>
           </DialogHeader>
-          
-          <div 
+
+          <div
             className="flex-1 overflow-hidden relative bg-black/50 cursor-grab active:cursor-grabbing"
             style={{ height: 'calc(98vh - 100px)' }}
             onWheel={(e) => {
@@ -3524,8 +3556,8 @@ function DashboardContent() {
                     <p className="text-sm opacity-80">Loading image...</p>
                   </div>
                 </div>
-                
-                <Image 
+
+                <Image
                   ref={imageRef as any}
                   src={`/api/files/${selectedDocumentForImage.id}/view?userId=${user?.id}`}
                   alt={selectedDocumentForImage.originalName}
@@ -3557,7 +3589,7 @@ function DashboardContent() {
                   }}
                   draggable={false}
                 />
-                
+
                 {/* Error message */}
                 <div className="error-message hidden absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
                   <div className="text-center text-white bg-red-900/20 border border-red-500/30 rounded-lg p-8 max-w-md mx-4">
@@ -3568,9 +3600,9 @@ function DashboardContent() {
                       <p>Document ID: {selectedDocumentForImage.id}</p>
                       <p>File: {selectedDocumentForImage.originalName}</p>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       className="mt-4 bg-white/10 border-white/20 text-white hover:bg-white/20"
                       onClick={() => {
                         // Try to reload the image
@@ -3591,7 +3623,7 @@ function DashboardContent() {
                 </div>
               </>
             )}
-            
+
             {/* Control hints */}
             <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm text-white text-xs px-3 py-2 rounded-lg">
               <p>🖱️ Mouse wheel - zoom</p>
@@ -3600,7 +3632,7 @@ function DashboardContent() {
           </div>
         </DialogContent>
       </Dialog>
-      
+
       <Dialog open={isAbnModalOpen} onOpenChange={setIsAbnModalOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
@@ -3661,8 +3693,8 @@ function DashboardContent() {
                     <div className="grid grid-cols-3 gap-4 py-2 border-b">
                       <span className="font-medium">Address:</span>
                       <span className="col-span-2">
-                        {abnData.AddressState && abnData.AddressPostcode 
-                          ? `${abnData.AddressState} ${abnData.AddressPostcode}` 
+                        {abnData.AddressState && abnData.AddressPostcode
+                          ? `${abnData.AddressState} ${abnData.AddressPostcode}`
                           : '-'
                         }
                       </span>
@@ -3741,7 +3773,7 @@ function DashboardContent() {
                             {account._class || account.class || 'N/A'}
                           </TableCell>
                           <TableCell>
-                            <Badge 
+                            <Badge
                               variant={account.status === 'ACTIVE' ? 'default' : 'secondary'}
                             >
                               {account.status || 'N/A'}
@@ -3757,7 +3789,7 @@ function DashboardContent() {
                 <div className="text-xs text-muted-foreground">
                   <strong>Sample JSON Structure:</strong>
                   <pre className="mt-2 p-3 bg-gray-50 rounded text-xs overflow-x-auto">
-{JSON.stringify(xeroTestResult.accounts[0], null, 2)}
+                    {JSON.stringify(xeroTestResult.accounts[0], null, 2)}
                   </pre>
                 </div>
               </div>
@@ -3773,102 +3805,102 @@ function DashboardContent() {
       {/* Add Company Modal */}
       <Dialog open={isAddCompanyModalOpen} onOpenChange={setIsAddCompanyModalOpen}>
         <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>Create New Company</DialogTitle>
-          <DialogDescription>Enter details to create a new company</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleCreateCompany} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="company-abn">ABN *</Label>
-            <Input
-              id="company-abn"
-              value={newCompanyData.abn}
-              onChange={(e) => {
-                const digits = e.target.value.replace(/[^\d]/g, '')
-                setNewCompanyData({ ...newCompanyData, abn: formatAbnInput(digits) })
-              }}
-              onBlur={(e) => handleCompanyAbnBlur(e.target.value)}
-              required
-              inputMode="numeric"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <DialogHeader>
+            <DialogTitle>Create New Company</DialogTitle>
+            <DialogDescription>Enter details to create a new company</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateCompany} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="company-name">Company Name *</Label>
+              <Label htmlFor="company-abn">ABN *</Label>
               <Input
-                id="company-name"
-                value={newCompanyData.name}
-                disabled
-                readOnly
-                placeholder="Auto-filled from ABN"
+                id="company-abn"
+                value={newCompanyData.abn}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/[^\d]/g, '')
+                  setNewCompanyData({ ...newCompanyData, abn: formatAbnInput(digits) })
+                }}
+                onBlur={(e) => handleCompanyAbnBlur(e.target.value)}
                 required
+                inputMode="numeric"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="company-industry">Industry</Label>
-              <Input
-                id="company-industry"
-                value={newCompanyData.industry}
-                onChange={(e) => setNewCompanyData({...newCompanyData, industry: e.target.value})}
-              />
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="company-name">Company Name *</Label>
+                <Input
+                  id="company-name"
+                  value={newCompanyData.name}
+                  disabled
+                  readOnly
+                  placeholder="Auto-filled from ABN"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="company-industry">Industry</Label>
+                <Input
+                  id="company-industry"
+                  value={newCompanyData.industry}
+                  onChange={(e) => setNewCompanyData({ ...newCompanyData, industry: e.target.value })}
+                />
+              </div>
             </div>
-          </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="company-description">Description</Label>
               <Textarea
                 id="company-description"
                 value={newCompanyData.description}
-                onChange={(e) => setNewCompanyData({...newCompanyData, description: e.target.value})}
+                onChange={(e) => setNewCompanyData({ ...newCompanyData, description: e.target.value })}
                 rows={3}
               />
             </div>
-            
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="company-email">Email</Label>
-              <Input
-                id="company-email"
-                type="email"
-                value={newCompanyData.email}
-                onChange={(e) => setNewCompanyData({...newCompanyData, email: e.target.value})}
-              />
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="company-email">Email</Label>
+                <Input
+                  id="company-email"
+                  type="email"
+                  value={newCompanyData.email}
+                  onChange={(e) => setNewCompanyData({ ...newCompanyData, email: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="company-phone">Phone *</Label>
+                <Input
+                  id="company-phone"
+                  value={newCompanyData.phone}
+                  onChange={handleCompanyPhoneChange}
+                  inputMode="tel"
+                  required
+                />
+              </div>
             </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="company-website">Website</Label>
+                <Input
+                  id="company-website"
+                  value={newCompanyData.website}
+                  onChange={(e) => setNewCompanyData({ ...newCompanyData, website: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2"></div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="company-phone">Phone *</Label>
+              <Label htmlFor="company-address">Address *</Label>
               <Input
-                id="company-phone"
-                value={newCompanyData.phone}
-                onChange={handleCompanyPhoneChange}
-                inputMode="tel"
+                id="company-address"
+                value={newCompanyData.address}
+                onChange={(e) => setNewCompanyData({ ...newCompanyData, address: e.target.value })}
                 required
               />
             </div>
-          </div>
-            
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="company-website">Website</Label>
-              <Input
-                id="company-website"
-                value={newCompanyData.website}
-                onChange={(e) => setNewCompanyData({...newCompanyData, website: e.target.value})}
-              />
-            </div>
-            <div className="space-y-2"></div>
-          </div>
-            
-          <div className="space-y-2">
-            <Label htmlFor="company-address">Address *</Label>
-            <Input
-              id="company-address"
-              value={newCompanyData.address}
-              onChange={(e) => setNewCompanyData({...newCompanyData, address: e.target.value})}
-              required
-            />
-          </div>
-            
+
             <div className="flex justify-end space-x-2">
               <Button type="button" variant="outline" onClick={handleCloseModal}>
                 Cancel
@@ -3880,7 +3912,7 @@ function DashboardContent() {
           </form>
         </DialogContent>
       </Dialog>
-      
+
       {/* Delete Confirmation Modal */}
       <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
@@ -3924,9 +3956,9 @@ function DashboardContent() {
           </div>
         </DialogContent>
       </Dialog>
-      
+
       <div className="fixed bottom-6 right-6 z-50">
-        <Button className="rounded-full px-4 py-3 shadow-lg" variant="default" onClick={() => { try { window.location.assign('/tickets') } catch {} }}>
+        <Button className="rounded-full px-4 py-3 shadow-lg" variant="default" onClick={() => { try { window.location.assign('/tickets') } catch { } }}>
           <div className="text-sm leading-tight text-left">
             <div>Need Halp ?</div>
             <div>Have sugession ?</div>
@@ -4011,7 +4043,7 @@ function CreateCompanyDialog({ onCompanyCreated }: { onCompanyCreated: (userData
         address: prev.address || addr,
         abn: formatAbn2Input(clean)
       }))
-    } catch {}
+    } catch { }
   }
 
   const handleCreateCompany = async (e: React.FormEvent) => {
@@ -4055,7 +4087,7 @@ function CreateCompanyDialog({ onCompanyCreated }: { onCompanyCreated: (userData
           description: 'Company created successfully!'
         })
         setIsOpen(false)
-        try { localStorage.setItem('lastCompanyId', String(newCompany.id)) } catch {}
+        try { localStorage.setItem('lastCompanyId', String(newCompany.id)) } catch { }
         window.location.href = `/dashboard?company=${newCompany.id}`
         return
       } else {
@@ -4124,21 +4156,21 @@ function CreateCompanyDialog({ onCompanyCreated }: { onCompanyCreated: (userData
               <Input
                 id="company-industry"
                 value={companyData.industry}
-                onChange={(e) => setCompanyData({...companyData, industry: e.target.value})}
+                onChange={(e) => setCompanyData({ ...companyData, industry: e.target.value })}
               />
             </div>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="company-description">Description</Label>
             <Textarea
               id="company-description"
               value={companyData.description}
-              onChange={(e) => setCompanyData({...companyData, description: e.target.value})}
+              onChange={(e) => setCompanyData({ ...companyData, description: e.target.value })}
               rows={3}
             />
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="company-email">Email</Label>
@@ -4146,7 +4178,7 @@ function CreateCompanyDialog({ onCompanyCreated }: { onCompanyCreated: (userData
                 id="company-email"
                 type="email"
                 value={companyData.email}
-                onChange={(e) => setCompanyData({...companyData, email: e.target.value})}
+                onChange={(e) => setCompanyData({ ...companyData, email: e.target.value })}
               />
             </div>
             <div className="space-y-2">
@@ -4160,29 +4192,29 @@ function CreateCompanyDialog({ onCompanyCreated }: { onCompanyCreated: (userData
               />
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="company-website">Website</Label>
               <Input
                 id="company-website"
                 value={companyData.website}
-                onChange={(e) => setCompanyData({...companyData, website: e.target.value})}
+                onChange={(e) => setCompanyData({ ...companyData, website: e.target.value })}
               />
             </div>
             <div className="space-y-2"></div>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="company-address">Address *</Label>
             <Input
               id="company-address"
               value={companyData.address}
-              onChange={(e) => setCompanyData({...companyData, address: e.target.value})}
+              onChange={(e) => setCompanyData({ ...companyData, address: e.target.value })}
               required
             />
           </div>
-          
+
           <div className="flex justify-end space-x-2">
             <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
               Cancel

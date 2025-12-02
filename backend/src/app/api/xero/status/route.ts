@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCorsHeaders, handleCorsOptions } from '@/lib/cors';
+import { disconnectXero } from '@/lib/xero';
 
 // Handle CORS preflight requests
 export async function OPTIONS(request: NextRequest) {
@@ -12,11 +13,11 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
-    
+
     if (!userId) {
       return NextResponse.json(
         { error: 'User ID is required' },
-        { 
+        {
           status: 400,
           headers: getCorsHeaders(request.headers.get('origin') || '')
         }
@@ -34,11 +35,11 @@ export async function GET(request: NextRequest) {
         xeroConnectedAt: true,
       }
     });
-    
+
     if (!user) {
       return NextResponse.json(
         { error: 'User not found' },
-        { 
+        {
           status: 404,
           headers: getCorsHeaders(request.headers.get('origin') || '')
         }
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
     console.error('Xero status check error:', error);
     return NextResponse.json(
       { error: 'Failed to check Xero status' },
-      { 
+      {
         status: 500,
         headers: getCorsHeaders(request.headers.get('origin') || '')
       }
@@ -77,30 +78,21 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
-    
+
     if (!userId) {
       return NextResponse.json(
         { error: 'User ID is required' },
-        { 
+        {
           status: 400,
           headers: getCorsHeaders(request.headers.get('origin') || '')
         }
       );
     }
 
-    // Clear Xero tokens and tenant info
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        xeroAccessToken: null,
-        xeroRefreshToken: null,
-        xeroTokenExpiry: null,
-        xeroTenantId: null,
-        xeroTenantName: null,
-        // Keep xeroConnectedAt for historical reference
-      }
-    });
-    
+    // Use shared disconnect function
+    // We import it dynamically or at top level. Let's add import at top level first.
+    await disconnectXero(userId);
+
     return NextResponse.json(
       { message: 'Xero disconnected successfully' },
       {
@@ -111,7 +103,7 @@ export async function DELETE(request: NextRequest) {
     console.error('Xero disconnect error:', error);
     return NextResponse.json(
       { error: 'Failed to disconnect Xero' },
-      { 
+      {
         status: 500,
         headers: getCorsHeaders(request.headers.get('origin') || '')
       }

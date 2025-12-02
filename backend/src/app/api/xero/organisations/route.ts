@@ -1,20 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { XeroClient } from 'xero-node'
 import { prisma } from '@/lib/prisma'
 import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
-
-function getXeroClient() {
-  const clientId = process.env.XERO_CLIENT_ID
-  const clientSecret = process.env.XERO_CLIENT_SECRET
-  const redirectUri = process.env.XERO_REDIRECT_URI
-  const scopes = process.env.XERO_SCOPES?.split(' ') || []
-
-  if (!clientId || !clientSecret || !redirectUri) {
-    throw new Error('Missing Xero environment variables')
-  }
-
-  return new XeroClient({ clientId, clientSecret, redirectUris: [redirectUri], scopes })
-}
+import { getXeroClient, disconnectXero } from '@/lib/xero'
 
 export async function OPTIONS(request: NextRequest) {
   return handleCorsOptions(request.headers.get('origin') || '')
@@ -22,9 +9,10 @@ export async function OPTIONS(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
+  let userId: string | null = null
   try {
     const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
+    userId = searchParams.get('userId')
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400, headers: corsHeaders })
     }
@@ -58,6 +46,26 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ tenants }, { headers: corsHeaders })
   } catch (error: any) {
+    console.error('Xero organisations error:', error)
+
+    // Check for authentication errors and disconnect if necessary
+    // Xero often returns 401 or "invalid_grant"
+    // The error object from xero-node often has response.status or body.Status
+    const isAuthError = error.response?.status === 401 ||
+      error.body?.Status === 401 ||
+      error.statusCode === 401 ||
+      error.message?.includes('invalid_grant') ||
+      error.message?.includes('unauthorized') ||
+      error.message?.includes('TokenExpired') ||
+      JSON.stringify(error).includes('invalid_grant') ||
+      JSON.stringify(error).includes('TokenExpired');
+
+    if (isAuthError && userId) {
+      console.log(`Disconnecting user ${userId} due to Xero auth error`)
+      await disconnectXero(userId)
+      return NextResponse.json({ error: 'Xero session expired. Please reconnect.', disconnected: true }, { status: 401, headers: corsHeaders })
+    }
+
     return NextResponse.json({ error: 'Failed to fetch Xero organisations', details: error.message }, { status: 500, headers: corsHeaders })
   }
 }
