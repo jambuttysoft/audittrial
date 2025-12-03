@@ -160,6 +160,7 @@ interface DigitizedData {
   mimeType: string
   filePath?: string
   purchaseDate?: string
+  digitizedAt?: string
   vendorName?: string
   vendorAbn?: string
   vendorAddress?: string
@@ -1803,6 +1804,17 @@ function DashboardContent() {
     })
   }
 
+  const formatDateTime = (dateString: string) => {
+    const d = new Date(dateString)
+    return d.toLocaleString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
   const formatAbn = (abn?: string) => {
     if (!abn) return '-'
     const digits = abn.replace(/\D/g, '')
@@ -3045,6 +3057,7 @@ function DashboardContent() {
               {(() => {
                 const columns: ColumnDef<DigitizedData>[] = [
                   { accessorKey: 'purchaseDate', header: 'Purchase Date', cell: ({ row }) => <TruncatedCell text={row.original.purchaseDate ? formatDate(row.original.purchaseDate) : '-'} /> },
+                  { accessorKey: 'digitizedAt', header: 'Digitized At', cell: ({ row }) => <TruncatedCell text={row.original.digitizedAt ? formatDateTime(row.original.digitizedAt) : (row.original.createdAt ? formatDateTime(row.original.createdAt) : '-')} /> },
                   {
                     accessorKey: 'vendorName', header: 'Vendor Name', cell: ({ row }) => {
                       const abn = row.original.vendorAbn || ''
@@ -3172,7 +3185,7 @@ function DashboardContent() {
                 ]
 
                 const defaultVisible = [
-                  'purchaseDate', 'vendorName', 'vendorAbn',
+                  'purchaseDate', 'digitizedAt', 'vendorName', 'vendorAbn',
                   'cashOutAmount', 'discountAmount', 'surchargeAmount',
                   'taxAmount', 'totalAmount', 'totalPaidAmount', 'gstStatus', 'actions'
                 ]

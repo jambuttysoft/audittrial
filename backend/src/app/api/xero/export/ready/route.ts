@@ -217,10 +217,22 @@ export async function POST(request: NextRequest) {
 
         const dateStr = (doc.purchaseDate ? new Date(doc.purchaseDate) : new Date()).toISOString().slice(0,10)
 
+        const taxStatusStr = String((doc as any).taxStatus || '').toLowerCase()
+        const taxTypeStr = String((doc as any).taxType || '').toUpperCase()
+        const isNoTax = !hasGst || taxStatusStr.includes('tax-free') || ['EXEMPTEXPENSES','EXEMPTOUTPUT','BASEXCLUDED'].includes(taxTypeStr)
+        const resolveLineAmountTypes = () => {
+          if (isOverrideExclusive) return 'Exclusive'
+          if (isOverrideInclusive) return 'Inclusive'
+          if (isNoTax) return 'NoTax'
+          if (amountExclTaxNum > 0 && !totalAmountNum) return 'Exclusive'
+          if (totalAmountNum > 0 && !amountExclTaxNum) return 'Inclusive'
+          return totalAmountNum ? 'Inclusive' : (amountExclTaxNum ? 'Exclusive' : 'Inclusive')
+        }
+
         stage = 'compose'
         if (exportMode === 'bill') {
           const dueStr = (doc.purchaseDate ? new Date(doc.purchaseDate.getTime() + 14 * 24 * 3600 * 1000) : new Date(Date.now() + 14 * 24 * 3600 * 1000)).toISOString().slice(0,10)
-          const lineAmountTypesBill = isOverrideExclusive ? 'Exclusive' : (isOverrideInclusive ? 'Inclusive' : (totalAmountNum ? 'Inclusive' : (amountExclTaxNum ? 'Exclusive' : 'Inclusive')))
+          const lineAmountTypesBill = resolveLineAmountTypes() as any
           const mainUnit = lineAmountTypesBill === 'Exclusive' ? Number(netRounded || 0) : Number(grossRounded || 0)
           const invoice = {
             type: 'ACCPAY' as any,
@@ -233,8 +245,8 @@ export async function POST(request: NextRequest) {
               quantity: 1,
               unitAmount: mainUnit,
               accountCode: accountCode,
-              taxType: taxType as any,
-              taxAmount: lineAmountTypesBill === 'Inclusive' ? Number(round2(taxAmountNum)) : undefined,
+              taxType: (isNoTax ? 'NONE' : taxType) as any,
+              taxAmount: lineAmountTypesBill === 'Inclusive' && hasGst ? Number(round2(taxAmountNum)) : undefined,
             }],
             status: 'DRAFT' as any,
           }
@@ -255,7 +267,7 @@ export async function POST(request: NextRequest) {
               quantity: 1,
               unitAmount: discUnit,
               accountCode: accountCode,
-              taxType: normalizeTaxType((doc as any).taxType, hasGst) as any,
+              taxType: (isNoTax ? 'NONE' : normalizeTaxType((doc as any).taxType, hasGst)) as any,
               taxAmount: 0
             })
           }
@@ -284,18 +296,19 @@ export async function POST(request: NextRequest) {
           stage = 'resolveBankAccount'
           const bankAccountID = await resolveBankAccountID()
           if (!bankAccountID) throw new Error('No active bank account found in Xero')
+          const lineAmountTypesSpend = resolveLineAmountTypes() as any
           const bankTransaction = {
             type: 'SPEND' as any,
             contact: { contactID: contact.contactID },
             bankAccount: { accountID: bankAccountID },
             date: dateStr,
-            lineAmountTypes: 'Inclusive' as any,
+            lineAmountTypes: lineAmountTypesSpend as any,
             lineItems: [{
               description: doc.documentType || doc.originalName || 'Expense',
               quantity: 1,
-              unitAmount: Number(grossRounded || 0),
+              unitAmount: Number((lineAmountTypesSpend === 'Exclusive' ? netRounded : grossRounded) || 0),
               accountCode: accountCode,
-              taxType: taxType as any,
+              taxType: (isNoTax ? 'NONE' : taxType) as any,
             }],
             status: 'AUTHORISED' as any,
           }
@@ -314,14 +327,14 @@ export async function POST(request: NextRequest) {
               quantity: 1,
               unitAmount: Number(-round2(discountAmountNum)),
               accountCode: accountCode,
-              taxType: normalizeTaxType((doc as any).taxType, hasGst) as any,
+              taxType: (isNoTax ? 'NONE' : normalizeTaxType((doc as any).taxType, hasGst)) as any,
             })
           }
           const spendPayload = { bankTransactions: [bankTransaction] }
           {
             const pathStr = doc.filePath ? (doc.filePath.startsWith('/') ? doc.filePath : join(process.cwd(), doc.filePath)) : ''
             const fileNameAttach = doc.originalName || doc.fileName || `receipt-${doc.originalDocumentId}`
-            exportRequests.push({ endpoint: 'createBankTransactions', originalDocumentId: doc.originalDocumentId, body: spendPayload, attachment: pathStr ? { fileName: fileNameAttach, path: pathStr } : undefined, audit: { hasGst, taxAmount: taxAmountNum, net: netRounded, gross: grossRounded, lineAmountTypes: 'Inclusive', discount: discountAmountNum, cashOut: cashOutAmountNum, region } })
+            exportRequests.push({ endpoint: 'createBankTransactions', originalDocumentId: doc.originalDocumentId, body: spendPayload, attachment: pathStr ? { fileName: fileNameAttach, path: pathStr } : undefined, audit: { hasGst, taxAmount: taxAmountNum, net: netRounded, gross: grossRounded, lineAmountTypes: lineAmountTypesSpend, discount: discountAmountNum, cashOut: cashOutAmountNum, region } })
           }
           stage = 'createSpend'
           const res = await accountingApi.createBankTransactions(tenantId, spendPayload)
