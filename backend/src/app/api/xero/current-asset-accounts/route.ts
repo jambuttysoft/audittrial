@@ -25,26 +25,25 @@ export async function GET(request: NextRequest) {
     const xero = getXeroClient()
     await xero.setTokenSet({ access_token: user.xeroAccessToken, refresh_token: user.xeroRefreshToken || undefined, expires_at: user.xeroTokenExpiry ? new Date(user.xeroTokenExpiry).getTime() : undefined })
     const res = await xero.accountingApi.getAccounts(tenantId)
-    const accounts = (res?.body?.accounts || [])
-      .filter((a: any) => a.status === 'ACTIVE' && a.type === 'BANK')
+    const accountsRaw = (res?.body?.accounts || [])
+    const accounts = accountsRaw
+      .filter((a: any) => a.status === 'ACTIVE' && a.code && (String(a._class).toUpperCase() === 'ASSET') && (String(a.type || '').toUpperCase().includes('CURRENT')))
       .map((a: any) => ({ accountID: a.accountID, code: a.code, name: a.name, type: a.type }))
 
     return NextResponse.json({ accounts }, { headers: corsHeaders })
   } catch (error: any) {
-    console.error('Xero bank accounts error:', error)
+    console.error('Xero current asset accounts error:', error)
 
-    // Check for authentication errors and disconnect if necessary
     const isAuthError = error.response?.status === 401 ||
       error.message?.includes('invalid_grant') ||
       error.message?.includes('unauthorized') ||
-      JSON.stringify(error).includes('invalid_grant');
+      JSON.stringify(error).includes('invalid_grant')
 
     if (isAuthError && userId) {
-      console.log(`Disconnecting user ${userId} due to Xero auth error`)
-      await disconnectXero(userId)
+      try { await disconnectXero(userId) } catch {}
       return NextResponse.json({ error: 'Xero session expired. Please reconnect.', disconnected: true }, { status: 401, headers: corsHeaders })
     }
 
-    return NextResponse.json({ error: 'Failed to fetch bank accounts', details: error.message }, { status: 500, headers: corsHeaders })
+    return NextResponse.json({ error: 'Failed to fetch current asset accounts', details: error.message }, { status: 500, headers: corsHeaders })
   }
 }

@@ -100,6 +100,8 @@ model Company {
   xeroTenantName String?
   xeroBankAccountId String?
   xeroBankAccountName String?
+  xeroCashOutAccountCode String?
+  xeroCashOutAccountName String?
   
   // Status
   isActive    Boolean  @default(true)
@@ -218,6 +220,7 @@ model Digitized {
   paymentType       String?
   cashOutAmount     Float?
   discountAmount    Float?
+  subTotal          Float?
   amountExclTax     Float?
   taxAmount         Float?
   totalAmount       Float?
@@ -227,6 +230,8 @@ model Digitized {
   taxStatus         String?
   taxType           String?
   taxTypeName       String?
+  lineItems         Json?
+  xeroApiRequests   Json?
   
   // Метаданные
   digitizedAt       DateTime  @default(now())
@@ -282,6 +287,7 @@ model DigitizedReview {
   paymentType       String?
   cashOutAmount     Float?
   discountAmount    Float?
+  subTotal          Float?
   amountExclTax     Float?
   taxAmount         Float?
   totalAmount       Float?
@@ -291,6 +297,8 @@ model DigitizedReview {
   taxStatus         String?
   taxType           String?
   taxTypeName       String?
+  lineItems         Json?
+  xeroApiRequests   Json?
   movedAt           DateTime  @default(now())
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -318,6 +326,7 @@ model DigitizedReady {
   paymentType        String?
   cashOutAmount      Float?
   discountAmount     Float?
+  subTotal           Float?
   amountExclTax      Float?
   taxAmount          Float?
   totalAmount        Float?
@@ -327,6 +336,8 @@ model DigitizedReady {
   taxStatus          String?
   taxType            String?
   taxTypeName        String?
+  lineItems          Json?
+  xeroApiRequests    Json?
   movedAt            DateTime  @default(now())
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
@@ -354,6 +365,7 @@ model DigitizedReported {
   paymentType         String?
   cashOutAmount       Float?
   discountAmount      Float?
+  subTotal            Float?
   amountExclTax       Float?
   taxAmount           Float?
   totalAmount         Float?
@@ -363,6 +375,8 @@ model DigitizedReported {
   taxStatus            String?
   taxType              String?
   taxTypeName          String?
+  lineItems            Json?
+  xeroApiRequests      Json?
   exportedAt          DateTime
   exportFileName      String
   exportStatus        String

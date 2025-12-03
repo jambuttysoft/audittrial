@@ -192,6 +192,14 @@ export async function POST(request: NextRequest) {
     const isOverrideExclusive = taxModeOverride === 'exclusive'
     const isOverrideInclusive = taxModeOverride === 'inclusive'
 
+    const mapItemTaxType = (t: any, hasGstItem: boolean) => {
+      const s = String(t || '').toUpperCase()
+      if (s === 'INPUT') return 'INPUT'
+      if (s === 'EXEMPTINPUT' || s.includes('EXEMPT')) return hasGstItem ? 'INPUT' : 'NONE'
+      if (['EXEMPTEXPENSES','EXEMPTOUTPUT','BASEXCLUDED'].includes(s)) return 'NONE'
+      return hasGstItem ? 'INPUT' : 'NONE'
+    }
+
     for (const doc of docs) {
       let stage = 'preflight'
       try {
@@ -220,9 +228,11 @@ export async function POST(request: NextRequest) {
         const taxStatusStr = String((doc as any).taxStatus || '').toLowerCase()
         const taxTypeStr = String((doc as any).taxType || '').toUpperCase()
         const isNoTax = !hasGst || taxStatusStr.includes('tax-free') || ['EXEMPTEXPENSES','EXEMPTOUTPUT','BASEXCLUDED'].includes(taxTypeStr)
+        const hasLineItems = Array.isArray((doc as any).lineItems) && (doc as any).lineItems.length > 0
         const resolveLineAmountTypes = () => {
           if (isOverrideExclusive) return 'Exclusive'
           if (isOverrideInclusive) return 'Inclusive'
+          if (hasLineItems) return 'Inclusive'
           if (isNoTax) return 'NoTax'
           if (amountExclTaxNum > 0 && !totalAmountNum) return 'Exclusive'
           if (totalAmountNum > 0 && !amountExclTaxNum) return 'Inclusive'
@@ -240,15 +250,34 @@ export async function POST(request: NextRequest) {
             date: dateStr,
             dueDate: dueStr,
             lineAmountTypes: lineAmountTypesBill as any,
-            lineItems: [{
+            lineItems: [] as any[],
+            status: 'DRAFT' as any,
+          }
+          if (hasLineItems) {
+            try {
+              const items = ((doc as any).lineItems || []) as any[]
+              for (const it of items) {
+                const qty = toNum(it.quantity) || 1
+                const unit = toNum(it.unitAmount)
+                const hasGstItem = !!(it.taxType && String(it.taxType).toUpperCase() === 'INPUT')
+                invoice.lineItems.push({
+                  description: String(it.description || doc.documentType || doc.originalName || 'Item'),
+                  quantity: Number(qty || 1),
+                  unitAmount: Number(unit || 0),
+                  accountCode: accountCode,
+                  taxType: mapItemTaxType(it.taxType, hasGstItem) as any,
+                })
+              }
+            } catch {}
+          } else {
+            invoice.lineItems.push({
               description: doc.documentType || doc.originalName || 'Expense',
               quantity: 1,
               unitAmount: mainUnit,
               accountCode: accountCode,
               taxType: (isNoTax ? 'NONE' : taxType) as any,
               taxAmount: lineAmountTypesBill === 'Inclusive' && hasGst ? Number(round2(taxAmountNum)) : undefined,
-            }],
-            status: 'DRAFT' as any,
+            })
           }
           if (cashOutAmountNum > 0) {
             invoice.lineItems.push({
@@ -267,8 +296,30 @@ export async function POST(request: NextRequest) {
               quantity: 1,
               unitAmount: discUnit,
               accountCode: accountCode,
-              taxType: (isNoTax ? 'NONE' : normalizeTaxType((doc as any).taxType, hasGst)) as any,
+              taxType: 'NONE' as any,
               taxAmount: 0
+            })
+          }
+          if ((doc as any).surchargeAmount && discountAmountNum >= 0) {
+            const sur = toNum((doc as any).surchargeAmount)
+            if (sur > 0) {
+              invoice.lineItems.push({
+                description: 'Payment Surcharge',
+                quantity: 1,
+                unitAmount: Number(round2(sur)),
+                accountCode: accountCode,
+                taxType: 'INPUT' as any,
+              })
+            }
+          }
+          if (cashOutAmountNum > 0) {
+            const selectedCashCode = (company as any)?.xeroCashOutAccountCode || await resolveCashOutAccountCode(accountingApi, tenantId)
+            invoice.lineItems.push({
+              description: 'Cash Out',
+              quantity: 1,
+              unitAmount: Number(-round2(cashOutAmountNum)),
+              accountCode: selectedCashCode,
+              taxType: 'NONE' as any,
             })
           }
           const invPayload = { invoices: [invoice] }
@@ -303,14 +354,33 @@ export async function POST(request: NextRequest) {
             bankAccount: { accountID: bankAccountID },
             date: dateStr,
             lineAmountTypes: lineAmountTypesSpend as any,
-            lineItems: [{
+            lineItems: [] as any[],
+            status: 'AUTHORISED' as any,
+          }
+          if (hasLineItems) {
+            try {
+              const items = ((doc as any).lineItems || []) as any[]
+              for (const it of items) {
+                const qty = toNum(it.quantity) || 1
+                const unit = toNum(it.unitAmount)
+                const hasGstItem = !!(it.taxType && String(it.taxType).toUpperCase() === 'INPUT')
+                bankTransaction.lineItems.push({
+                  description: String(it.description || doc.documentType || doc.originalName || 'Item'),
+                  quantity: Number(qty || 1),
+                  unitAmount: Number(unit || 0),
+                  accountCode: accountCode,
+                  taxType: mapItemTaxType(it.taxType, hasGstItem) as any,
+                })
+              }
+            } catch {}
+          } else {
+            bankTransaction.lineItems.push({
               description: doc.documentType || doc.originalName || 'Expense',
               quantity: 1,
               unitAmount: Number((lineAmountTypesSpend === 'Exclusive' ? netRounded : grossRounded) || 0),
               accountCode: accountCode,
               taxType: (isNoTax ? 'NONE' : taxType) as any,
-            }],
-            status: 'AUTHORISED' as any,
+            })
           }
           if (cashOutAmountNum > 0) {
             bankTransaction.lineItems.push({
@@ -327,8 +397,20 @@ export async function POST(request: NextRequest) {
               quantity: 1,
               unitAmount: Number(-round2(discountAmountNum)),
               accountCode: accountCode,
-              taxType: (isNoTax ? 'NONE' : normalizeTaxType((doc as any).taxType, hasGst)) as any,
+              taxType: 'NONE' as any,
             })
+          }
+          if ((doc as any).surchargeAmount && discountAmountNum >= 0) {
+            const sur = toNum((doc as any).surchargeAmount)
+            if (sur > 0) {
+              bankTransaction.lineItems.push({
+                description: 'Payment Surcharge',
+                quantity: 1,
+                unitAmount: Number(round2(sur)),
+                accountCode: accountCode,
+                taxType: 'INPUT' as any,
+              })
+            }
           }
           const spendPayload = { bankTransactions: [bankTransaction] }
           {
@@ -373,6 +455,7 @@ export async function POST(request: NextRequest) {
             paymentType: doc.paymentType,
             cashOutAmount: doc.cashOutAmount,
             discountAmount: doc.discountAmount,
+            subTotal: (doc as any).subTotal ?? null,
             amountExclTax: doc.amountExclTax,
             taxAmount: doc.taxAmount,
             totalAmount: doc.totalAmount,
@@ -382,6 +465,8 @@ export async function POST(request: NextRequest) {
             taxStatus: doc.taxStatus,
             taxType: (doc as any).taxType ?? null,
             taxTypeName: (doc as any).taxTypeName ?? null,
+            lineItems: (doc as any).lineItems ?? null,
+            xeroApiRequests: (doc as any).xeroApiRequests ?? null,
             exportedAt: new Date(),
             exportFileName: exportMode === 'bill' ? `xero-invoice-${new Date().toISOString()}` : `xero-spend-${new Date().toISOString()}`,
             exportStatus: 'SUCCESS',

@@ -72,7 +72,7 @@ export async function POST(
       console.log('Using Gemini model:', modelName)
       const model = genAI.getGenerativeModel({ model: modelName })
       
-const prompt = `
+/* const prompt = `
 Analyze this receipt/invoice image and extract ALL the following information in JSON format:
 {
   "purchaseDate": "YYYY-MM-DD format (Purchase Date)",
@@ -147,6 +147,90 @@ GST TAX TYPE DETERMINATION:
   - BASEXCLUDED / "BAS Excluded": Items outside BAS (e.g., bank fees, fines, non-reportable). If clearly non-BAS.
   - GSTONIMPORTS / "GST on Imports": Imports/customs where GST applies to imports (keywords: "import", "customs", "duty").
 - If multiple candidates appear, choose the most specific single value. Do NOT return arrays.
+`; */
+
+const prompt = `
+You are an expert in extracting data from Australian retail receipts (e.g., Coles, Woolworths) and generating Xero Accounting API requests to record them as purchase bills (ACCPAY), payments, and bank transactions. Analyze this receipt/invoice image using OCR/vision and output TWO main JSON objects: first, an extraction summary; second, the required API request(s) in JSON format for Xero (POST /Invoices for the bill, plus optional POST /Payments and/or POST /BankTransactions if cashout or other features present).
+
+Output ONLY valid JSON like this structure, no additional text:
+{
+  "extraction": {
+    "purchaseDate": "YYYY-MM-DD (from receipt date)",
+    "vendorName": "exact vendor name (e.g., 'Coles Supermarkets Australia Pty Ltd')",
+    "vendorAbn": "11-digit ABN only (digits, no spaces/hyphens, or '-' if absent)",
+    "vendorAddress": "full address or '-'",
+    "documentType": "receipt or invoice",
+    "receiptNumber": "receipt/invoice number or '-'",
+    "subTotal": "subtotal excl. tax/discount as number",
+    "taxAmount": "GST amount as number (e.g., 9.40)",
+    "discountAmount": "total discount as negative number (e.g., -11.76) or 0.00",
+    "surchargeAmount": "surcharge fee as number (e.g., 0.39) or 0.00",
+    "cashOutAmount": "cash out/withdrawal as number (e.g., 50.00) or 0.00",
+    "totalAmount": "final total incl. tax/discount/surcharge as number (e.g., 105.87)",
+    "totalPaidAmount": "amount charged to payment method (total + cashout if present) as number",
+    "paymentType": "CASH, BANK, CREDITCARD, EFTPOS, VISA, etc. (from tender lines)",
+    "lineItems": [
+      {
+        "description": "exact item name (e.g., 'COLES CHICKEN BREASTS 500G')",
+        "quantity": "number (e.g., 1) or 1 if not specified",
+        "unitAmount": "price incl. tax as number (e.g., 5.50)",
+        "taxType": "INPUT (taxable, 10% GST) or EXEMPTINPUT (GST-free fresh food) based on ATO rules"
+      }
+      // Extract ALL items, including specials (*) and taxable (%). Group similar if unreadable. For GST-free: fresh meat/fish/veg/fruit/dairy/bread (no prep); taxable: processed/snacks/drinks.
+    ],
+    "expenseCategory": "groceries, office supplies, meals, transport, etc. (main category)",
+    "taxStatus": "taxable, tax-free, or mixed (if line items vary)"
+  },
+  "xeroApiRequests": [
+    // ALWAYS include the main bill request. Add others conditionally.
+    {
+      "endpoint": "POST /Invoices",
+      "headers": { "Content-Type": "application/json" },  // Assume auth/tenant handled externally
+      "body": {
+        "Invoices": [
+          {
+            "Type": "ACCPAY",
+            "Contact": {
+              "ContactID": "use-your-default-supplier-guid-or-create-via-API"  // Placeholder; assume Coles GUID
+            },
+            "Date": "YYYY-MM-DD from extraction",
+            "DueDate": "same as Date for retail",
+            "LineAmountTypes": "Inclusive",  // Receipts are tax-inclusive
+            "LineItems": [
+              // Map from extraction.lineItems; add discount/surcharge as separate lines
+              // For each: { "Description": desc, "Quantity": qty, "UnitAmount": amount, "AccountCode": "430" (groceries, adjust per category), "TaxType": from extraction }
+              // Discount line: if discountAmount < 0, add { "Description": "Discount", "Quantity": 1, "UnitAmount": discountAmount, "AccountCode": "940" (Discount Received), "TaxType": "NONE" }
+              // Surcharge line: if surchargeAmount > 0, add { "Description": "Payment Surcharge", "Quantity": 1, "UnitAmount": surchargeAmount, "AccountCode": "680" (Bank Fees), "TaxType": "INPUT" }
+            ],
+            "Status": "AUTHORISED",
+            "Reference": "Receipt # + number + date"
+          }
+        ]
+      }
+    }
+    // Conditional: If cashOutAmount > 0, add payment for bill + bank transaction for cashout
+    // {
+    //   "endpoint": "POST /Payments",
+    //   "body": { "Payments": [ { "Date": date, "Amount": extraction.totalAmount, "Invoice": { "InvoiceID": "placeholder-from-bill-response" }, "Account": { "AccountID": "your-bank-guid" }, "PaymentType": paymentType } ] }
+    // },
+    // {
+    //   "endpoint": "POST /BankTransactions",
+    //   "body": { "BankTransactions": [ { "Type": "SPEND", "Date": date, "BankAccount": { "AccountID": "your-bank-guid" }, "LineItems": [ { "Description": "Cash Out from Receipt", "Quantity": 1, "UnitAmount": cashOutAmount, "AccountCode": "800" (Drawings), "TaxType": "NONE" } ], "LineAmountTypes": "Exclusive" } ] }
+    // }
+    // Conditional: If discount or surcharge present, ensure lines in bill above; no extra endpoint needed.
+  ]
+}
+
+IMPORTANT RULES:
+- VARIANT HANDLING: Base is always a simple receipt as ACCPAY bill. Add /Payments if paymentType != CASH (for bill payment). Add /BankTransactions ONLY if cashOutAmount > 0 (as SPEND from bank to drawings). Discounts/surcharges: Embed as LineItems in bill (negative for discount, positive for surcharge). Combinations: Handle all present (e.g., receipt + cashout + discount + surcharge = bill with extra lines + payment + spend).
+- CASH OUT: PRIORITY 1: Explicit lines ('CASH OUT', 'CASHOUT', 'CASH WITHDRAWAL'). PRIORITY 2: If totalPaidAmount > totalAmount and labeled 'CHANGE' or similar (not pure cash tender). Else 0.00. totalPaidAmount = totalAmount + cashOutAmount.
+- DISCOUNT: Extract from lines ('DISCOUNT', 'TEAM DISCOUNT', 'PROMO', 'LESS'). Always negative in extraction; add as bill line.
+- SURCHARGE: From lines ('CARD SURCHARGE', 'FEE', '% FEE'). Positive; add as bill line if >0.
+- LINE ITEMS: Extract EVERY item (32+ if present). Use Inclusive amounts. TaxType: INPUT for % items (taxable); EXEMPTINPUT for * fresh/unprocessed (ATO: fresh produce/meat GST-free). If mixed, vary per line. AccountCode: Default '430' for groceries; adjust for category (e.g., '420' transport).
+- TAX: For Australia, use INPUT/EXEMPTINPUT in lines; overall taxStatus 'mixed' if varies. taxAmount from explicit GST line.
+- JSON VALIDITY: All numbers as floats (e.g., 5.50). Dates YYYY-MM-DD. If unclear, use defaults (e.g., qty=1, taxType='INPUT'). For unreadable text, approximate (e.g., '[garbled] Chicken').
+- API PLACEHOLDERS: Use descriptive placeholders for GUIDs (e.g., 'your-bank-guid'); assume single bill/transaction.
+- PRECISION: Match receipt totals exactly in bill sum. No extras; only described endpoints.
 `;
 
 
@@ -216,6 +300,7 @@ GST TAX TYPE DETERMINATION:
         }
       }
       console.log('Parsed receiptData:', receiptData)
+      const ext = (receiptData && typeof receiptData === 'object' && receiptData.extraction) ? receiptData.extraction : receiptData
 
       // Get document data for creating digitized record
       const documentWithRelations = await prisma.document.findUnique({
@@ -251,12 +336,12 @@ GST TAX TYPE DETERMINATION:
           status: 'DIGITIZED',
           processedDate: new Date(),
           // Legacy поля для обратной совместимости
-          vendor: receiptData.vendorName || receiptData.vendor || null,
-          abn: receiptData.vendorAbn || receiptData.abn || null,
-          transactionDate: receiptData.purchaseDate ? new Date(receiptData.purchaseDate) : (receiptData.transactionDate ? new Date(receiptData.transactionDate) : null),
-          gstAmount: receiptData.taxAmount ? parseFloat(receiptData.taxAmount.toString()) : (receiptData.gstAmount ? parseFloat(receiptData.gstAmount.toString()) : null),
-          paymentMethod: receiptData.paymentType || receiptData.paymentMethod || null,
-          description: receiptData.expenseCategory || receiptData.description || null,
+          vendor: ext.vendorName || ext.vendor || null,
+          abn: ext.vendorAbn || ext.abn || null,
+          transactionDate: ext.purchaseDate ? new Date(ext.purchaseDate) : (ext.transactionDate ? new Date(ext.transactionDate) : null),
+          gstAmount: ext.taxAmount ? parseFloat(ext.taxAmount.toString()) : (ext.gstAmount ? parseFloat(ext.gstAmount.toString()) : null),
+          paymentMethod: ext.paymentType || ext.paymentMethod || null,
+          description: ext.expenseCategory || ext.description || null,
           receiptData: receiptData,
         },
       })
@@ -277,24 +362,27 @@ GST TAX TYPE DETERMINATION:
         filePath: documentWithRelations.filePath,
         fileSize: documentWithRelations.fileSize,
         mimeType: documentWithRelations.mimeType,
-        purchaseDate: receiptData.purchaseDate ? new Date(receiptData.purchaseDate) : null,
-        vendorName: receiptData.vendorName || null,
-        vendorAbn: receiptData.vendorAbn || null,
-        vendorAddress: receiptData.vendorAddress || null,
-        documentType: typeof receiptData.documentType === 'string' ? receiptData.documentType : null,
-        receiptNumber: receiptData.receiptNumber || null,
-        paymentType: receiptData.paymentType || null,
-        cashOutAmount: receiptData.cashOutAmount !== undefined && receiptData.cashOutAmount !== null ? parseFloat(receiptData.cashOutAmount.toString()) : null,
-        discountAmount: receiptData.discountAmount !== undefined && receiptData.discountAmount !== null ? parseFloat(receiptData.discountAmount.toString()) : null,
-        amountExclTax: receiptData.amountExclTax !== undefined && receiptData.amountExclTax !== null ? parseFloat(receiptData.amountExclTax.toString()) : null,
-        taxAmount: receiptData.taxAmount !== undefined && receiptData.taxAmount !== null ? parseFloat(receiptData.taxAmount.toString()) : null,
-        totalAmount: receiptData.totalAmount !== undefined && receiptData.totalAmount !== null ? parseFloat(receiptData.totalAmount.toString()) : null,
-        totalPaidAmount: receiptData.totalPaidAmount !== undefined && receiptData.totalPaidAmount !== null ? parseFloat(receiptData.totalPaidAmount.toString()) : null,
-        surchargeAmount: receiptData.surchargeAmount !== undefined && receiptData.surchargeAmount !== null ? parseFloat(receiptData.surchargeAmount.toString()) : null,
-        expenseCategory: receiptData.expenseCategory || null,
-        taxStatus: typeof receiptData.taxStatus === 'string' ? receiptData.taxStatus : null,
-        taxType: typeof receiptData.taxType === 'string' ? receiptData.taxType : null,
-        taxTypeName: typeof receiptData.taxTypeName === 'string' ? receiptData.taxTypeName : null,
+        purchaseDate: ext && ext.purchaseDate ? new Date(ext.purchaseDate) : null,
+        vendorName: ext && ext.vendorName ? ext.vendorName : null,
+        vendorAbn: ext && ext.vendorAbn ? ext.vendorAbn : null,
+        vendorAddress: ext && ext.vendorAddress ? ext.vendorAddress : null,
+        documentType: ext && typeof ext.documentType === 'string' ? ext.documentType : null,
+        receiptNumber: ext && ext.receiptNumber ? ext.receiptNumber : null,
+        paymentType: ext && ext.paymentType ? ext.paymentType : null,
+        cashOutAmount: ext && ext.cashOutAmount !== undefined && ext.cashOutAmount !== null ? parseFloat(ext.cashOutAmount.toString()) : null,
+        discountAmount: ext && ext.discountAmount !== undefined && ext.discountAmount !== null ? parseFloat(ext.discountAmount.toString()) : null,
+        subTotal: ext && ext.subTotal !== undefined && ext.subTotal !== null ? parseFloat(ext.subTotal.toString()) : null,
+        amountExclTax: ext && ext.amountExclTax !== undefined && ext.amountExclTax !== null ? parseFloat(ext.amountExclTax.toString()) : (ext && ext.subTotal !== undefined && ext.subTotal !== null ? parseFloat(ext.subTotal.toString()) : null),
+        taxAmount: ext && ext.taxAmount !== undefined && ext.taxAmount !== null ? parseFloat(ext.taxAmount.toString()) : null,
+        totalAmount: ext && ext.totalAmount !== undefined && ext.totalAmount !== null ? parseFloat(ext.totalAmount.toString()) : null,
+        totalPaidAmount: ext && ext.totalPaidAmount !== undefined && ext.totalPaidAmount !== null ? parseFloat(ext.totalPaidAmount.toString()) : null,
+        surchargeAmount: ext && ext.surchargeAmount !== undefined && ext.surchargeAmount !== null ? parseFloat(ext.surchargeAmount.toString()) : null,
+        expenseCategory: ext && ext.expenseCategory ? ext.expenseCategory : null,
+        taxStatus: ext && typeof ext.taxStatus === 'string' ? ext.taxStatus : null,
+        taxType: ext && typeof ext.taxType === 'string' ? ext.taxType : null,
+        taxTypeName: ext && typeof ext.taxTypeName === 'string' ? ext.taxTypeName : null,
+        lineItems: ext && Array.isArray(ext.lineItems) ? ext.lineItems : null,
+        xeroApiRequests: receiptData && Array.isArray(receiptData.xeroApiRequests) ? receiptData.xeroApiRequests : null,
       }
       console.log('Digitized payload to save:', digitizedData)
       let digitizedDocument

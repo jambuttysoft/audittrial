@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
         paymentType: digitized.paymentType,
         cashOutAmount: digitized.cashOutAmount,
         discountAmount: digitized.discountAmount,
+        subTotal: (digitized as any).subTotal ?? null,
         amountExclTax: digitized.amountExclTax,
         taxAmount: digitized.taxAmount,
         totalAmount: digitized.totalAmount,
@@ -61,6 +62,8 @@ export async function POST(request: NextRequest) {
         taxStatus: digitized.taxStatus,
         taxType: (digitized as any).taxType ?? null,
         taxTypeName: (digitized as any).taxTypeName ?? null,
+        lineItems: (digitized as any).lineItems ?? null,
+        xeroApiRequests: (digitized as any).xeroApiRequests ?? null,
         movedAt: new Date(),
       },
       create: {
@@ -82,6 +85,7 @@ export async function POST(request: NextRequest) {
         paymentType: digitized.paymentType,
         cashOutAmount: digitized.cashOutAmount,
         discountAmount: digitized.discountAmount,
+        subTotal: (digitized as any).subTotal ?? null,
         amountExclTax: digitized.amountExclTax,
         taxAmount: digitized.taxAmount,
         totalAmount: digitized.totalAmount,
@@ -91,6 +95,8 @@ export async function POST(request: NextRequest) {
         taxStatus: digitized.taxStatus,
         taxType: (digitized as any).taxType ?? null,
         taxTypeName: (digitized as any).taxTypeName ?? null,
+        lineItems: (digitized as any).lineItems ?? null,
+        xeroApiRequests: (digitized as any).xeroApiRequests ?? null,
       },
     })
     try {

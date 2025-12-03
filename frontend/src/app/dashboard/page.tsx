@@ -118,6 +118,8 @@ interface Company {
   xeroTenantName?: string
   xeroBankAccountId?: string
   xeroBankAccountName?: string
+  xeroCashOutAccountCode?: string
+  xeroCashOutAccountName?: string
 }
 
 interface DocumentData {
@@ -264,15 +266,22 @@ function DashboardContent() {
   const [xeroAccounts, setXeroAccounts] = useState<any[]>([])
   const [xeroOrganisations, setXeroOrganisations] = useState<{ tenantId: string; tenantName: string }[]>([])
   const [xeroExportMode, setXeroExportMode] = useState<'bill' | 'spend'>('bill')
-  const [xeroBankAccounts, setXeroBankAccounts] = useState<{ accountID: string; code?: string; name?: string }[]>([])
+  const [xeroBankAccounts, setXeroBankAccounts] = useState<{ accountID: string; code?: string; name?: string; type?: string }[]>([])
+  const [xeroCashOutAccounts, setXeroCashOutAccounts] = useState<{ accountID?: string; code: string; name?: string; type?: string }[]>([])
+  const [isAddXeroAccountModalOpen, setIsAddXeroAccountModalOpen] = useState(false)
+  const [newXeroAccount, setNewXeroAccount] = useState<{ code: string; name: string; type: string; class: string; description?: string }>({ code: '', name: '', type: 'CURRENT', class: 'ASSET', description: '' })
+  const [newXeroAccountErrors, setNewXeroAccountErrors] = useState<Record<string, string>>({})
+  const [isCreatingXeroAccount, setIsCreatingXeroAccount] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [exportHistory, setExportHistory] = useState<any[]>([])
   const [reportedDocuments, setReportedDocuments] = useState<any[]>([])
   const [exportFilterFile, setExportFilterFile] = useState('')
   const [exportFilterFrom, setExportFilterFrom] = useState('')
   const [exportFilterTo, setExportFilterTo] = useState('')
+  const [exportFilterStatus, setExportFilterStatus] = useState('')
   const [exportHistoryVisibleCount, setExportHistoryVisibleCount] = useState(0)
   const [exportHistoryStats, setExportHistoryStats] = useState<{ total: number; success: number; failed: number; rowsExported: number }>({ total: 0, success: 0, failed: 0, rowsExported: 0 })
+  const [exportSummaryMap, setExportSummaryMap] = useState<Record<string, { endpointsCount: number; successCount: number; failureCount: number }>>({})
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [selectedDocumentForEdit, setSelectedDocumentForEdit] = useState<DigitizedData | null>(null)
   const [editForm, setEditForm] = useState<any>(null)
@@ -1002,6 +1011,7 @@ function DashboardContent() {
     if (exportFilterFile) params.set('file', exportFilterFile)
     if (exportFilterFrom) params.set('from', exportFilterFrom)
     if (exportFilterTo) params.set('to', exportFilterTo)
+    if (exportFilterStatus) params.set('status', exportFilterStatus)
     try {
       const r = await fetch(`/api/export-history?${params.toString()}`)
       if (r.ok) {
@@ -1027,6 +1037,52 @@ function DashboardContent() {
     const url = `/api/export-files/${selectedCompany.id}/${encodeURIComponent(fileName)}?userId=${user.id}`
     window.open(url, '_blank')
   }
+
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false)
+  const [exportPreviewData, setExportPreviewData] = useState<any>(null)
+  const [exportPreviewFileName, setExportPreviewFileName] = useState('')
+
+  const viewExportFile = async (fileName: string) => {
+    if (!selectedCompany?.id || !user?.id) return
+    try {
+      const url = `/api/export-files/${selectedCompany.id}/${encodeURIComponent(fileName)}?userId=${user.id}`
+      const r = await fetch(url)
+      const text = await r.text()
+      try {
+        const j = JSON.parse(text)
+        setExportPreviewData(j)
+        const reqs = Array.isArray(j.requests) ? j.requests.length : 0
+        const succ = Array.isArray(j.successes) ? j.successes.length : 0
+        const fails = Array.isArray(j.failures) ? j.failures.length : 0
+        setExportSummaryMap(prev => ({ ...prev, [fileName]: { endpointsCount: reqs, successCount: succ, failureCount: fails } }))
+      } catch {
+        setExportPreviewData({ raw: text })
+      }
+      setExportPreviewFileName(fileName)
+      setIsExportModalOpen(true)
+    } catch {}
+  }
+
+  const ensureExportSummary = useCallback(async (fileName: string) => {
+    if (!selectedCompany?.id || !user?.id) return
+    if (exportSummaryMap[fileName]) return
+    try {
+      const url = `/api/export-files/${selectedCompany.id}/${encodeURIComponent(fileName)}?userId=${user.id}`
+      const r = await fetch(url)
+      const text = await r.text()
+      const j = JSON.parse(text)
+      const reqs = Array.isArray(j.requests) ? j.requests.length : 0
+      const succ = Array.isArray(j.successes) ? j.successes.length : 0
+      const fails = Array.isArray(j.failures) ? j.failures.length : 0
+      setExportSummaryMap(prev => ({ ...prev, [fileName]: { endpointsCount: reqs, successCount: succ, failureCount: fails } }))
+    } catch {}
+  }, [selectedCompany?.id, user?.id, exportSummaryMap])
+
+  useEffect(() => {
+    const files = exportHistory.map(i => i.fileName).filter(Boolean)
+    const slice = files.slice(0, 10)
+    Promise.all(slice.map(f => ensureExportSummary(f)))
+  }, [exportHistory, ensureExportSummary])
 
   useEffect(() => {
     if (selectedCompany?.id) loadExportHistory(selectedCompany.id)
@@ -1892,6 +1948,100 @@ function DashboardContent() {
     }
   }, [user?.id, selectedCompany?.id, toast])
 
+  const loadXeroCashOutAccounts = useCallback(async () => {
+    if (!user?.id || !selectedCompany?.id) return
+    try {
+      const r = await fetch(`/api/xero/current-asset-accounts?userId=${user.id}&companyId=${selectedCompany.id}`, { credentials: 'include' })
+      const j = await r.json()
+      if (r.ok) {
+        setXeroCashOutAccounts(j.accounts || [])
+      } else {
+        if (j.disconnected) {
+          setXeroStatus({ connected: false })
+          toast({ title: 'Xero Disconnected', description: 'Your Xero session has expired. Please reconnect.', variant: 'default' })
+        } else {
+          const msg = j.error || 'Failed to load accounts'
+          toast({ title: 'Xero Error', description: msg, variant: 'destructive' })
+        }
+      }
+    } catch (e) {
+      toast({ title: 'Network Error', description: 'Unable to fetch accounts', variant: 'destructive' })
+    }
+  }, [user?.id, selectedCompany?.id, toast])
+
+  const validateNewXeroAccount = (data: { code: string; name: string; type: string; class: string }) => {
+    const errors: Record<string, string> = {}
+    if (!data.code || !/^[A-Za-z0-9]+$/.test(data.code)) errors.code = 'Enter short code'
+    if (!data.name) errors.name = 'Enter Name'
+    if (!data.type) errors.type = 'Enter Tpye'
+    return errors
+  }
+
+  const handleCreateXeroAccount = useCallback(async () => {
+    if (!user?.id || !selectedCompany?.id) return
+    const errs = validateNewXeroAccount(newXeroAccount)
+    setNewXeroAccountErrors(errs)
+    if (Object.keys(errs).length > 0) return
+    setIsCreatingXeroAccount(true)
+    try {
+      const r = await fetch('/api/xero/create-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          userId: user.id,
+          companyId: selectedCompany.id,
+          code: newXeroAccount.code,
+          name: newXeroAccount.name,
+          type: newXeroAccount.type,
+          description: newXeroAccount.description || undefined,
+        }),
+      })
+      const j = await r.json().catch(() => ({}))
+      if (j?.disconnected || r.status === 401) {
+        setXeroStatus({ connected: false })
+        throw new Error(j?.error || 'Xero session expired. Please reconnect.')
+      }
+      if (!r.ok || !j?.success) {
+        const msg = j?.details || j?.error || 'Failed to create account'
+        throw new Error(msg)
+      }
+      setIsAddXeroAccountModalOpen(false)
+      setNewXeroAccount({ code: '', name: '', type: 'CURRENT', class: 'ASSET', description: '' })
+      await loadXeroCashOutAccounts()
+      toast({ title: 'Счёт создан', description: `${j?.account?.code || ''} | ${j?.account?.name || ''}` })
+    } catch (e: any) {
+      toast({ title: 'Ошибка Xero', description: e?.message || 'Не удалось создать счёт', variant: 'destructive' })
+    } finally {
+      setIsCreatingXeroAccount(false)
+    }
+  }, [user?.id, selectedCompany?.id, newXeroAccount, loadXeroCashOutAccounts, toast])
+
+  const handleSelectCashOutAccount = useCallback(async (accountCode: string) => {
+    if (!user?.id || !selectedCompany?.id) return
+    const accountName = xeroCashOutAccounts.find(a => a.code === accountCode)?.name || ''
+    try {
+      const r = await fetch(`/api/xero/select-cashout-account`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ userId: user.id, companyId: selectedCompany.id, accountCode, accountName }),
+      })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok || !j?.success) {
+        throw new Error(j?.error || 'Failed to save cash out account')
+      }
+      if (selectedCompany) {
+        const updated = { ...selectedCompany, xeroCashOutAccountCode: accountCode, xeroCashOutAccountName: accountName }
+        setSelectedCompany(updated)
+        setCompanies(prev => prev.map(c => c.id === updated.id ? updated : c))
+      }
+      toast({ title: 'Cash Out Account Selected', description: accountName || accountCode })
+    } catch (e: any) {
+      toast({ title: 'Xero Error', description: e?.message || 'Failed to select account', variant: 'destructive' })
+    }
+  }, [user?.id, selectedCompany, xeroCashOutAccounts, toast])
+
   const handleSelectXeroBankAccount = useCallback(async (accountId: string) => {
     if (!user?.id || !selectedCompany?.id) return
     const accountName = xeroBankAccounts.find(a => a.accountID === accountId)?.name || ''
@@ -2198,11 +2348,13 @@ function DashboardContent() {
     if (xeroStatus.connected) {
       loadXeroOrganisations()
       loadXeroBankAccounts()
+      loadXeroCashOutAccounts()
     } else {
       setXeroOrganisations([])
       setXeroBankAccounts([])
+      setXeroCashOutAccounts([])
     }
-  }, [xeroStatus.connected, loadXeroOrganisations, loadXeroBankAccounts])
+  }, [xeroStatus.connected, loadXeroOrganisations, loadXeroBankAccounts, loadXeroCashOutAccounts])
 
   // Auto-link Xero tenant to company if connected and not yet linked
   useEffect(() => {
@@ -2377,7 +2529,17 @@ function DashboardContent() {
                       return (
                         <div className="flex items-center space-x-3">
                           {doc.mimeType.startsWith('image/') ? (
-                            <div className="relative w-10 h-10 rounded-md overflow-hidden bg-muted flex-shrink-0">
+                            <div
+                              className="relative w-10 h-10 rounded-md overflow-hidden bg-muted flex-shrink-0 cursor-pointer"
+                              onClick={() => {
+                                if (!user?.id) {
+                                  toast({ title: 'Not signed in', description: 'Please sign in to view images.', variant: 'destructive' })
+                                  return
+                                }
+                                setSelectedDocumentForImage(doc)
+                                setIsImageModalOpen(true)
+                              }}
+                            >
                               <Image
                                 src={`/api/files/${doc.id}/view?userId=${user?.id}`}
                                 alt={doc.originalName}
@@ -2727,7 +2889,7 @@ function DashboardContent() {
                                 </SelectTrigger>
                                 <SelectContent>
                                   {xeroBankAccounts.map(a => (
-                                    <SelectItem key={a.accountID} value={a.accountID}>{a.name || a.accountID}{a.code ? ` (${a.code})` : ''}</SelectItem>
+                                    <SelectItem key={a.accountID} value={a.accountID}>{`${a.code || ''} | ${a.name || a.accountID} | ${a.type || 'BANK'}`}</SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
@@ -2792,21 +2954,44 @@ function DashboardContent() {
                     )}
                   </div>
 
-                  {xeroOrganisations.length > 0 && (
-                    <div>
-                      <Label className="text-sm font-medium text-muted-foreground">Select Organisation</Label>
-                      <Select defaultValue={selectedCompany?.xeroTenantId || xeroStatus.tenantId} onValueChange={handleSelectXeroTenant}>
-                        <SelectTrigger className="w-full md:w-[360px]">
-                          <SelectValue placeholder="Choose organisation" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {xeroOrganisations.map((t) => (
-                            <SelectItem key={t.tenantId} value={t.tenantId}>{t.tenantName}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                {xeroOrganisations.length > 0 && (
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Select Organisation</Label>
+                    <Select defaultValue={selectedCompany?.xeroTenantId || xeroStatus.tenantId} onValueChange={handleSelectXeroTenant}>
+                      <SelectTrigger className="w-full md:w-[360px]">
+                        <SelectValue placeholder="Choose organisation" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {xeroOrganisations.map((t) => (
+                          <SelectItem key={t.tenantId} value={t.tenantId}>{t.tenantName}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Cash Out Account (Current Assets)</Label>
+                    <Select value={selectedCompany?.xeroCashOutAccountCode || undefined} onValueChange={handleSelectCashOutAccount}>
+                      <SelectTrigger className="w-full md:w-[360px]">
+                        <SelectValue placeholder="Choose account for Cash Out" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {xeroCashOutAccounts.map((a) => (
+                          <SelectItem key={a.code} value={a.code}>{`${a.code} | ${a.name || ''} | ${a.type || 'CURRENT'}`}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">Используется для строки Cash Out при экспорте Bills (ACCPAY).</p>
+                    <div className="mt-2">
+                      <Button size="sm" variant="outline" onClick={() => setIsAddXeroAccountModalOpen(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Account
+                      </Button>
                     </div>
-                  )}
+                  </div>
+                </div>
 
                   <div className="flex gap-2 flex-wrap">
                     <Button onClick={handleXeroDisconnect} variant="outline" size="sm">
@@ -2827,7 +3012,7 @@ function DashboardContent() {
                     </Button>
                   </div>
 
-                  {xeroTestResult && (
+              {xeroTestResult && (
                     <div className="mt-4 p-4 rounded-lg border">
                       <h4 className="font-medium mb-2">Test Results</h4>
                       {xeroTestResult.error ? (
@@ -2852,9 +3037,9 @@ function DashboardContent() {
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
-              ) : (
+              )}
+            </div>
+          ) : (
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">Connect your Xero account to automatically sync invoices, expenses, and other financial data.</p>
                   <Button onClick={handleXeroConnect} className="w-full sm:w-auto">
@@ -2862,9 +3047,9 @@ function DashboardContent() {
                     {isLoadingXero ? 'Connecting...' : 'Connect to Xero'}
                   </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+          )}
+        </CardContent>
+      </Card>
         </TabsContent>
 
         <TabsContent value="export-history" className="space-y-4">
@@ -2882,6 +3067,17 @@ function DashboardContent() {
                 <Input placeholder="File name" value={exportFilterFile} onChange={(e) => setExportFilterFile(e.target.value)} className="max-w-xs" />
                 <Input type="date" value={exportFilterFrom} onChange={(e) => setExportFilterFrom(e.target.value)} className="max-w-[180px]" />
                 <Input type="date" value={exportFilterTo} onChange={(e) => setExportFilterTo(e.target.value)} className="max-w-[180px]" />
+                <Select value={exportFilterStatus} onValueChange={(v) => setExportFilterStatus(v === 'ALL' ? '' : v)}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="All statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All</SelectItem>
+                    <SelectItem value="SUCCESS">Success</SelectItem>
+                    <SelectItem value="PARTIAL">Partial</SelectItem>
+                    <SelectItem value="FAILED">Failed</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button variant="outline" size="sm" onClick={() => { if (selectedCompany?.id && user?.id) fetchExportHistory() }}>Filter</Button>
               </div>
               <div className="text-xs text-muted-foreground mb-3 flex flex-wrap gap-2 items-center">
@@ -2897,9 +3093,27 @@ function DashboardContent() {
                   { accessorKey: 'fileName', header: 'File Name', cell: ({ row }) => <TruncatedCell text={row.original.fileName} /> },
                   { accessorKey: 'status', header: 'Status', cell: ({ row }) => <Badge variant={row.original.status === 'SUCCESS' ? 'default' : 'destructive'}>{row.original.status}</Badge> },
                   { accessorKey: 'totalRows', header: 'Rows', cell: ({ row }) => <TruncatedCell text={String(row.original.totalRows || 0)} /> },
+                  { id: 'endpointsCount', header: 'Endpoints', cell: ({ row }) => {
+                    const f = row.original.fileName
+                    const m = exportSummaryMap[f]
+                    return <TruncatedCell text={m ? String(m.endpointsCount) : '-'} />
+                  } },
+                  { id: 'successCount', header: 'Successes', cell: ({ row }) => {
+                    const f = row.original.fileName
+                    const m = exportSummaryMap[f]
+                    return <Badge variant="default">{m ? String(m.successCount) : '-'}</Badge>
+                  } },
+                  { id: 'failureCount', header: 'Failures', cell: ({ row }) => {
+                    const f = row.original.fileName
+                    const m = exportSummaryMap[f]
+                    return <Badge variant="destructive">{m ? String(m.failureCount) : '-'}</Badge>
+                  } },
                   {
                     id: 'actions', header: 'Actions', cell: ({ row }) => (
-                      <Button size="sm" variant="outline" onClick={() => downloadExportFile(row.original.fileName)}>Download</Button>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => viewExportFile(row.original.fileName)}>View</Button>
+                        <Button size="sm" variant="outline" onClick={() => downloadExportFile(row.original.fileName)}>Download</Button>
+                      </div>
                     )
                   },
                 ]
@@ -3528,6 +3742,124 @@ function DashboardContent() {
                   }, null, 2)}
                 </pre>
               </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isAddXeroAccountModalOpen} onOpenChange={setIsAddXeroAccountModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Create Xero Account</DialogTitle>
+            <DialogDescription>Заполните поля для создания нового счёта в Xero.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="xeroAccountCode">Code</Label>
+              <Input id="xeroAccountCode" value={newXeroAccount.code} onChange={(e) => setNewXeroAccount({ ...newXeroAccount, code: e.target.value })} />
+              {newXeroAccountErrors.code && <div className="text-sm text-destructive">{newXeroAccountErrors.code}</div>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="xeroAccountName">Name</Label>
+              <Input id="xeroAccountName" value={newXeroAccount.name} onChange={(e) => setNewXeroAccount({ ...newXeroAccount, name: e.target.value })} />
+              {newXeroAccountErrors.name && <div className="text-sm text-destructive">{newXeroAccountErrors.name}</div>}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Type</Label>
+                <Select value={newXeroAccount.type} onValueChange={(v) => setNewXeroAccount({ ...newXeroAccount, type: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CURRENT">CURRENT</SelectItem>
+                    <SelectItem value="BANK">BANK</SelectItem>
+                    <SelectItem value="FIXED">FIXED</SelectItem>
+                    <SelectItem value="INVENTORY">INVENTORY</SelectItem>
+                    <SelectItem value="EXPENSE">EXPENSE</SelectItem>
+                    <SelectItem value="REVENUE">REVENUE</SelectItem>
+                    <SelectItem value="LIABILITY">LIABILITY</SelectItem>
+                  </SelectContent>
+                </Select>
+                {newXeroAccountErrors.type && <div className="text-sm text-destructive">{newXeroAccountErrors.type}</div>}
+              </div>
+              <div className="space-y-2">
+                <Label>Class</Label>
+                <Select value={newXeroAccount.class} onValueChange={(v) => setNewXeroAccount({ ...newXeroAccount, class: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose class" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ASSET">ASSET</SelectItem>
+                    <SelectItem value="LIABILITY">LIABILITY</SelectItem>
+                    <SelectItem value="REVENUE">REVENUE</SelectItem>
+                    <SelectItem value="EXPENSE">EXPENSE</SelectItem>
+                    <SelectItem value="EQUITY">EQUITY</SelectItem>
+                  </SelectContent>
+                </Select>
+                {newXeroAccountErrors.class && <div className="text-sm text-destructive">{newXeroAccountErrors.class}</div>}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="xeroAccountDesc">Description (optional)</Label>
+              <Input id="xeroAccountDesc" value={newXeroAccount.description || ''} onChange={(e) => setNewXeroAccount({ ...newXeroAccount, description: e.target.value })} />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsAddXeroAccountModalOpen(false)}>Cancel</Button>
+              <Button onClick={handleCreateXeroAccount} disabled={isCreatingXeroAccount}>{isCreatingXeroAccount ? 'Creating...' : 'Create'}</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isExportModalOpen} onOpenChange={setIsExportModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Export Preview - {exportPreviewFileName}</DialogTitle>
+            <DialogDescription>Requests, successes, and failures for this export.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {exportPreviewData ? (
+              <Tabs defaultValue="summary">
+                <TabsList className="grid grid-cols-4 w-full">
+                  <TabsTrigger value="summary">Summary</TabsTrigger>
+                  <TabsTrigger value="requests">Requests</TabsTrigger>
+                  <TabsTrigger value="successes">Successes</TabsTrigger>
+                  <TabsTrigger value="failures">Failures</TabsTrigger>
+                </TabsList>
+                <TabsContent value="summary" className="mt-4">
+                  {(() => {
+                    const d = exportPreviewData
+                    const reqs = Array.isArray(d?.requests) ? d.requests.length : 0
+                    const succ = Array.isArray(d?.successes) ? d.successes.length : 0
+                    const fails = Array.isArray(d?.failures) ? d.failures.length : 0
+                    return (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="outline">Endpoints: {reqs}</Badge>
+                        <Badge variant="default">Success: {succ}</Badge>
+                        <Badge variant="destructive">Failed: {fails}</Badge>
+                      </div>
+                    )
+                  })()}
+                </TabsContent>
+                <TabsContent value="requests" className="mt-4">
+                  <div className="bg-muted p-4 rounded-lg">
+                    <pre className="text-sm whitespace-pre-wrap overflow-x-auto">{JSON.stringify(exportPreviewData?.requests || [], null, 2)}</pre>
+                  </div>
+                </TabsContent>
+                <TabsContent value="successes" className="mt-4">
+                  <div className="bg-muted p-4 rounded-lg">
+                    <pre className="text-sm whitespace-pre-wrap overflow-x-auto">{JSON.stringify(exportPreviewData?.successes || [], null, 2)}</pre>
+                  </div>
+                </TabsContent>
+                <TabsContent value="failures" className="mt-4">
+                  <div className="bg-muted p-4 rounded-lg">
+                    <pre className="text-sm whitespace-pre-wrap overflow-x-auto">{JSON.stringify(exportPreviewData?.failures || [], null, 2)}</pre>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <div className="text-sm text-muted-foreground">No data</div>
             )}
           </div>
         </DialogContent>

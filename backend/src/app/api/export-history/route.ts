@@ -11,14 +11,16 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const companyId = searchParams.get('companyId')
     const userId = searchParams.get('userId')
-    const file = searchParams.get('file') || ''
-    const from = searchParams.get('from')
-    const to = searchParams.get('to')
+  const file = searchParams.get('file') || ''
+  const from = searchParams.get('from')
+  const to = searchParams.get('to')
+  const status = (searchParams.get('status') || '').toUpperCase()
     if (!companyId || !userId) {
       return NextResponse.json({ error: 'Company ID and User ID are required' }, { status: 400, headers: getCorsHeaders(request.headers.get('origin') || '') })
     }
     const where: any = { companyId, userId }
     if (file) where.fileName = { contains: file }
+    if (status && ['SUCCESS','PARTIAL','FAILED'].includes(status)) where.status = status === 'FAILED' ? { not: 'SUCCESS' } : status
     if (from || to) {
       const fromDate = from ? new Date(from) : null
       const toDate = to ? new Date(to) : null
