@@ -1971,9 +1971,9 @@ function DashboardContent() {
 
   const validateNewXeroAccount = (data: { code: string; name: string; type: string; class: string }) => {
     const errors: Record<string, string> = {}
-    if (!data.code || !/^[A-Za-z0-9]+$/.test(data.code)) errors.code = 'Enter short code'
-    if (!data.name) errors.name = 'Enter Name'
-    if (!data.type) errors.type = 'Enter Tpye'
+    if (!data.code || !/^[A-Za-z0-9]+$/.test(data.code)) errors.code = 'Enter a valid code'
+    if (!data.name) errors.name = 'Enter name'
+    if (!data.type) errors.type = 'Select type'
     return errors
   }
 
@@ -2009,9 +2009,9 @@ function DashboardContent() {
       setIsAddXeroAccountModalOpen(false)
       setNewXeroAccount({ code: '', name: '', type: 'CURRENT', class: 'ASSET', description: '' })
       await loadXeroCashOutAccounts()
-      toast({ title: 'Счёт создан', description: `${j?.account?.code || ''} | ${j?.account?.name || ''}` })
+      toast({ title: 'Account Created', description: `${j?.account?.code || ''} | ${j?.account?.name || ''}` })
     } catch (e: any) {
-      toast({ title: 'Ошибка Xero', description: e?.message || 'Не удалось создать счёт', variant: 'destructive' })
+      toast({ title: 'Xero Error', description: e?.message || 'Failed to create account', variant: 'destructive' })
     } finally {
       setIsCreatingXeroAccount(false)
     }
@@ -2280,6 +2280,24 @@ function DashboardContent() {
         setCompanies(prev => prev.map(c => c.id === selectedCompany.id ? { ...c, xeroTenantId: tenantId, xeroTenantName: tenantName } : c))
       }
       toast({ title: 'Organisation Selected', description: tenantName || tenantId })
+
+      try {
+        if (!selectedCompany?.id) return
+        const r2 = await fetch(`/api/xero/current-asset-accounts?userId=${user.id}&companyId=${selectedCompany.id}`, { credentials: 'include' })
+        const j2 = await r2.json().catch(() => ({}))
+        if (r2.ok) {
+          const accs = Array.isArray(j2.accounts) ? j2.accounts : []
+          const existingCode = selectedCompany?.xeroCashOutAccountCode
+          const exists = existingCode && accs.some((a: any) => a.code === existingCode)
+          if (!exists && accs.length > 0) {
+            await handleSelectCashOutAccount(accs[0].code)
+          } else {
+            setXeroCashOutAccounts(accs)
+          }
+        } else {
+          if (j2.disconnected) setXeroStatus({ connected: false })
+        }
+      } catch {}
     } catch (e: any) {
       toast({ title: 'Xero Error', description: e?.message || 'Failed to select organisation', variant: 'destructive' })
     }
@@ -2899,8 +2917,18 @@ function DashboardContent() {
                         <Button size="sm" onClick={() => { if (!rows.length) { toast({ title: 'Nothing selected', description: 'Please select at least one row', variant: 'destructive' }); return }; exportReadyRowsToExcel(rows).then(() => clearSelection()) }}>
                           {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Export to Excel'}
                         </Button>
-                        <Button size="sm" variant="default" onClick={() => { if (!rows.length) { toast({ title: 'Nothing selected', description: 'Please select at least one row', variant: 'destructive' }); return }; exportReadyRowsToXero(rows).then(() => clearSelection()) }}>
-                          {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Export to Xero'}
+                        <Button
+                          size="sm"
+                          variant={(!xeroStatus.connected || !selectedCompany?.id) ? 'destructive' : 'default'}
+                          onClick={() => {
+                            if (!rows.length) { toast({ title: 'Nothing selected', description: 'Please select at least one row', variant: 'destructive' }); return }
+                            if (!xeroStatus.connected || !selectedCompany?.id) { toast({ title: 'Connect Xero Company', description: 'Connect Xero and select a company first', variant: 'destructive' }); return }
+                            exportReadyRowsToXero(rows).then(() => clearSelection())
+                          }}
+                        >
+                          {isExporting
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : `Export to ${xeroStatus.connected ? (xeroStatus.tenantName || 'Xero') : '...'}`}
                         </Button>
                       </>
                     )}
@@ -2983,7 +3011,7 @@ function DashboardContent() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground mt-1">Используется для строки Cash Out при экспорте Bills (ACCPAY).</p>
+                    <p className="text-xs text-muted-foreground mt-1">Used for the Cash Out line when exporting Bills (ACCPAY).</p>
                     <div className="mt-2">
                       <Button size="sm" variant="outline" onClick={() => setIsAddXeroAccountModalOpen(true)}>
                         <Plus className="h-4 w-4 mr-2" />
@@ -3751,7 +3779,7 @@ function DashboardContent() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Create Xero Account</DialogTitle>
-            <DialogDescription>Заполните поля для создания нового счёта в Xero.</DialogDescription>
+            <DialogDescription>Fill in the fields to create a new account in Xero.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">

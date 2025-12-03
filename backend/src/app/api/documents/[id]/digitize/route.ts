@@ -169,6 +169,7 @@ Output ONLY valid JSON like this structure, no additional text:
     "totalAmount": "final total incl. tax/discount/surcharge as number (e.g., 105.87)",
     "totalPaidAmount": "amount charged to payment method (total + cashout if present) as number",
     "paymentType": "CASH, BANK, CREDITCARD, EFTPOS, VISA, etc. (from tender lines)",
+    "gstIncluded": "true if 'GST Included in Total' or similar present, else false",
     "lineItems": [
       {
         "description": "exact item name (e.g., 'COLES CHICKEN BREASTS 500G')",
@@ -199,8 +200,8 @@ Output ONLY valid JSON like this structure, no additional text:
             "LineItems": [
               // Map from extraction.lineItems; add discount/surcharge as separate lines
               // For each: { "Description": desc, "Quantity": qty, "UnitAmount": amount, "AccountCode": "430" (groceries, adjust per category), "TaxType": from extraction }
-              // Discount line: if discountAmount < 0, add { "Description": "Discount", "Quantity": 1, "UnitAmount": discountAmount, "AccountCode": "940" (Discount Received), "TaxType": "NONE" }
-              // Surcharge line: if surchargeAmount > 0, add { "Description": "Payment Surcharge", "Quantity": 1, "UnitAmount": surchargeAmount, "AccountCode": "680" (Bank Fees), "TaxType": "INPUT" }
+              // Discount line: if discountAmount < 0, add { "Description": "Discount", "Quantity": 1, "UnitAmount": discountAmount, "AccountCode": "940" (Discount Received), "TaxType": extraction.gstIncluded ? "INPUT" : "NONE" }  // INPUT (GST on Expenses) if GST Included in total
+              // Surcharge line: if surchargeAmount > 0, add { "Description": "Payment Surcharge", "Quantity": 1, "UnitAmount": surchargeAmount, "AccountCode": "680" (Bank Fees), "TaxType": "BASEXCLUDED" }  // BAS Excluded for surcharges
             ],
             "Status": "AUTHORISED",
             "Reference": "Receipt # + number + date"
@@ -215,7 +216,7 @@ Output ONLY valid JSON like this structure, no additional text:
     // },
     // {
     //   "endpoint": "POST /BankTransactions",
-    //   "body": { "BankTransactions": [ { "Type": "SPEND", "Date": date, "BankAccount": { "AccountID": "your-bank-guid" }, "LineItems": [ { "Description": "Cash Out from Receipt", "Quantity": 1, "UnitAmount": cashOutAmount, "AccountCode": "800" (Drawings), "TaxType": "NONE" } ], "LineAmountTypes": "Exclusive" } ] }
+    //   "body": { "BankTransactions": [ { "Type": "SPEND", "Date": date, "BankAccount": { "AccountID": "your-bank-guid" }, "LineItems": [ { "Description": "Cash Out from Receipt", "Quantity": 1, "UnitAmount": cashOutAmount, "AccountCode": "800" (Drawings), "TaxType": "BASEXCLUDED" } ], "LineAmountTypes": "Exclusive" } ] }  // BAS Excluded for cash out
     // }
     // Conditional: If discount or surcharge present, ensure lines in bill above; no extra endpoint needed.
   ]
@@ -224,15 +225,15 @@ Output ONLY valid JSON like this structure, no additional text:
 IMPORTANT RULES:
 - VARIANT HANDLING: Base is always a simple receipt as ACCPAY bill. Add /Payments if paymentType != CASH (for bill payment). Add /BankTransactions ONLY if cashOutAmount > 0 (as SPEND from bank to drawings). Discounts/surcharges: Embed as LineItems in bill (negative for discount, positive for surcharge). Combinations: Handle all present (e.g., receipt + cashout + discount + surcharge = bill with extra lines + payment + spend).
 - CASH OUT: PRIORITY 1: Explicit lines ('CASH OUT', 'CASHOUT', 'CASH WITHDRAWAL'). PRIORITY 2: If totalPaidAmount > totalAmount and labeled 'CHANGE' or similar (not pure cash tender). Else 0.00. totalPaidAmount = totalAmount + cashOutAmount.
-- DISCOUNT: Extract from lines ('DISCOUNT', 'TEAM DISCOUNT', 'PROMO', 'LESS'). Always negative in extraction; add as bill line.
+- DISCOUNT: Extract from lines ('DISCOUNT', 'TEAM DISCOUNT', 'PROMO', 'LESS'). Always negative in extraction; add as bill line with TaxType 'INPUT' (GST on Expenses) if gstIncluded=true, else 'NONE'.
 - SURCHARGE: From lines ('CARD SURCHARGE', 'FEE', '% FEE'). Positive; add as bill line if >0.
 - LINE ITEMS: Extract EVERY item (32+ if present). Use Inclusive amounts. TaxType: INPUT for % items (taxable); EXEMPTINPUT for * fresh/unprocessed (ATO: fresh produce/meat GST-free). If mixed, vary per line. AccountCode: Default '430' for groceries; adjust for category (e.g., '420' transport).
-- TAX: For Australia, use INPUT/EXEMPTINPUT in lines; overall taxStatus 'mixed' if varies. taxAmount from explicit GST line.
+- TAX: For Australia, use INPUT/EXEMPTINPUT in lines; overall taxStatus 'mixed' if varies. taxAmount from explicit GST line. Detect gstIncluded from lines like 'GST Included in Total'.
 - JSON VALIDITY: All numbers as floats (e.g., 5.50). Dates YYYY-MM-DD. If unclear, use defaults (e.g., qty=1, taxType='INPUT'). For unreadable text, approximate (e.g., '[garbled] Chicken').
 - API PLACEHOLDERS: Use descriptive placeholders for GUIDs (e.g., 'your-bank-guid'); assume single bill/transaction.
 - PRECISION: Match receipt totals exactly in bill sum. No extras; only described endpoints.
+- ABN RECOGNITION: Aggressively scan for ABN: Look in headers/footers for 'ABN:', 'ABN ', 'ABN No.', patterns like 'xx xxx xxx xxx' (11 digits total), or after vendor name. Validate: Must be exactly 11 digits (first digit 1-9, weighted check if possible but prioritize extraction). OCR common errors: Fix 'O' to '0', 'I' to '1', spaces/hyphens removed. If multiple, pick the one near vendor name. If none, '-'.
 `;
-
 
       console.log(`Starting AI digitization for document ${id}...`)
       console.log(`Document type: ${document.mimeType}, size: ${document.fileSize} bytes`)
