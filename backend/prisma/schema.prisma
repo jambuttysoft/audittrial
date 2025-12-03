@@ -225,6 +225,8 @@ model Digitized {
   surchargeAmount   Float?
   expenseCategory   String?
   taxStatus         String?
+  taxType           String?
+  taxTypeName       String?
   
   // Метаданные
   digitizedAt       DateTime  @default(now())
@@ -287,6 +289,8 @@ model DigitizedReview {
   surchargeAmount   Float?
   expenseCategory   String?
   taxStatus         String?
+  taxType           String?
+  taxTypeName       String?
   movedAt           DateTime  @default(now())
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -321,6 +325,8 @@ model DigitizedReady {
   surchargeAmount    Float?
   expenseCategory    String?
   taxStatus          String?
+  taxType            String?
+  taxTypeName        String?
   movedAt            DateTime  @default(now())
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
@@ -352,9 +358,11 @@ model DigitizedReported {
   taxAmount           Float?
   totalAmount         Float?
   totalPaidAmount     Float?
-  surchargeAmount     Float?
-  expenseCategory     String?
-  taxStatus           String?
+  surchargeAmount      Float?
+  expenseCategory      String?
+  taxStatus            String?
+  taxType              String?
+  taxTypeName          String?
   exportedAt          DateTime
   exportFileName      String
   exportStatus        String

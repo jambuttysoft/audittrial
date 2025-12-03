@@ -161,22 +161,33 @@ export async function POST(request: NextRequest) {
       return 0
     }
 
-    const region = (company as any)?.taxRegion as string | undefined
-    const getTaxTypeByRegion = (isTaxable: boolean) => {
-      const r = (region || 'AU').toUpperCase()
-      if (!isTaxable) return 'NONE'
-      switch (r) {
-        case 'AU':
-        case 'NZ':
-        case 'UK':
-        case 'EU':
-        case 'CA':
-        case 'US':
-          return 'INPUT'
-        default:
-          return 'INPUT'
-      }
+  const region = (company as any)?.taxRegion as string | undefined
+  const getTaxTypeByRegion = (isTaxable: boolean) => {
+    const r = (region || 'AU').toUpperCase()
+    if (!isTaxable) return 'NONE'
+    switch (r) {
+      case 'AU':
+      case 'NZ':
+      case 'UK':
+      case 'EU':
+      case 'CA':
+      case 'US':
+        return 'INPUT'
+      default:
+        return 'INPUT'
     }
+  }
+  const normalizeTaxType = (v: any, hasGst: boolean) => {
+    const s = String(v || '').toUpperCase()
+    if (!s) return getTaxTypeByRegion(hasGst)
+    if (s === 'OUTPUT') return 'OUTPUT'
+    if (s === 'INPUT') return 'INPUT'
+    if (s === 'EXEMPTEXPENSES') return 'NONE'
+    if (s === 'EXEMPTOUTPUT') return 'NONE'
+    if (s === 'BASEXCLUDED') return 'NONE'
+    if (s === 'GSTONIMPORTS') return hasGst ? 'INPUT' : 'NONE'
+    return getTaxTypeByRegion(hasGst)
+  }
     const taxModeOverride = typeof taxMode === 'string' ? taxMode.toLowerCase() : ''
     const isOverrideExclusive = taxModeOverride === 'exclusive'
     const isOverrideInclusive = taxModeOverride === 'inclusive'
@@ -195,7 +206,7 @@ export async function POST(request: NextRequest) {
         const discountAmountNum = toNum((doc as any).discountAmount)
         const cashOutAmountNum = toNum((doc as any).cashOutAmount)
         const hasGst = taxAmountNum > 0
-        const taxType = getTaxTypeByRegion(hasGst) as any
+        const taxType = normalizeTaxType((doc as any).taxType, hasGst) as any
         const net = amountExclTaxNum || (totalAmountNum ? (totalAmountNum - taxAmountNum) : 0)
         const gross = totalAmountNum || (amountExclTaxNum ? (amountExclTaxNum + taxAmountNum) : 0)
         const round2 = (n: number) => Math.round(n * 100) / 100
@@ -244,7 +255,7 @@ export async function POST(request: NextRequest) {
               quantity: 1,
               unitAmount: discUnit,
               accountCode: accountCode,
-              taxType: getTaxTypeByRegion(hasGst) as any,
+              taxType: normalizeTaxType((doc as any).taxType, hasGst) as any,
               taxAmount: 0
             })
           }
@@ -303,7 +314,7 @@ export async function POST(request: NextRequest) {
               quantity: 1,
               unitAmount: Number(-round2(discountAmountNum)),
               accountCode: accountCode,
-              taxType: getTaxTypeByRegion(hasGst) as any,
+              taxType: normalizeTaxType((doc as any).taxType, hasGst) as any,
             })
           }
           const spendPayload = { bankTransactions: [bankTransaction] }
@@ -329,7 +340,7 @@ export async function POST(request: NextRequest) {
           } catch {}
         }
 
-        await prisma.digitizedReported.create({
+        await (prisma as any).digitizedReported.create({
           data: {
             originalDigitizedId: doc.id,
             companyId: doc.companyId,
@@ -356,6 +367,8 @@ export async function POST(request: NextRequest) {
             surchargeAmount: doc.surchargeAmount,
             expenseCategory: doc.expenseCategory,
             taxStatus: doc.taxStatus,
+            taxType: (doc as any).taxType ?? null,
+            taxTypeName: (doc as any).taxTypeName ?? null,
             exportedAt: new Date(),
             exportFileName: exportMode === 'bill' ? `xero-invoice-${new Date().toISOString()}` : `xero-spend-${new Date().toISOString()}`,
             exportStatus: 'SUCCESS',

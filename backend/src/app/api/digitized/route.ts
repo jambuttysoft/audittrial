@@ -178,6 +178,8 @@ export async function DELETE(request: NextRequest) {
       surchargeAmount: (digitizedDocument as any).surchargeAmount ?? null,
       expenseCategory: digitizedDocument.expenseCategory,
       taxStatus: digitizedDocument.taxStatus,
+      taxType: (digitizedDocument as any).taxType ?? null,
+      taxTypeName: (digitizedDocument as any).taxTypeName ?? null,
       movedAt: new Date(),
     },
     create: {
@@ -206,6 +208,8 @@ export async function DELETE(request: NextRequest) {
       surchargeAmount: (digitizedDocument as any).surchargeAmount ?? null,
       expenseCategory: digitizedDocument.expenseCategory,
       taxStatus: digitizedDocument.taxStatus,
+      taxType: (digitizedDocument as any).taxType ?? null,
+      taxTypeName: (digitizedDocument as any).taxTypeName ?? null,
     },
   });
 
@@ -310,7 +314,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Обновляем запись
-    const updated = await prisma.digitized.update({
+    const updated = await (prisma as any).digitized.update({
       where: { id },
       data: {
         purchaseDate,
@@ -329,6 +333,8 @@ export async function PUT(request: NextRequest) {
         totalPaidAmount: totalPaidAmount ?? undefined,
         expenseCategory: sanitizeString(body.expenseCategory),
         taxStatus: sanitizeString(body.taxStatus),
+        taxType: sanitizeString(body.taxType),
+        taxTypeName: sanitizeString(body.taxTypeName),
         updatedAt: new Date(),
       },
     })

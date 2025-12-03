@@ -90,7 +90,9 @@ Analyze this receipt/invoice image and extract ALL the following information in 
   "totalAmount": "total amount including tax as number",
   "totalPaidAmount": "final amount charged/tendered including cash out",
   "expenseCategory": "category like office supplies, meals, transport, etc",
-  "taxStatus": "taxable, tax-free, or mixed"
+  "taxStatus": "taxable, tax-free, or mixed",
+  "taxType": "one of OUTPUT, INPUT, EXEMPTEXPENSES, EXEMPTOUTPUT, BASEXCLUDED, GSTONIMPORTS",
+  "taxTypeName": "label like 'GST on Income', 'GST on Expenses', 'GST Free Expenses', 'GST Free Income', 'BAS Excluded', 'GST on Imports'"
 }
 
 IMPORTANT:
@@ -132,6 +134,19 @@ SURCHARGE RULES:
 - If such a line exists, extract the exact amount (e.g., $0.39 in this case).
 - The SurchargeAmount must be included in the TotalAmount calculation.
 - If no surcharge-indicating lines appear, return SurchargeAmount as 0.00.
+
+GST TAX TYPE DETERMINATION:
+- Determine the GST tax type and return two fields: "taxType" and "taxTypeName".
+- "taxType" MUST be exactly one of: OUTPUT, INPUT, EXEMPTEXPENSES, EXEMPTOUTPUT, BASEXCLUDED, GSTONIMPORTS.
+- "taxTypeName" MUST be one of: "GST on Income", "GST on Expenses", "GST Free Expenses", "GST Free Income", "BAS Excluded", "GST on Imports".
+- Selection rules:
+  - OUTPUT / "GST on Income": Use for sales/income documents (outgoing invoices to customers). Keywords: "tax invoice issued", "sale", "customer payment". If the document represents revenue.
+  - INPUT / "GST on Expenses": Use for purchase/expense receipts/invoices (vendor bills). If the document represents a business expense.
+  - EXEMPTEXPENSES / "GST Free Expenses": Expense with taxAmount == 0 and text mentions "GST free", "exempt", or category known GST-free.
+  - EXEMPTOUTPUT / "GST Free Income": Income with taxAmount == 0 and text mentions "GST free" or "no GST".
+  - BASEXCLUDED / "BAS Excluded": Items outside BAS (e.g., bank fees, fines, non-reportable). If clearly non-BAS.
+  - GSTONIMPORTS / "GST on Imports": Imports/customs where GST applies to imports (keywords: "import", "customs", "duty").
+- If multiple candidates appear, choose the most specific single value. Do NOT return arrays.
 `;
 
 
@@ -278,6 +293,8 @@ SURCHARGE RULES:
         surchargeAmount: receiptData.surchargeAmount !== undefined && receiptData.surchargeAmount !== null ? parseFloat(receiptData.surchargeAmount.toString()) : null,
         expenseCategory: receiptData.expenseCategory || null,
         taxStatus: typeof receiptData.taxStatus === 'string' ? receiptData.taxStatus : null,
+        taxType: typeof receiptData.taxType === 'string' ? receiptData.taxType : null,
+        taxTypeName: typeof receiptData.taxTypeName === 'string' ? receiptData.taxTypeName : null,
       }
       console.log('Digitized payload to save:', digitizedData)
       let digitizedDocument

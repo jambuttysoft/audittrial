@@ -59,6 +59,8 @@ export async function POST(request: NextRequest) {
         surchargeAmount: (digitized as any).surchargeAmount ?? null,
         expenseCategory: digitized.expenseCategory,
         taxStatus: digitized.taxStatus,
+        taxType: (digitized as any).taxType ?? null,
+        taxTypeName: (digitized as any).taxTypeName ?? null,
         movedAt: new Date(),
       },
       create: {
@@ -87,6 +89,8 @@ export async function POST(request: NextRequest) {
         surchargeAmount: (digitized as any).surchargeAmount ?? null,
         expenseCategory: digitized.expenseCategory,
         taxStatus: digitized.taxStatus,
+        taxType: (digitized as any).taxType ?? null,
+        taxTypeName: (digitized as any).taxTypeName ?? null,
       },
     })
     try {
