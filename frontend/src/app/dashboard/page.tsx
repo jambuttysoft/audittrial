@@ -309,6 +309,7 @@ function DashboardContent() {
 
   // Image zoom states
   const [imageZoom, setImageZoom] = useState(1)
+  const [imageOrigin, setImageOrigin] = useState<{ x: number, y: number } | null>(null)
 
   // Delete confirmation modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
@@ -3910,7 +3911,7 @@ function DashboardContent() {
           <div className="grid grid-cols-1 md:grid-cols-2" style={{ height: 'calc(98vh - 80px)' }}>
             <div
               className="relative bg-black/50 cursor-grab active:cursor-grabbing overflow-hidden"
-              onWheel={(e) => { e.preventDefault(); const delta = e.deltaY > 0 ? 0.85 : 1.15; const newZoom = Math.max(0.1, Math.min(8, imageZoom * delta)); setImageZoom(newZoom) }}
+              onWheel={(e) => { e.preventDefault(); const delta = e.deltaY > 0 ? 0.85 : 1.15; const img = imageRef?.current as any; if (img) { const rect = img.getBoundingClientRect(); const ox = e.clientX - rect.left; const oy = e.clientY - rect.top; setImageOrigin({ x: ox, y: oy }) } const newZoom = Math.max(0.1, Math.min(8, imageZoom * delta)); setImageZoom(newZoom) }}
               onMouseDown={(e) => { if (imageZoom > 1) { setIsDragging(true); setDragStart({ x: e.clientX - imagePosition.x, y: e.clientY - imagePosition.y }) } }}
               onMouseMove={(e) => { if (isDragging && imageZoom > 1) { setImagePosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y }) } }}
               onMouseUp={() => setIsDragging(false)}
@@ -3924,7 +3925,7 @@ function DashboardContent() {
                   width={2000}
                   height={2000}
                   className="absolute top-1/2 left-1/2 max-w-none shadow-2xl transition-transform duration-200 ease-out"
-                  style={{ transform: `translate(-50%, -50%) translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${imageZoom})`, transformOrigin: 'center center' }}
+                  style={{ transform: `translate(-50%, -50%) translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${imageZoom})`, transformOrigin: imageOrigin ? `${imageOrigin.x}px ${imageOrigin.y}px` : 'center center' }}
                   draggable={false}
                 />
               )}
