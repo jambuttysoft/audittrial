@@ -312,6 +312,10 @@ function DashboardContent() {
   const [editZoom, setEditZoom] = useState(1)
   const [modalZoom, setModalZoom] = useState(1)
 
+  // Xero bill preview modal state
+  const [isXeroBillModalOpen, setIsXeroBillModalOpen] = useState(false)
+  const [selectedDocumentForXero, setSelectedDocumentForXero] = useState<DigitizedData | null>(null)
+
   // Delete confirmation modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null)
@@ -650,6 +654,47 @@ function DashboardContent() {
     } catch (e) {
       console.error('Bulk delete failed', e)
       toast({ title: 'Delete failed', description: 'Failed to move selected documents', variant: 'destructive' })
+    }
+  }
+
+  const handleBulkDeleteReadySelected = async (rows: any[]) => {
+    if (!rows.length) { toast({ title: 'Nothing selected', description: 'Please select at least one row', variant: 'destructive' }); return }
+    if (!selectedCompany?.id || !user?.id) { toast({ title: 'Error', description: 'Please select a company and sign in', variant: 'destructive' }); return }
+    if (!window.confirm('Delete selected validated rows and move to Deleted?')) return
+    try {
+      const ids = rows.map((r) => r.original.id).filter(Boolean)
+      const results = await Promise.all(ids.map(async (id) => {
+        const resp = await fetch(`/api/ready?id=${id}&userId=${user.id}`, { method: 'DELETE', credentials: 'include', headers: { 'Content-Type': 'application/json' } })
+        return resp.ok
+      }))
+      const successCount = results.filter(Boolean).length
+      await Promise.all([
+        loadReadyDocuments(selectedCompany.id),
+        loadReviewDocuments(selectedCompany.id)
+      ])
+      toast({ title: 'Deleted', description: `${successCount}/${ids.length} moved to Deleted` })
+    } catch (e) {
+      console.error('Delete ready failed', e)
+      toast({ title: 'Delete failed', description: 'Failed to delete validated rows', variant: 'destructive' })
+    }
+  }
+
+  const handleBulkEraseDeletedSelected = async (rows: any[]) => {
+    if (!rows.length) { toast({ title: 'Nothing selected', description: 'Please select at least one row', variant: 'destructive' }); return }
+    if (!selectedCompany?.id || !user?.id) { toast({ title: 'Error', description: 'Please select a company and sign in', variant: 'destructive' }); return }
+    if (!window.confirm('Erase selected deleted rows permanently? This cannot be undone.')) return
+    try {
+      const ids = rows.map((r) => r.original.id).filter(Boolean)
+      const results = await Promise.all(ids.map(async (id) => {
+        const resp = await fetch(`/api/review?id=${id}&userId=${user.id}&permanent=1`, { method: 'DELETE', credentials: 'include', headers: { 'Content-Type': 'application/json' } })
+        return resp.ok
+      }))
+      const successCount = results.filter(Boolean).length
+      await loadReviewDocuments(selectedCompany.id)
+      toast({ title: 'Erased', description: `${successCount}/${ids.length} permanently removed` })
+    } catch (e) {
+      console.error('Erase failed', e)
+      toast({ title: 'Erase failed', description: 'Failed to erase selected rows', variant: 'destructive' })
     }
   }
 
@@ -2932,6 +2977,7 @@ function DashboardContent() {
                             ? <Loader2 className="h-4 w-4 animate-spin" />
                             : `Export to ${xeroStatus.connected ? (xeroStatus.tenantName || 'Xero') : '...'}`}
                         </Button>
+                        <Button size="sm" variant="destructive" onClick={() => { handleBulkDeleteReadySelected(rows); clearSelection() }}>Delete</Button>
                       </>
                     )}
                   />
@@ -3282,6 +3328,11 @@ function DashboardContent() {
                     data={reviewDocuments}
                     defaultVisibleColumnIds={defaultVisible}
                     storageKey={key}
+                    bulkActions={(rows, clearSelection) => (
+                      <>
+                        <Button size="sm" variant="destructive" onClick={() => { handleBulkEraseDeletedSelected(rows); clearSelection() }}>Erase</Button>
+                      </>
+                    )}
                   />
                 )
               })()}
@@ -3391,6 +3442,16 @@ function DashboardContent() {
                               }}
                             >
                               View Source Document
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                setSelectedDocumentForXero(doc)
+                                setIsXeroBillModalOpen(true)
+                              }}
+                            >
+                              View Xero Bill
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={(e) => {
@@ -4027,6 +4088,113 @@ function DashboardContent() {
       </Dialog>
 
       <SupportButton />
+
+      {/* Xero Bill Preview Modal */}
+      <Dialog open={isXeroBillModalOpen} onOpenChange={(open) => { setIsXeroBillModalOpen(open); if (!open) setSelectedDocumentForXero(null) }}>
+        <DialogContent className="max-w-3xl w-full p-0 bg-white">
+          <DialogHeader className="px-6 py-4 border-b bg-muted/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-lg font-semibold">Xero Bill Preview</DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground">Mocked bill layout similar to Xero</DialogDescription>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setIsXeroBillModalOpen(false)}>Close</Button>
+            </div>
+          </DialogHeader>
+          <div className="px-6 py-4 space-y-4">
+            {(() => {
+              const doc = selectedDocumentForXero
+              const nf = new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' })
+              const fmtDate = (d?: string) => d ? new Date(d).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'
+              const supplier = doc?.vendorName || 'SPOTLIGHT HOPPERS'
+              const date = doc?.purchaseDate || new Date().toISOString()
+              const dueDate = (() => { const dt = new Date(date); dt.setDate(dt.getDate() + 14); return dt.toISOString() })()
+              const reference = (doc as any)?.reference || '1'
+              const currency = 'AUD Australian Dollar'
+              const taxInclusive = 'Tax Inclusive'
+              const items = (doc as any)?.extractedData?.lineItems?.length ? (doc as any).extractedData.lineItems : [
+                { description: '*NOLA FLOOR CUSH,NAT,50X50X12CM', quantity: 4, unitPrice: 36, amount: 144 },
+                { description: '*WH ZANZIBAR CUSH,TOBACCO,27X70CM', quantity: 2, unitPrice: 25, amount: 50 },
+              ]
+              const subtotal = items.reduce((s: number, it: any) => s + (Number(it.amount) || (Number(it.quantity) * Number(it.unitPrice))), 0)
+              const gst = Math.round(subtotal * 0.1 * 100) / 100
+              const total = subtotal
+              return (
+                <div className="border rounded-md shadow-sm">
+                  <div className="px-4 py-3 border-b bg-muted/10 grid grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <div className="text-muted-foreground">From</div>
+                      <div className="font-medium">{supplier}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Date</div>
+                      <div className="font-medium">{fmtDate(date)}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Due Date</div>
+                      <div className="font-medium">{fmtDate(dueDate)}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Reference</div>
+                      <div className="font-medium">{reference}</div>
+                    </div>
+                  </div>
+
+                  <div className="px-4 py-3 border-b flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="border rounded px-2 py-1">{currency}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Amounts are</span>
+                      <span className="border rounded px-2 py-1">{taxInclusive}</span>
+                    </div>
+                  </div>
+
+                  <div className="px-4 py-3">
+                    <div className="overflow-auto">
+                      <Table className="min-w-full border">
+                        <TableHeader>
+                          <TableRow className="bg-muted/30">
+                            <TableHead className="w-1/12">Item</TableHead>
+                            <TableHead className="w-5/12">Description</TableHead>
+                            <TableHead className="w-1/12 text-right">Qty</TableHead>
+                            <TableHead className="w-2/12 text-right">Unit Price</TableHead>
+                            <TableHead className="w-1/12">Account</TableHead>
+                            <TableHead className="w-1/12">Tax Rate</TableHead>
+                            <TableHead className="w-1/12 text-right">Amount AUD</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {items.map((it: any, idx: number) => (
+                            <TableRow key={idx}>
+                              <TableCell>{idx + 1}</TableCell>
+                              <TableCell className="text-xs">{it.description}</TableCell>
+                              <TableCell className="text-right">{Number(it.quantity).toFixed(2)}</TableCell>
+                              <TableCell className="text-right">{nf.format(Number(it.unitPrice))}</TableCell>
+                              <TableCell className="text-xs">310 - Cost of Goods Sold</TableCell>
+                              <TableCell className="text-xs">GST on Expenses</TableCell>
+                              <TableCell className="text-right">{nf.format(Number(it.amount) || Number(it.quantity) * Number(it.unitPrice))}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    <div className="mt-6 grid grid-cols-2">
+                      <div></div>
+                      <div className="text-sm">
+                        <div className="flex justify-between"><span>Subtotal</span><span>{nf.format(subtotal)}</span></div>
+                        <div className="flex justify-between text-muted-foreground"><span>Includes GST 10.00%</span><span>{nf.format(gst)}</span></div>
+                        <div className="mt-2 border-t pt-2 text-xl font-bold flex justify-between"><span>TOTAL</span><span>{nf.format(total)}</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Enhanced modal window for displaying images after digitization */}
       <Dialog open={isImageModalOpen} onOpenChange={(open) => {

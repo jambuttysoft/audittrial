@@ -1,111 +1,76 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
 import { prisma } from '@/lib/prisma'
+import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
 
 export async function OPTIONS(request: NextRequest) {
   return handleCorsOptions(request.headers.get('origin') || '')
 }
 
 export async function GET(request: NextRequest) {
+  const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
   try {
     const { searchParams } = new URL(request.url)
-    const companyId = searchParams.get('companyId')
     const userId = searchParams.get('userId')
-    if (!companyId || !userId) {
-      return NextResponse.json({ error: 'Company ID and User ID are required' }, { status: 400, headers: getCorsHeaders(request.headers.get('origin') || '') })
+    const companyId = searchParams.get('companyId')
+    if (!userId || !companyId) {
+      return NextResponse.json({ success: false, code: 'BAD_REQUEST', message: 'userId and companyId are required' }, { status: 400, headers: corsHeaders })
     }
-    const items = await (prisma as any).digitizedReady.findMany({ where: { companyId, userId }, orderBy: { movedAt: 'desc' } })
-    return NextResponse.json({ success: true, ready: items }, { headers: getCorsHeaders(request.headers.get('origin') || '') })
+    const items = await (prisma as any).digitizedReady.findMany({ where: { userId, companyId }, orderBy: { movedAt: 'desc' } })
+    return NextResponse.json({ success: true, code: 'SUCCESS', ready: items, message: 'Operation completed successfully' }, { headers: corsHeaders })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch ready items' }, { status: 500, headers: getCorsHeaders(request.headers.get('origin') || '') })
+    return NextResponse.json({ success: false, code: 'INTERNAL_ERROR', message: 'Failed to fetch ready items' }, { status: 500, headers: corsHeaders })
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function DELETE(request: NextRequest) {
+  const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
   try {
-    const body = await request.json()
-    const { id, userId } = body
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    const userId = searchParams.get('userId')
     if (!id || !userId) {
-      return NextResponse.json({ error: 'Digitized ID and User ID are required' }, { status: 400, headers: getCorsHeaders(request.headers.get('origin') || '') })
+      return NextResponse.json({ success: false, code: 'BAD_REQUEST', message: 'id and userId are required' }, { status: 400, headers: corsHeaders })
     }
-    const digitized = await prisma.digitized.findFirst({ where: { id, userId } })
-    if (!digitized) {
-      return NextResponse.json({ error: 'Digitized not found' }, { status: 404, headers: getCorsHeaders(request.headers.get('origin') || '') })
+    const item = await (prisma as any).digitizedReady.findUnique({ where: { id: String(id) } })
+    if (!item || item.userId !== userId) {
+      return NextResponse.json({ success: false, code: 'NOT_FOUND', message: 'Item not found' }, { status: 404, headers: corsHeaders })
     }
-    await (prisma as any).digitizedReady.upsert({
-      where: { originalDigitizedId: digitized.id },
-      update: {
-        companyId: digitized.companyId,
-        userId: digitized.userId,
-        originalDocumentId: digitized.originalDocumentId,
-        fileName: digitized.fileName,
-        originalName: digitized.originalName,
-        filePath: digitized.filePath,
-        fileSize: digitized.fileSize,
-        mimeType: digitized.mimeType,
-        purchaseDate: digitized.purchaseDate,
-        vendorName: digitized.vendorName,
-        vendorAbn: digitized.vendorAbn,
-        vendorAddress: digitized.vendorAddress,
-        documentType: digitized.documentType,
-        receiptNumber: digitized.receiptNumber,
-        paymentType: digitized.paymentType,
-        cashOutAmount: digitized.cashOutAmount,
-        discountAmount: digitized.discountAmount,
-        subTotal: (digitized as any).subTotal ?? null,
-        amountExclTax: digitized.amountExclTax,
-        taxAmount: digitized.taxAmount,
-        totalAmount: digitized.totalAmount,
-        totalPaidAmount: (digitized as any).totalPaidAmount ?? null,
-        surchargeAmount: (digitized as any).surchargeAmount ?? null,
-        expenseCategory: digitized.expenseCategory,
-        taxStatus: digitized.taxStatus,
-        taxType: (digitized as any).taxType ?? null,
-        taxTypeName: (digitized as any).taxTypeName ?? null,
-        lineItems: (digitized as any).lineItems ?? null,
-        xeroApiRequests: (digitized as any).xeroApiRequests ?? null,
-        movedAt: new Date(),
-      },
-      create: {
-        originalDigitizedId: digitized.id,
-        companyId: digitized.companyId,
-        userId: digitized.userId,
-        originalDocumentId: digitized.originalDocumentId,
-        fileName: digitized.fileName,
-        originalName: digitized.originalName,
-        filePath: digitized.filePath,
-        fileSize: digitized.fileSize,
-        mimeType: digitized.mimeType,
-        purchaseDate: digitized.purchaseDate,
-        vendorName: digitized.vendorName,
-        vendorAbn: digitized.vendorAbn,
-        vendorAddress: digitized.vendorAddress,
-        documentType: digitized.documentType,
-        receiptNumber: digitized.receiptNumber,
-        paymentType: digitized.paymentType,
-        cashOutAmount: digitized.cashOutAmount,
-        discountAmount: digitized.discountAmount,
-        subTotal: (digitized as any).subTotal ?? null,
-        amountExclTax: digitized.amountExclTax,
-        taxAmount: digitized.taxAmount,
-        totalAmount: digitized.totalAmount,
-        totalPaidAmount: (digitized as any).totalPaidAmount ?? null,
-        surchargeAmount: (digitized as any).surchargeAmount ?? null,
-        expenseCategory: digitized.expenseCategory,
-        taxStatus: digitized.taxStatus,
-        taxType: (digitized as any).taxType ?? null,
-        taxTypeName: (digitized as any).taxTypeName ?? null,
-        lineItems: (digitized as any).lineItems ?? null,
-        xeroApiRequests: (digitized as any).xeroApiRequests ?? null,
-      },
-    })
-    try {
-      await prisma.digitized.delete({ where: { id: digitized.id } })
-    } catch (e) {
-      // ignore if already removed
+    const payload: any = {
+      originalDigitizedId: item.originalDigitizedId,
+      companyId: item.companyId,
+      userId: item.userId,
+      originalDocumentId: item.originalDocumentId,
+      fileName: item.fileName,
+      originalName: item.originalName,
+      filePath: item.filePath,
+      fileSize: item.fileSize,
+      mimeType: item.mimeType,
+      purchaseDate: item.purchaseDate,
+      vendorName: item.vendorName,
+      vendorAbn: item.vendorAbn,
+      vendorAddress: item.vendorAddress,
+      documentType: item.documentType,
+      receiptNumber: item.receiptNumber,
+      paymentType: item.paymentType,
+      cashOutAmount: item.cashOutAmount,
+      discountAmount: item.discountAmount,
+      subTotal: item.subTotal,
+      amountExclTax: item.amountExclTax,
+      taxAmount: item.taxAmount,
+      totalAmount: item.totalAmount,
+      totalPaidAmount: item.totalPaidAmount,
+      surchargeAmount: item.surchargeAmount,
+      expenseCategory: item.expenseCategory,
+      taxStatus: item.taxStatus,
+      taxType: item.taxType,
+      taxTypeName: item.taxTypeName,
+      lineItems: item.lineItems,
+      xeroApiRequests: item.xeroApiRequests,
     }
-    return NextResponse.json({ success: true }, { headers: getCorsHeaders(request.headers.get('origin') || '') })
+    await (prisma as any).digitizedReview.create({ data: payload })
+    await (prisma as any).digitizedReady.delete({ where: { id: String(id) } })
+    return NextResponse.json({ success: true, code: 'SUCCESS', message: 'Item moved to Deleted' }, { headers: corsHeaders })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to move item to ready' }, { status: 500, headers: getCorsHeaders(request.headers.get('origin') || '') })
+    return NextResponse.json({ success: false, code: 'INTERNAL_ERROR', message: 'Failed to delete ready item' }, { status: 500, headers: corsHeaders })
   }
 }
