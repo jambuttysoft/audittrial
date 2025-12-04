@@ -59,7 +59,7 @@ export default function BillingPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [user?.id, toast, API_BASE])
+  }, [user?.id, toast])
 
   const loadProfile = useCallback(async () => {
     if (!user?.id) return
@@ -68,7 +68,7 @@ export default function BillingPage() {
       const data = await r.json()
       if (data?.profile) setProfile(data.profile as Profile)
     } catch {}
-  }, [user?.id, API_BASE])
+  }, [user?.id])
 
   useEffect(() => { loadInvoices(); loadProfile() }, [loadInvoices, loadProfile])
 

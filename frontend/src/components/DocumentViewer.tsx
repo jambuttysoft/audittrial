@@ -1,6 +1,7 @@
 'use client'
 
 import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react'
+import Image from 'next/image'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 
 export type DocumentViewerHandle = {
@@ -33,7 +34,7 @@ const DocumentViewer = forwardRef<DocumentViewerHandle, DocumentViewerProps>(fun
   }), [scale])
 
   return (
-    <div className={`relative h-96 border rounded-lg shadow-sm bg-background ${className || ''}`} style={style}>
+    <div className={`relative w-full h-full border rounded-lg shadow-sm bg-background ${className || ''}`} style={style}>
       <TransformWrapper
         ref={wrapperRef}
         wheel={{ disabled: false }}
@@ -48,8 +49,10 @@ const DocumentViewer = forwardRef<DocumentViewerHandle, DocumentViewerProps>(fun
         {({ zoomIn, zoomOut, resetTransform }) => (
           <>
             <TransformComponent wrapperClass="w-full h-full" contentClass="w-full h-full">
-              <div className="w-full h-full flex items-center justify-center overflow-hidden">
-                <img src={src} alt={alt || ''} className="max-w-none select-none shadow-lg" draggable={false} />
+              <div className="w-full h-full flex items-start justify-center overflow-hidden">
+                <div className="relative w-full h-full">
+                  <Image src={src} alt={alt || ''} fill sizes="100vw" className="object-contain object-top select-none shadow-lg" draggable={false} unoptimized />
+                </div>
               </div>
             </TransformComponent>
 

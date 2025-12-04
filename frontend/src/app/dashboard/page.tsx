@@ -315,6 +315,10 @@ function DashboardContent() {
   // Xero bill preview modal state
   const [isXeroBillModalOpen, setIsXeroBillModalOpen] = useState(false)
   const [selectedDocumentForXero, setSelectedDocumentForXero] = useState<DigitizedData | null>(null)
+  const [billPreview, setBillPreview] = useState<any | null>(null)
+  const [billAudit, setBillAudit] = useState<any | null>(null)
+  const [billWarnings, setBillWarnings] = useState<string[]>([])
+  const [billLoading, setBillLoading] = useState(false)
 
   // Delete confirmation modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
@@ -1961,7 +1965,8 @@ function DashboardContent() {
         const tenants = (j.tenants || []) as { tenantId: string; tenantName: string }[]
         setXeroOrganisations(tenants)
       } else {
-        if (j.disconnected) {
+        if (j.disconnected || r.status === 401) {
+          try { await fetch(`/api/xero/status?userId=${user.id}`, { method: 'DELETE', credentials: 'include' }) } catch {}
           setXeroStatus({ connected: false })
           toast({ title: 'Xero Disconnected', description: 'Your Xero session has expired. Please reconnect.', variant: 'default' })
         } else {
@@ -2443,7 +2448,7 @@ function DashboardContent() {
         }
       } catch { }
     })()
-  }, [user?.id, selectedCompany?.id, selectedCompany?.xeroTenantId, xeroStatus.connected, xeroStatus.tenantId, xeroStatus.tenantName])
+  }, [user?.id, selectedCompany, selectedCompany?.id, selectedCompany?.xeroTenantId, xeroStatus.connected, xeroStatus.tenantId, xeroStatus.tenantName])
 
   if (isLoading) {
     return (
@@ -3444,11 +3449,37 @@ function DashboardContent() {
                               View Source Document
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={(e) => {
+                              onClick={async (e) => {
                                 e.preventDefault()
                                 e.stopPropagation()
                                 setSelectedDocumentForXero(doc)
                                 setIsXeroBillModalOpen(true)
+                                if (user?.id && selectedCompany?.id) {
+                                  try {
+                                    setBillLoading(true)
+                                    const r = await fetch('/api/xero/preview/bill', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      credentials: 'include',
+                                      body: JSON.stringify({ userId: user.id, companyId: selectedCompany.id, digitizedId: doc.id })
+                                    })
+                                    const j = await r.json()
+                                    if (r.ok && j?.data?.payload?.invoices?.[0]) {
+                                      setBillPreview(j.data.payload.invoices[0])
+                                      setBillAudit(j.data.audit || null)
+                                      setBillWarnings(j.data.warnings || [])
+                                    } else {
+                                      const msg = j?.error || j?.message || 'Failed to load bill preview'
+                                      toast({ title: 'Xero Preview Error', description: msg, variant: 'destructive' })
+                                    }
+                                  } catch (err: any) {
+                                    toast({ title: 'Network Error', description: 'Unable to load bill preview', variant: 'destructive' })
+                                  } finally {
+                                    setBillLoading(false)
+                                  }
+                                } else {
+                                  toast({ title: 'Select Company', description: 'Please select a company and sign in', variant: 'destructive' })
+                                }
                               }}
                             >
                               View Xero Bill
@@ -4091,64 +4122,85 @@ function DashboardContent() {
 
       {/* Xero Bill Preview Modal */}
       <Dialog open={isXeroBillModalOpen} onOpenChange={(open) => { setIsXeroBillModalOpen(open); if (!open) setSelectedDocumentForXero(null) }}>
-        <DialogContent className="max-w-3xl w-full p-0 bg-white">
+        <DialogContent className="w-[95vw] max-w-[95vw] lg:w-[90vw] lg:max-w-[90vw] p-0 bg-white">
           <DialogHeader className="px-6 py-4 border-b bg-muted/20">
             <div className="flex items-center justify-between">
               <div>
                 <DialogTitle className="text-lg font-semibold">Xero Bill Preview</DialogTitle>
-                <DialogDescription className="text-sm text-muted-foreground">Mocked bill layout similar to Xero</DialogDescription>
+                <DialogDescription className="text-sm text-muted-foreground">Preview reflects actual payload to Xero API</DialogDescription>
+                <div className="mt-2 text-base font-bold">
+                  {(billPreview?.contact?.name) || selectedDocumentForXero?.vendorName || '-'}
+                </div>
               </div>
               <Button variant="outline" size="sm" onClick={() => setIsXeroBillModalOpen(false)}>Close</Button>
             </div>
           </DialogHeader>
           <div className="px-6 py-4 space-y-4">
-            {(() => {
-              const doc = selectedDocumentForXero
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="rounded border p-3">
+                <div className="text-xs text-muted-foreground">Vendor</div>
+                <div className="text-sm font-medium">{selectedDocumentForXero?.vendorName || billPreview?.contact?.name || '-'}</div>
+              </div>
+              <div className="rounded border p-3">
+                <div className="text-xs text-muted-foreground">ABN</div>
+                <div className="text-sm font-medium">{selectedDocumentForXero?.vendorAbn || '-'}</div>
+              </div>
+              <div className="rounded border p-3 md:col-span-1">
+                <div className="text-xs text-muted-foreground">Address</div>
+                <div className="text-sm font-medium break-words">{selectedDocumentForXero?.vendorAddress || '-'}</div>
+              </div>
+            </div>
+            {billLoading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Loading preview...</div>
+            )}
+            {(!billLoading && billPreview) && (() => {
+              const inv = billPreview
               const nf = new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' })
               const fmtDate = (d?: string) => d ? new Date(d).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'
-              const supplier = doc?.vendorName || 'SPOTLIGHT HOPPERS'
-              const date = doc?.purchaseDate || new Date().toISOString()
-              const dueDate = (() => { const dt = new Date(date); dt.setDate(dt.getDate() + 14); return dt.toISOString() })()
-              const reference = (doc as any)?.reference || '1'
-              const currency = 'AUD Australian Dollar'
-              const taxInclusive = 'Tax Inclusive'
-              const items = (doc as any)?.extractedData?.lineItems?.length ? (doc as any).extractedData.lineItems : [
-                { description: '*NOLA FLOOR CUSH,NAT,50X50X12CM', quantity: 4, unitPrice: 36, amount: 144 },
-                { description: '*WH ZANZIBAR CUSH,TOBACCO,27X70CM', quantity: 2, unitPrice: 25, amount: 50 },
-              ]
-              const subtotal = items.reduce((s: number, it: any) => s + (Number(it.amount) || (Number(it.quantity) * Number(it.unitPrice))), 0)
-              const gst = Math.round(subtotal * 0.1 * 100) / 100
-              const total = subtotal
+              const onHeaderChange = (k: string, v: any) => { setBillPreview((p: any) => ({ ...p, [k]: v })) }
+              const onItemChange = (i: number, k: string, v: any) => { setBillPreview((p: any) => ({ ...p, lineItems: p.lineItems.map((li: any, idx: number) => idx === i ? { ...li, [k]: v } : li) })) }
+              const recalc = () => {
+                const subtotal = inv.lineItems.reduce((s: number, li: any) => s + Number(li.quantity || 1) * Number(li.unitAmount || 0), 0)
+                const tax = inv.lineAmountTypes === 'Exclusive' ? subtotal * 0.1 : subtotal * (1/11)
+                const total = inv.lineAmountTypes === 'Exclusive' ? subtotal + tax : subtotal
+                setBillAudit({ ...(billAudit || {}), subtotalCalc: Math.round(subtotal*100)/100, taxCalc: Math.round(tax*100)/100, totalCalc: Math.round(total*100)/100 })
+              }
               return (
-                <div className="border rounded-md shadow-sm">
+                <div className="border rounded-md shadow-sm overflow-x-auto">
                   <div className="px-4 py-3 border-b bg-muted/10 grid grid-cols-4 gap-4 text-sm">
                     <div>
-                      <div className="text-muted-foreground">From</div>
-                      <div className="font-medium">{supplier}</div>
+                      <div className="text-muted-foreground">Supplier</div>
+                      <div className="font-medium">{(inv.contact?.name) || '-'}</div>
                     </div>
                     <div>
                       <div className="text-muted-foreground">Date</div>
-                      <div className="font-medium">{fmtDate(date)}</div>
+                      <Input value={inv.date || ''} onChange={(e) => onHeaderChange('date', e.target.value)} />
                     </div>
                     <div>
                       <div className="text-muted-foreground">Due Date</div>
-                      <div className="font-medium">{fmtDate(dueDate)}</div>
+                      <Input value={inv.dueDate || ''} onChange={(e) => onHeaderChange('dueDate', e.target.value)} />
                     </div>
                     <div>
                       <div className="text-muted-foreground">Reference</div>
-                      <div className="font-medium">{reference}</div>
+                      <Input value={inv.reference || ''} onChange={(e) => onHeaderChange('reference', e.target.value)} />
                     </div>
                   </div>
 
                   <div className="px-4 py-3 border-b flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
-                      <span className="border rounded px-2 py-1">{currency}</span>
+                      <span className="border rounded px-2 py-1">AUD Australian Dollar</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-muted-foreground">Amounts are</span>
-                      <span className="border rounded px-2 py-1">{taxInclusive}</span>
+                      <span className="border rounded px-2 py-1">{inv.lineAmountTypes}</span>
                     </div>
                   </div>
+
+                  {billWarnings.length > 0 && (
+                    <div className="px-4 py-2 flex flex-wrap gap-2">
+                      {billWarnings.map((w, i) => (<Badge key={i} variant="destructive">{w}</Badge>))}
+                    </div>
+                  )}
 
                   <div className="px-4 py-3">
                     <div className="overflow-auto">
@@ -4158,43 +4210,47 @@ function DashboardContent() {
                             <TableHead className="w-1/12">Item</TableHead>
                             <TableHead className="w-5/12">Description</TableHead>
                             <TableHead className="w-1/12 text-right">Qty</TableHead>
-                            <TableHead className="w-2/12 text-right">Unit Price</TableHead>
+                            <TableHead className="w-2/12 text-right">Unit Amount</TableHead>
                             <TableHead className="w-1/12">Account</TableHead>
-                            <TableHead className="w-1/12">Tax Rate</TableHead>
-                            <TableHead className="w-1/12 text-right">Amount AUD</TableHead>
+                            <TableHead className="w-1/12">Tax Type</TableHead>
+                            <TableHead className="w-1/12 text-right">Amount</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {items.map((it: any, idx: number) => (
+                          {inv.lineItems.map((it: any, idx: number) => (
                             <TableRow key={idx}>
                               <TableCell>{idx + 1}</TableCell>
-                              <TableCell className="text-xs">{it.description}</TableCell>
-                              <TableCell className="text-right">{Number(it.quantity).toFixed(2)}</TableCell>
-                              <TableCell className="text-right">{nf.format(Number(it.unitPrice))}</TableCell>
-                              <TableCell className="text-xs">310 - Cost of Goods Sold</TableCell>
-                              <TableCell className="text-xs">GST on Expenses</TableCell>
-                              <TableCell className="text-right">{nf.format(Number(it.amount) || Number(it.quantity) * Number(it.unitPrice))}</TableCell>
+                              <TableCell className="text-xs"><Input value={it.description || ''} onChange={(e) => onItemChange(idx, 'description', e.target.value)} /></TableCell>
+                              <TableCell className="text-right"><Input value={String(it.quantity || 1)} onChange={(e) => onItemChange(idx, 'quantity', Number(e.target.value))} /></TableCell>
+                              <TableCell className="text-right"><Input value={String(it.unitAmount || 0)} onChange={(e) => onItemChange(idx, 'unitAmount', Number(e.target.value))} /></TableCell>
+                              <TableCell className="text-xs"><Input value={String(it.accountCode || '')} onChange={(e) => onItemChange(idx, 'accountCode', e.target.value)} /></TableCell>
+                              <TableCell className="text-xs"><Input value={String(it.taxType || '')} onChange={(e) => onItemChange(idx, 'taxType', e.target.value)} /></TableCell>
+                              <TableCell className="text-right">{nf.format(Number(it.quantity || 1) * Number(it.unitAmount || 0))}</TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
                       </Table>
                     </div>
 
-                    <div className="mt-6 grid grid-cols-2">
+                    <div className="mt-4 flex justify-end">
+                      <Button variant="secondary" onClick={recalc}>Recalculate totals</Button>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2">
                       <div></div>
                       <div className="text-sm">
-                        <div className="flex justify-between"><span>Subtotal</span><span>{nf.format(subtotal)}</span></div>
-                        <div className="flex justify-between text-muted-foreground"><span>Includes GST 10.00%</span><span>{nf.format(gst)}</span></div>
-                        <div className="mt-2 border-t pt-2 text-xl font-bold flex justify-between"><span>TOTAL</span><span>{nf.format(total)}</span></div>
+                        <div className="flex justify-between"><span>Subtotal</span><span>{nf.format((billAudit?.subtotalCalc || 0))}</span></div>
+                        <div className="flex justify-between text-muted-foreground"><span>GST</span><span>{nf.format((billAudit?.taxCalc || 0))}</span></div>
+                        <div className="mt-2 border-t pt-2 text-xl font-bold flex justify-between"><span>TOTAL</span><span>{nf.format((billAudit?.totalCalc || 0))}</span></div>
                       </div>
                     </div>
                   </div>
                 </div>
               )
             })()}
-          </div>
-        </DialogContent>
-      </Dialog>
+            </div>
+          </DialogContent>
+        </Dialog>
 
       {/* Enhanced modal window for displaying images after digitization */}
       <Dialog open={isImageModalOpen} onOpenChange={(open) => {

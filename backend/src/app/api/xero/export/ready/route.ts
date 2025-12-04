@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { createReadStream } from 'fs'
 import { join } from 'path'
 import { getCorsHeaders, handleCorsOptions } from '@/lib/cors'
+import { disconnectXero } from '@/lib/xero'
 
 function getXeroClient() {
   const clientId = process.env.XERO_CLIENT_ID
@@ -96,9 +97,11 @@ export async function OPTIONS(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
+  let reqUserId: string | null = null
   try {
     const body = await request.json()
     const { userId, companyId, documentIds, dateRangeStart, dateRangeEnd, mode, taxMode } = body || {}
+    reqUserId = userId || null
     if (!userId || !companyId) {
       return NextResponse.json({ error: 'userId and companyId are required' }, { status: 400, headers: corsHeaders })
     }
@@ -115,7 +118,8 @@ export async function POST(request: NextRequest) {
 
     const tokenExpiry = user.xeroTokenExpiry ? new Date(user.xeroTokenExpiry) : null
     if (tokenExpiry && new Date() >= tokenExpiry) {
-      return NextResponse.json({ error: 'Xero token expired. Please reconnect.' }, { status: 401, headers: corsHeaders })
+      try { await disconnectXero(userId) } catch {}
+      return NextResponse.json({ error: 'Xero token expired. Please reconnect.', disconnected: true }, { status: 401, headers: corsHeaders })
     }
 
     const xero = getXeroClient()
@@ -509,6 +513,16 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, summary: { successes, failures } }, { headers: corsHeaders })
   } catch (error: any) {
+    const isAuthError = error?.response?.status === 401 ||
+      error?.message?.includes('invalid_grant') ||
+      error?.message?.includes('unauthorized') ||
+      JSON.stringify(error || {}).includes('invalid_grant')
+
+    if (isAuthError) {
+      try { if (reqUserId) await disconnectXero(reqUserId) } catch {}
+      return NextResponse.json({ error: 'Xero session expired. Please reconnect.', disconnected: true }, { status: 401, headers: corsHeaders })
+    }
+
     if (error?.response) {
       const status = error.response.status || 500
       const message = error.response.data?.message || error.message

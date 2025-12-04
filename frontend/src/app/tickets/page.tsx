@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -61,7 +61,7 @@ export default function TicketsPage() {
     } catch {}
   }, [])
 
-  const loadTickets = async () => {
+  const loadTickets = useCallback(async () => {
     setIsLoading(true)
     try {
       const r = await fetch('/api/tickets', { credentials: 'include' })
@@ -74,11 +74,11 @@ export default function TicketsPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [user, toast])
 
   useEffect(() => {
     loadTickets()
-  }, [user?.id])
+  }, [loadTickets])
 
   useEffect(() => {
     if (!selectedTicketId) return
