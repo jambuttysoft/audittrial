@@ -56,6 +56,7 @@ import UserMenu from '@/components/UserMenu'
 import { useRef } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Info } from 'lucide-react'
+import DocumentViewer, { DocumentViewerHandle } from '@/components/DocumentViewer'
 
 // Component for truncated text with tooltip
 function TruncatedCell({ text, maxWidth = '150px' }: { text: string; maxWidth?: string }) {
@@ -307,20 +308,20 @@ function DashboardContent() {
   const [isUploading, setIsUploading] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
 
-  // Image zoom states
-  const [imageZoom, setImageZoom] = useState(1)
-  const [imageOrigin, setImageOrigin] = useState<{ x: number, y: number } | null>(null)
+  // Image viewer states
+  const [editZoom, setEditZoom] = useState(1)
+  const [modalZoom, setModalZoom] = useState(1)
 
   // Delete confirmation modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null)
   const [isDeleteDigitizedModalOpen, setIsDeleteDigitizedModalOpen] = useState(false)
   const [digitizedDocumentToDelete, setDigitizedDocumentToDelete] = useState<string | null>(null)
-  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 })
-  const [isDragging, setIsDragging] = useState(false)
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
-  const imageRef = useRef<HTMLImageElement>(null)
+  const editViewerRef = useRef<DocumentViewerHandle>(null)
+  const modalViewerRef = useRef<DocumentViewerHandle>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const editImageContainerRef = useRef<HTMLDivElement>(null)
+  const imageModalContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (isBulkDigitizing && bulkDigitizeStart) {
@@ -332,6 +333,8 @@ function DashboardContent() {
       setBulkDigitizeElapsed(0)
     }
   }, [isBulkDigitizing, bulkDigitizeStart])
+
+  useEffect(() => {}, [isEditModalOpen, isImageModalOpen])
 
   const formatMMSS = (s: number) => {
     const m = Math.floor(s / 60).toString().padStart(2, '0')
@@ -890,9 +893,7 @@ function DashboardContent() {
     setSelectedDocumentForEdit(null)
     setEditForm(null)
     setEditErrors({})
-    setImageZoom(1)
-    setImagePosition({ x: 0, y: 0 })
-    setIsDragging(false)
+    editViewerRef.current?.reset()
   }
 
   const formatTimestamp = (d: Date) => {
@@ -3903,36 +3904,22 @@ function DashboardContent() {
                 <DialogDescription className="text-sm mt-1">{selectedDocumentForEdit?.originalName || selectedDocumentForEdit?.fileName}</DialogDescription>
               </div>
               <div className="flex items-center gap-3">
-                <div className="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">Zoom: {Math.round(imageZoom * 100)}%</div>
-                <Button variant="outline" size="sm" onClick={() => { setImageZoom(1); setImagePosition({ x: 0, y: 0 }) }}>Reset</Button>
+                <div className="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">Zoom: {Math.round(editZoom * 100)}%</div>
+                <Button variant="outline" size="sm" onClick={() => { editViewerRef.current?.reset() }}>Reset</Button>
               </div>
             </div>
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2" style={{ height: 'calc(98vh - 80px)' }}>
-            <div
-              className="relative bg-black/50 cursor-grab active:cursor-grabbing overflow-hidden"
-              onWheel={(e) => { e.preventDefault(); const delta = e.deltaY > 0 ? 0.85 : 1.15; const img = imageRef?.current as any; if (img) { const rect = img.getBoundingClientRect(); const ox = e.clientX - rect.left; const oy = e.clientY - rect.top; setImageOrigin({ x: ox, y: oy }) } const newZoom = Math.max(0.1, Math.min(8, imageZoom * delta)); setImageZoom(newZoom) }}
-              onMouseDown={(e) => { if (imageZoom > 1) { setIsDragging(true); setDragStart({ x: e.clientX - imagePosition.x, y: e.clientY - imagePosition.y }) } }}
-              onMouseMove={(e) => { if (isDragging && imageZoom > 1) { setImagePosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y }) } }}
-              onMouseUp={() => setIsDragging(false)}
-              onMouseLeave={() => setIsDragging(false)}
-            >
+            <div className="relative bg-black/50 cursor-grab active:cursor-grabbing overflow-hidden" ref={editImageContainerRef}>
               {selectedDocumentForEdit && (
-                <Image
-                  ref={imageRef as any}
+                <DocumentViewer
+                  ref={editViewerRef}
                   src={`/api/files/${selectedDocumentForEdit.originalDocumentId || (selectedDocumentForEdit as any).id}/view?userId=${user?.id}`}
                   alt={selectedDocumentForEdit.originalName || selectedDocumentForEdit.fileName}
-                  width={2000}
-                  height={2000}
-                  className="absolute top-1/2 left-1/2 max-w-none shadow-2xl transition-transform duration-200 ease-out"
-                  style={{ transform: `translate(-50%, -50%) translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${imageZoom})`, transformOrigin: imageOrigin ? `${imageOrigin.x}px ${imageOrigin.y}px` : 'center center' }}
-                  draggable={false}
+                  className="absolute inset-0"
+                  onZoomChange={setEditZoom}
                 />
               )}
-              <div className="absolute bottom-4 left-4 bg-black/60 text-white text-xs px-3 py-2 rounded-lg">
-                <p>Mouse wheel - zoom</p>
-                <p>Drag - move</p>
-              </div>
             </div>
             <div className="overflow-y-auto p-6">
               {editForm && (
@@ -4046,12 +4033,10 @@ function DashboardContent() {
         setIsImageModalOpen(open)
         if (!open) {
           // Reset zoom and position when closing modal window
-          setImageZoom(1)
-          setImagePosition({ x: 0, y: 0 })
-          setIsDragging(false)
+          modalViewerRef.current?.reset()
         }
       }}>
-        <DialogContent className="max-w-7xl max-h-[98vh] p-0 bg-black/95 border-0">
+        <DialogContent className="max-w-3xl max-h-[98vh] p-0 bg-black/95 border-0">
           <DialogHeader className="px-6 py-4 bg-background/95 backdrop-blur-sm border-b">
             <div className="flex items-center justify-between">
               <div className="flex-1">
@@ -4064,14 +4049,33 @@ function DashboardContent() {
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
-                  <span>Zoom: {Math.round(imageZoom * 100)}%</span>
+                  <span>Zoom: {Math.round(modalZoom * 100)}%</span>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    setImageZoom(1)
-                    setImagePosition({ x: 0, y: 0 })
+                    modalViewerRef.current?.zoomIn()
+                  }}
+                  className="bg-background/80 hover:bg-background"
+                >
+                  Zoom In
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    modalViewerRef.current?.zoomOut()
+                  }}
+                  className="bg-background/80 hover:bg-background"
+                >
+                  Zoom Out
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    modalViewerRef.current?.reset()
                   }}
                   className="bg-background/80 hover:bg-background"
                 >
@@ -4102,114 +4106,17 @@ function DashboardContent() {
             </div>
           </DialogHeader>
 
-          <div
-            className="flex-1 overflow-hidden relative bg-black/50 cursor-grab active:cursor-grabbing"
-            style={{ height: 'calc(98vh - 100px)' }}
-            onWheel={(e) => {
-              e.preventDefault()
-              const delta = e.deltaY > 0 ? 0.85 : 1.15
-              const newZoom = Math.max(0.1, Math.min(8, imageZoom * delta))
-              setImageZoom(newZoom)
-            }}
-            onMouseDown={(e) => {
-              if (imageZoom > 1) {
-                setIsDragging(true)
-                setDragStart({ x: e.clientX - imagePosition.x, y: e.clientY - imagePosition.y })
-              }
-            }}
-            onMouseMove={(e) => {
-              if (isDragging && imageZoom > 1) {
-                setImagePosition({
-                  x: e.clientX - dragStart.x,
-                  y: e.clientY - dragStart.y
-                })
-              }
-            }}
-            onMouseUp={() => setIsDragging(false)}
-            onMouseLeave={() => setIsDragging(false)}
-          >
+          <div className="flex-1 overflow-hidden relative bg-black/50 cursor-grab active:cursor-grabbing" style={{ height: 'calc(98vh - 100px)' }} ref={imageModalContainerRef}>
             {selectedDocumentForImage && (
-              <>
-                {/* Loading indicator */}
-                <div className="loading-indicator absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-                  <div className="text-center text-white">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-3" />
-                    <p className="text-sm opacity-80">Loading image...</p>
-                  </div>
-                </div>
-
-                <Image
-                  ref={imageRef as any}
-                  src={`/api/files/${selectedDocumentForImage.id}/view?userId=${user?.id}`}
-                  alt={selectedDocumentForImage.originalName}
-                  width={2000}
-                  height={2000}
-                  className="absolute top-1/2 left-1/2 max-w-none shadow-2xl transition-transform duration-200 ease-out"
-                  style={{
-                    transform: `translate(-50%, -50%) translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${imageZoom})`,
-                    transformOrigin: 'center center',
-                    filter: 'drop-shadow(0 10px 25px rgba(0,0,0,0.5))'
-                  }}
-                  onError={(e: any) => {
-                    e.currentTarget.style.display = 'none'
-                    const loadingDiv = e.currentTarget.parentElement?.querySelector('.loading-indicator') as HTMLElement
-                    if (loadingDiv) loadingDiv.style.display = 'none'
-                    const errorDiv = e.currentTarget.parentElement?.querySelector('.error-message') as HTMLElement
-                    if (errorDiv) errorDiv.style.display = 'flex'
-                    toast({
-                      title: "Image Loading Error",
-                      description: `Failed to load document image: ${selectedDocumentForImage.originalName}`,
-                      variant: "destructive"
-                    })
-                  }}
-                  onLoad={() => {
-                    const loadingDiv = imageRef.current?.parentElement?.querySelector('.loading-indicator') as HTMLElement
-                    if (loadingDiv) loadingDiv.style.display = 'none'
-                    const errorDiv = imageRef.current?.parentElement?.querySelector('.error-message') as HTMLElement
-                    if (errorDiv) errorDiv.style.display = 'none'
-                  }}
-                  draggable={false}
-                />
-
-                {/* Error message */}
-                <div className="error-message hidden absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                  <div className="text-center text-white bg-red-900/20 border border-red-500/30 rounded-lg p-8 max-w-md mx-4">
-                    <AlertCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Image Loading Error</h3>
-                    <p className="text-sm opacity-80 mb-4">Failed to load document image</p>
-                    <div className="text-xs opacity-60 space-y-1">
-                      <p>Document ID: {selectedDocumentForImage.id}</p>
-                      <p>File: {selectedDocumentForImage.originalName}</p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-4 bg-white/10 border-white/20 text-white hover:bg-white/20"
-                      onClick={() => {
-                        // Try to reload the image
-                        const img = imageRef.current
-                        if (img) {
-                          const loadingDiv = img.parentElement?.querySelector('.loading-indicator') as HTMLElement
-                          const errorDiv = img.parentElement?.querySelector('.error-message') as HTMLElement
-                          if (loadingDiv) loadingDiv.style.display = 'flex'
-                          if (errorDiv) errorDiv.style.display = 'none'
-                          img.style.display = 'block'
-                          img.src = img.src + '&t=' + Date.now() // Force reload
-                        }
-                      }}
-                    >
-                      Try Again
-                    </Button>
-                  </div>
-                </div>
-              </>
+              <DocumentViewer
+                ref={modalViewerRef}
+                src={`/api/files/${selectedDocumentForImage.id}/view?userId=${user?.id}`}
+                alt={selectedDocumentForImage.originalName}
+                className="absolute inset-0"
+                onZoomChange={setModalZoom}
+                showControls={false}
+              />
             )}
-
-            {/* Control hints */}
-            <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm text-white text-xs px-3 py-2 rounded-lg">
-              <p>🖱️ Mouse wheel - zoom</p>
-              <p>🖱️ Drag - move (when zoomed)</p>
-            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -4671,7 +4578,8 @@ function CreateCompanyDialog({ onCompanyCreated }: { onCompanyCreated: (userData
     setIsLoading(true)
 
     try {
-      const userData = localStorage.getItem('user')
+      let userData: string | null = null
+      try { userData = localStorage.getItem('user') } catch { userData = null }
       if (!userData) {
         toast({
           title: 'Error',

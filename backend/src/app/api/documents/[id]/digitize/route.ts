@@ -150,36 +150,43 @@ GST TAX TYPE DETERMINATION:
 `; */
 
 const prompt = `
-You are an expert in extracting data from Australian retail receipts (e.g., Coles, Woolworths) and generating Xero Accounting API requests to record them as purchase bills (ACCPAY), payments, and bank transactions. Analyze this receipt/invoice image using OCR/vision and output TWO main JSON objects: first, an extraction summary; second, the required API request(s) in JSON format for Xero (POST /Invoices for the bill, plus optional POST /Payments and/or POST /BankTransactions if cashout or other features present).
+You are an expert in extracting data from Australian retail receipts (e.g., Coles, Woolworths, UGG Express, Dry Cleaners) and generating Xero Accounting API requests to record them as purchase bills (ACCPAY), payments, and bank transactions. Analyze this receipt/invoice image using OCR/vision and output TWO main JSON objects: first, an extraction summary; second, the required API request(s) in JSON format for Xero (POST /Invoices for the bill, plus optional POST /Payments and/or POST /BankTransactions if cashout or other features present).
 
 Output ONLY valid JSON like this structure, no additional text:
 {
   "extraction": {
     "purchaseDate": "YYYY-MM-DD (from receipt date)",
-    "vendorName": "exact vendor name (e.g., 'Coles Supermarkets Australia Pty Ltd')",
+    "vendorName": "exact vendor name (e.g., 'Dry Cleaners Master')",
     "vendorAbn": "11-digit ABN only (digits, no spaces/hyphens, or '-' if absent)",
     "vendorAddress": "full address or '-'",
     "documentType": "receipt or invoice",
     "receiptNumber": "receipt/invoice number or '-'",
-    "subTotal": "subtotal excl. tax/discount as number",
-    "taxAmount": "GST amount as number (e.g., 9.40)",
-    "discountAmount": "total discount as negative number (e.g., -11.76) or 0.00",
+    "subTotal": "subtotal excl. tax/discount as number (pre-GST base)",
+    "taxAmount": "GST amount as number (e.g., 4.09)",
+    "discountAmount": "transaction discount as negative number (e.g., -53.38 from 'Disc:' line) or 0.00",
     "surchargeAmount": "surcharge fee as number (e.g., 0.39) or 0.00",
     "cashOutAmount": "cash out/withdrawal as number (e.g., 50.00) or 0.00",
-    "totalAmount": "final total incl. tax/discount/surcharge as number (e.g., 105.87)",
+    "totalAmount": "final total incl. tax/discount/surcharge as number (e.g., 45.00)",
     "totalPaidAmount": "amount charged to payment method (total + cashout if present) as number",
-    "paymentType": "CASH, BANK, CREDITCARD, EFTPOS, VISA, etc. (from tender lines)",
+    "paymentType": "CASH, BANK, CREDITCARD, EFTPOS, VISA, etc. (from tender lines; support split like 'CASH $50 + MASTERCARD $55')",
     "gstIncluded": "true if 'GST Included in Total' or similar present, else false",
+    "lineAmountTypes": "Inclusive (if GST included in prices/total) or Exclusive (if separate GST after subtotal, e.g., 'Subtotal (GST,10%) $95.45' + 'GST $9.55')",
     "lineItems": [
       {
-        "description": "exact item name (e.g., 'COLES CHICKEN BREASTS 500G')",
-        "quantity": "number (e.g., 1) or 1 if not specified",
-        "unitAmount": "price incl. tax as number (e.g., 5.50)",
+        "description": "exact item name (e.g., 'Key Cutting - Plain - Retail Products')",
+        "quantity": "number (e.g., 6 from '(6 pieces)') or 1 if not specified",
+        "unitAmount": "price per rules: if Inclusive, incl. tax amount per unit (e.g., total / qty); if Exclusive, pre-tax per unit",
         "taxType": "INPUT (taxable, 10% GST) or EXEMPTINPUT (GST-free fresh food) based on ATO rules"
       }
-      // Extract ALL items, including specials (*) and taxable (%). Group similar if unreadable. For GST-free: fresh meat/fish/veg/fruit/dairy/bread (no prep); taxable: processed/snacks/drinks.
+      // Extract ONLY valid product/service lines. Skip/merge annotations like '(6 pieces)' into previous item's quantity. Do not create separate lines for quantities/units.
     ],
-    "expenseCategory": "groceries, office supplies, meals, transport, etc. (main category)",
+    "sumValidation": {
+      "calculatedSubTotal": "sum of (qty * unitAmount) for lineItems excl. discount/surcharge as number",
+      "calculatedTotal": "calculatedSubTotal + discountAmount + surchargeAmount + (taxAmount if Exclusive) as number",
+      "matchesReceipt": "true if |calculatedTotal - totalAmount| < 0.01, else false",
+      "adjustments": "brief note on fixes (e.g., 'Consolidated to single line' or 'Skipped invalid qty line') or ''"
+    },
+    "expenseCategory": "groceries, office supplies, meals, transport, clothing, services, etc. (main category)",
     "taxStatus": "taxable, tax-free, or mixed (if line items vary)"
   },
   "xeroApiRequests": [
@@ -192,16 +199,17 @@ Output ONLY valid JSON like this structure, no additional text:
           {
             "Type": "ACCPAY",
             "Contact": {
-              "ContactID": "use-your-default-supplier-guid-or-create-via-API"  // Placeholder; assume Coles GUID
+              "ContactID": "use-your-default-supplier-guid-or-create-via-API"  // Placeholder; assume vendor GUID
             },
             "Date": "YYYY-MM-DD from extraction",
             "DueDate": "same as Date for retail",
-            "LineAmountTypes": "Inclusive",  // Receipts are tax-inclusive
+            "LineAmountTypes": "from extraction.lineAmountTypes",  // Exclusive if separate GST line, else Inclusive
             "LineItems": [
-              // Map from extraction.lineItems; add discount/surcharge as separate lines
-              // For each: { "Description": desc, "Quantity": qty, "UnitAmount": amount, "AccountCode": "430" (groceries, adjust per category), "TaxType": from extraction }
-              // Discount line: if discountAmount < 0, add { "Description": "Discount", "Quantity": 1, "UnitAmount": discountAmount, "AccountCode": "940" (Discount Received), "TaxType": extraction.gstIncluded ? "INPUT" : "NONE" }  // INPUT (GST on Expenses) if GST Included in total
-              // Surcharge line: if surchargeAmount > 0, add { "Description": "Payment Surcharge", "Quantity": 1, "UnitAmount": surchargeAmount, "AccountCode": "680" (Bank Fees), "TaxType": "BASEXCLUDED" }  // BAS Excluded for surcharges
+              // Map from extraction.lineItems ONLY if sumValidation.matchesReceipt=true; else adjust: e.g., if single item mismatch, set qty=1, unitAmount=adjusted total/subTotal
+              // { "Description": desc, "Quantity": qty, "UnitAmount": amount (adjusted for lineAmountTypes), "AccountCode": "430" (groceries/services, adjust per category), "TaxType": from extraction }
+              // If discountAmount < 0 and not already in lineItems, add { "Description": "Discount", "Quantity": 1, "UnitAmount": discountAmount (pre-tax if Exclusive), "AccountCode": "940" (Discount Received), "TaxType": extraction.gstIncluded ? "INPUT" : "NONE" }
+              // Surcharge line: if surchargeAmount > 0, add { "Description": "Payment Surcharge", "Quantity": 1, "UnitAmount": surchargeAmount, "AccountCode": "680" (Bank Fees), "TaxType": "BASEXCLUDED" }
+              // FINAL VALIDATION: After mapping, recompute sum; if mismatch >0.01, override to single lineItem with qty=1, unitAmount=total/subTotal, description='Receipt Total Items'.
             ],
             "Status": "AUTHORISED",
             "Reference": "Receipt # + number + date"
@@ -212,27 +220,29 @@ Output ONLY valid JSON like this structure, no additional text:
     // Conditional: If cashOutAmount > 0, add payment for bill + bank transaction for cashout
     // {
     //   "endpoint": "POST /Payments",
-    //   "body": { "Payments": [ { "Date": date, "Amount": extraction.totalAmount, "Invoice": { "InvoiceID": "placeholder-from-bill-response" }, "Account": { "AccountID": "your-bank-guid" }, "PaymentType": paymentType } ] }
+    //   "body": { "Payments": [ { "Date": date, "Amount": extraction.totalAmount, "Invoice": { "InvoiceID": "placeholder-from-bill-response" }, "Account": { "AccountID": "your-bank-guid" }, "PaymentType": paymentType } ] }  // Split if multiple payments detected
     // },
     // {
     //   "endpoint": "POST /BankTransactions",
-    //   "body": { "BankTransactions": [ { "Type": "SPEND", "Date": date, "BankAccount": { "AccountID": "your-bank-guid" }, "LineItems": [ { "Description": "Cash Out from Receipt", "Quantity": 1, "UnitAmount": cashOutAmount, "AccountCode": "800" (Drawings), "TaxType": "BASEXCLUDED" } ], "LineAmountTypes": "Exclusive" } ] }  // BAS Excluded for cash out
+    //   "body": { "BankTransactions": [ { "Type": "SPEND", "Date": date, "BankAccount": { "AccountID": "your-bank-guid" }, "LineItems": [ { "Description": "Cash Out from Receipt", "Quantity": 1, "UnitAmount": cashOutAmount, "AccountCode": "800" (Drawings), "TaxType": "BASEXCLUDED" } ], "LineAmountTypes": "Exclusive" } ] }
     // }
     // Conditional: If discount or surcharge present, ensure lines in bill above; no extra endpoint needed.
   ]
 }
 
 IMPORTANT RULES:
-- VARIANT HANDLING: Base is always a simple receipt as ACCPAY bill. Add /Payments if paymentType != CASH (for bill payment). Add /BankTransactions ONLY if cashOutAmount > 0 (as SPEND from bank to drawings). Discounts/surcharges: Embed as LineItems in bill (negative for discount, positive for surcharge). Combinations: Handle all present (e.g., receipt + cashout + discount + surcharge = bill with extra lines + payment + spend).
+- LINEAMOUNTTYPES DETECTION: Scan for structure. If 'Subtotal (GST, x%) $XX.XX' followed by 'GST $YY.YY' then 'Total $ZZ.ZZ' (XX + YY = ZZ), set "Exclusive" and subTotal=XX.XX, taxAmount=YY.YY; unitAmounts = pre-tax portions. Else, if 'GST Included' or prices incl. (no separate GST), "Inclusive" and subTotal=total - tax if shown.
+- LINE ITEMS VALIDATION & EXTRACTION: Extract ONLY product/service descriptions with prices. Incorporate quantity annotations (e.g., '(6 pieces)', 'Qty: 6') into the main item's "quantity" field (default 1). Do NOT create separate lines for quantities, units, or fragments like 'pieces'. If a recognized "line" is non-descriptive (e.g., just 'pieces', numbers, or subtotal labels), skip it or merge to prior item. For single-item receipts (subTotal == one price), use qty=1, unitAmount=subTotal (pre-tax) or total (incl.), unless explicit qty present—then unitAmount = total / qty (adjust for tax type). After extraction, compute calculatedSubTotal = sum(qty * unitAmount for main items); if |calculatedSubTotal - subTotal| > 0.01, adjust: set qty=1 for that item, unitAmount=subTotal / num_items or total if single.
+- SUM VALIDATION: Always perform after lineItems extraction: calculatedSubTotal = sum(qty * unitAmount excl. discount/surcharge); calculatedTotal = calculatedSubTotal + discount + surcharge + (tax if Exclusive). Set matchesReceipt=true only if |calculatedTotal - totalAmount| < 0.01. If false, note adjustments (e.g., 'Overrode qty line to merge'). For discounts: Verify discountAmount = total pre-discount - post-discount; if unclear, set 0.00.
+- VARIANT HANDLING: Base is always a simple receipt as ACCPAY bill. Add /Payments if paymentType != CASH (for bill payment; split if e.g., CASH + CARD). Add /BankTransactions ONLY if cashOutAmount > 0 (as SPEND from bank to drawings). Discounts/surcharges: Embed as LineItems (negative for discount, positive for surcharge; adjust for lineAmountTypes). Combinations: Handle all present.
 - CASH OUT: PRIORITY 1: Explicit lines ('CASH OUT', 'CASHOUT', 'CASH WITHDRAWAL'). PRIORITY 2: If totalPaidAmount > totalAmount and labeled 'CHANGE' or similar (not pure cash tender). Else 0.00. totalPaidAmount = totalAmount + cashOutAmount.
-- DISCOUNT: Extract from lines ('DISCOUNT', 'TEAM DISCOUNT', 'PROMO', 'LESS'). Always negative in extraction; add as bill line with TaxType 'INPUT' (GST on Expenses) if gstIncluded=true, else 'NONE'.
-- SURCHARGE: From lines ('CARD SURCHARGE', 'FEE', '% FEE'). Positive; add as bill line if >0.
-- LINE ITEMS: Extract EVERY item (32+ if present). Use Inclusive amounts. TaxType: INPUT for % items (taxable); EXEMPTINPUT for * fresh/unprocessed (ATO: fresh produce/meat GST-free). If mixed, vary per line. AccountCode: Default '430' for groceries; adjust for category (e.g., '420' transport).
-- TAX: For Australia, use INPUT/EXEMPTINPUT in lines; overall taxStatus 'mixed' if varies. taxAmount from explicit GST line. Detect gstIncluded from lines like 'GST Included in Total'.
-- JSON VALIDITY: All numbers as floats (e.g., 5.50). Dates YYYY-MM-DD. If unclear, use defaults (e.g., qty=1, taxType='INPUT'). For unreadable text, approximate (e.g., '[garbled] Chicken').
-- API PLACEHOLDERS: Use descriptive placeholders for GUIDs (e.g., 'your-bank-guid'); assume single bill/transaction.
-- PRECISION: Match receipt totals exactly in bill sum. No extras; only described endpoints.
-- ABN RECOGNITION: Aggressively scan for ABN: Look in headers/footers for 'ABN:', 'ABN ', 'ABN No.', patterns like 'xx xxx xxx xxx' (11 digits total), or after vendor name. Validate: Must be exactly 11 digits (first digit 1-9, weighted check if possible but prioritize extraction). OCR common errors: Fix 'O' to '0', 'I' to '1', spaces/hyphens removed. If multiple, pick the one near vendor name. If none, '-'.
+- DISCOUNT: Extract ONLY from transaction-specific lines ('Disc:', 'Discount $XX.XX', '20% off'). Ignore cumulative 'Total Savings' or loyalty points unless directly deducted here. Always negative; add as bill line with TaxType 'INPUT' (GST on Expenses) if gstIncluded=true, else 'NONE'. If per-item, include as negative lineItem. Validate: Ensure post-discount total matches receipt.
+- SURCHARGE: From lines ('CARD SURCHARGE', 'FEE', '% FEE'). Positive; add as bill line if >0. Validate addition to total.
+- TAX: For Australia, use INPUT/EXEMPTINPUT in lines; overall taxStatus 'mixed' if varies. taxAmount from explicit GST line. Detect gstIncluded from 'GST Included in Total'. Validate: For Exclusive, taxAmount ≈ subTotal * 0.1; for Inclusive, taxAmount ≈ total * 0.1 / 1.1.
+- JSON VALIDITY: All numbers as floats (e.g., 7.50 for 45/6). Dates YYYY-MM-DD. If unclear, use defaults (e.g., qty=1, taxType='INPUT'). For unreadable text, approximate (e.g., '[garbled] Key Cutting').
+- API PLACEHOLDERS: Use descriptive placeholders for GUIDs (e.g., 'your-bank-guid'); assume single bill/transaction unless split payments.
+- PRECISION: Match receipt totals exactly: for Exclusive, sum LineItems = subTotal, Xero adds tax; for Inclusive, sum LineItems = total (Xero extracts tax). If validation fails, force single consolidated lineItem.
+- ABN RECOGNITION: Aggressively scan for ABN: Look in headers/footers for 'ABN:', 'ABN ', 'ABN No.', patterns like 'xx xxx xxx xxx' (11 digits total), or after vendor name. Validate: Must be exactly 11 digits (first digit 1-9, weighted check if possible but prioritize extraction). OCR common errors: Fix 'O' to '0', 'I' to '1', 'S' to '5', spaces/hyphens removed. If multiple, pick the one near vendor name. If none, '-'.
 `;
 
       console.log(`Starting AI digitization for document ${id}...`)
