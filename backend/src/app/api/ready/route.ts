@@ -22,6 +22,92 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function POST(request: NextRequest) {
+  const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
+  try {
+    const body = await request.json()
+    const { id, userId } = body
+    if (!id || !userId) {
+      return NextResponse.json({ success: false, code: 'BAD_REQUEST', message: 'id and userId are required' }, { status: 400, headers: corsHeaders })
+    }
+    const doc = await (prisma as any).digitized.findUnique({ where: { id: String(id) } })
+    if (!doc || doc.userId !== userId) {
+      return NextResponse.json({ success: false, code: 'NOT_FOUND', message: 'Item not found' }, { status: 404, headers: corsHeaders })
+    }
+    await (prisma as any).digitizedReady.upsert({
+      where: { originalDigitizedId: doc.id },
+      update: {
+        companyId: doc.companyId,
+        userId: doc.userId,
+        originalDocumentId: doc.originalDocumentId,
+        fileName: doc.fileName,
+        originalName: doc.originalName,
+        filePath: doc.filePath,
+        fileSize: doc.fileSize,
+        mimeType: doc.mimeType,
+        purchaseDate: doc.purchaseDate,
+        vendorName: doc.vendorName,
+        vendorAbn: doc.vendorAbn,
+        vendorAddress: doc.vendorAddress,
+        documentType: doc.documentType,
+        receiptNumber: doc.receiptNumber,
+        paymentType: doc.paymentType,
+        cashOutAmount: doc.cashOutAmount,
+        discountAmount: doc.discountAmount,
+        subTotal: doc.subTotal,
+        amountExclTax: doc.amountExclTax,
+        taxAmount: doc.taxAmount,
+        totalAmount: doc.totalAmount,
+        totalPaidAmount: doc.totalPaidAmount,
+        surchargeAmount: doc.surchargeAmount,
+        expenseCategory: doc.expenseCategory,
+        taxStatus: doc.taxStatus,
+        taxType: doc.taxType,
+        taxTypeName: doc.taxTypeName,
+        lineItems: doc.lineItems,
+        xeroApiRequests: doc.xeroApiRequests,
+        movedAt: new Date(),
+      },
+      create: {
+        originalDigitizedId: doc.id,
+        companyId: doc.companyId,
+        userId: doc.userId,
+        originalDocumentId: doc.originalDocumentId,
+        fileName: doc.fileName,
+        originalName: doc.originalName,
+        filePath: doc.filePath,
+        fileSize: doc.fileSize,
+        mimeType: doc.mimeType,
+        purchaseDate: doc.purchaseDate,
+        vendorName: doc.vendorName,
+        vendorAbn: doc.vendorAbn,
+        vendorAddress: doc.vendorAddress,
+        documentType: doc.documentType,
+        receiptNumber: doc.receiptNumber,
+        paymentType: doc.paymentType,
+        cashOutAmount: doc.cashOutAmount,
+        discountAmount: doc.discountAmount,
+        subTotal: doc.subTotal,
+        amountExclTax: doc.amountExclTax,
+        taxAmount: doc.taxAmount,
+        totalAmount: doc.totalAmount,
+        totalPaidAmount: doc.totalPaidAmount,
+        surchargeAmount: doc.surchargeAmount,
+        expenseCategory: doc.expenseCategory,
+        taxStatus: doc.taxStatus,
+        taxType: doc.taxType,
+        taxTypeName: doc.taxTypeName,
+        lineItems: doc.lineItems,
+        xeroApiRequests: doc.xeroApiRequests,
+      },
+    })
+    await (prisma as any).digitized.delete({ where: { id: String(id) } })
+    return NextResponse.json({ success: true, code: 'SUCCESS', message: 'Item moved to Ready for Report' }, { headers: corsHeaders })
+  } catch (error) {
+    return NextResponse.json({ success: false, code: 'INTERNAL_ERROR', message: 'Failed to move item to Ready' }, { status: 500, headers: corsHeaders })
+  }
+}
+
 export async function DELETE(request: NextRequest) {
   const corsHeaders = getCorsHeaders(request.headers.get('origin') || '')
   try {
